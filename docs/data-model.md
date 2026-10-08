@@ -115,3 +115,17 @@ Prompts do not add database tables. Bundled Markdown files are immutable; user
 files/overrides live in configured `INVEST_PROMPTS` or the local Investobot data
 `prompts` directory. Safe slugs identify files. User deletion restores a bundled
 default where available. Prompt text is never interpreted as executable commands.
+
+
+## Conservative input defaults
+
+Omitted tax status becomes `OTHER`; it never establishes taxable treatment.
+Omitted cash remains unknown and leaves previously accepted cash unchanged.
+Explicit supplied cash asserts a known balance unless `cash_known: false` is
+provided. Coverage and history assertions require JSON booleans.
+
+An unchanged-quantity partial valuation refresh can retain known aggregate basis
+when retained lots resolve it. Complete lot inventory must agree with supplied
+aggregate basis within one cent. Conflicting strong identities for an already
+held ticker require manual resolution. Fresh price observations do not establish
+fresh holdings; stale or unknown quantity source dates force plan review.

@@ -50,8 +50,9 @@ Editing a bundled prompt creates a local user override; deleting that override
 restores the immutable bundled default. Only user prompts can be deleted.
 Content stays text and is never interpreted as commands or executed. User prompts
 live under `INVEST_PROMPTS` when explicitly configured, otherwise the Investobot
-local data directory's `prompts` subdirectory. Mount that directory deliberately
-if persistence outside the container runtime is desired. Path traversal,
+local data directory's `prompts` subdirectory. Compose explicitly uses
+`/data/prompts` in its persistent ledger volume. Native listeners default to
+`127.0.0.1`; Compose binds within the container and publishes only host loopback. Path traversal,
 symlinks, oversized files and invalid slugs are rejected.
 
 **Import & Reconcile** preserves preview → reconcile → explicit accept:
