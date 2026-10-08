@@ -371,3 +371,10 @@ def identity_conflict(ctx):
     classify(ctx)
     ctx['snap']['positions'][0]['cusip'] = 'CONFLICTING-CUSIP'
     catch(ctx, lambda: ctx['ledger'].apply(ctx['snap']))
+
+
+@when('an otherwise unchanged snapshot loses its source date')
+def lost_source_date(ctx):
+    ctx['snap']['source_timestamp'] = None
+    ctx['diff'] = ctx['ledger'].reconcile(ctx['snap'])
+    catch(ctx, lambda: ctx['ledger'].apply(ctx['snap']))

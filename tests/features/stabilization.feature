@@ -107,3 +107,7 @@ Feature: Explicit corrections preserve trustworthy portfolio state
     Given an unknown security in two dated accounts with saved plans
     When a verified ETF receives conflicting strong identities
     Then the correction is rejected atomically
+  Scenario: Removing dated observation provenance requires review even with equal values
+    Given an unknown security in two dated accounts with saved plans
+    When an otherwise unchanged snapshot loses its source date
+    Then unknown freshness requires override and leaves state unchanged
