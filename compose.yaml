@@ -4,12 +4,12 @@ services:
     ports: ["127.0.0.1:8765:8765"]
     volumes:
       - .:/app
-      - dependencies:/app/.venv
+      - runtime_dependencies:/opt/venv
       - ledger:/data
     environment:
       INVEST_DB: /data/portfolio.db
       FMP_API_KEY: ${FMP_API_KEY:-}
     command: ["sh", "-c", "uv sync --locked && python -m invest.web"]
 volumes:
-  dependencies:
+  runtime_dependencies:
   ledger:

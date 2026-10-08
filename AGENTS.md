@@ -16,3 +16,4 @@
 - Never sum different currencies without an FX model. Guard household summary, exposure, risk and simulation.
 - Quote refresh writes cache only, never canonical portfolio prices. Keep900-second quote TTL distinct from day/week data TTLs.
 - Docker builds copy uv.lock before dependency sync; use --locked. Exclude .venv and private local data from image contexts.
+- Runtime dependencies live at /opt/venv in a named Docker volume. Never mount a dependency volume inside the project bind mount: removing its host mountpoint can disrupt entry points on Docker Desktop.
