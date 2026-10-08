@@ -71,3 +71,5 @@ local configuration, never from browser-entered credentials. Explicit
 labeled `SYNTHETIC_FMP_FIXTURE`. No API key is needed for local-state analysis;
 market-dependent results require configured data or return missing-data errors
 and warnings. Nothing applies a simulated portfolio.
+
+Inconsistent household currencies return HTTP409 JSON with domain error code3. No FX rates are invented. The inspection surface remains localhost-only and has no authentication; do not publish its port to a network. Your Docker ledger volume starts empty and synthetic acceptance data is never preloaded.

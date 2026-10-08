@@ -196,21 +196,35 @@ def simulation_cash(context):
 @then("the database bytes are unchanged")
 def db_unchanged(context):
     assert context["before_bytes"] == context["path"].read_bytes()
-@given('a household with unsupported mixed currencies')
+
+
+@given("a household with unsupported mixed currencies")
 def mixed_currency(context):
     from invest.ledger import Ledger
-    ledger=Ledger(context['path'])
-    for alias,currency in [('dollars','USD'),('euros','EUR')]:
-        ledger.apply({'account':{'id':alias,'name':alias,'currency':currency},'positions':[],'cash':'100','source_hash':'SYNTHETIC'})
+
+    ledger = Ledger(context["path"])
+    for alias, currency in [("dollars", "USD"), ("euros", "EUR")]:
+        ledger.apply(
+            {
+                "account": {"id": alias, "name": alias, "currency": currency},
+                "positions": [],
+                "cash": "100",
+                "source_hash": "SYNTHETIC",
+            }
+        )
     ledger.connection.close()
-@when('I inspect that household summary')
+
+
+@when("I inspect that household summary")
 def mixed_summary(context):
     try:
-        context['response']=request(context,'/api/summary')
+        context["response"] = request(context, "/api/summary")
     except Exception as exc:
-        context['connection_error']=exc
-@then('the API returns a JSON inconsistent-state error')
+        context["connection_error"] = exc
+
+
+@then("the API returns a JSON inconsistent-state error")
 def mixed_error(context):
-    assert 'connection_error' not in context
-    assert context['response'][0]==409
-    assert context['response'][1]['code']==3
+    assert "connection_error" not in context
+    assert context["response"][0] == 409
+    assert context["response"][1]["code"] == 3

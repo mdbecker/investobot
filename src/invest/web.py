@@ -132,6 +132,12 @@ def create_server(db_path, host="0.0.0.0", port=8765):
                     self.reply(
                         200, ledger.summary() if self.path.endswith("summary") else ledger.state()
                     )
+                except DomainError as error:
+                    self.reply(
+                        409 if error.code == 3 else 400, {"error": str(error), "code": error.code}
+                    )
+                except Exception:
+                    self.reply(500, {"error": "Internal inspection error", "code": 4})
                 finally:
                     ledger.connection.close()
                 return
