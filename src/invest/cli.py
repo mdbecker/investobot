@@ -282,3 +282,54 @@ def tool_describe(name: str):
 @market.command("quote")
 def quote(ticker: str, refresh: bool = False):
     emit(lambda: client().quote(ticker, refresh=refresh))
+
+
+target = typer.Typer()
+app.add_typer(target, name="target")
+
+
+@target.command("save")
+def target_save(file: str):
+    from invest.targets import save
+
+    emit(lambda: save(ledger(), read_json(file)))
+
+
+@target.command("list")
+def target_list():
+    from invest.targets import list_targets
+
+    emit(lambda: list_targets(ledger()))
+
+
+@target.command("show")
+def target_show(target_id: str, version: int = typer.Option(None)):
+    from invest.targets import show
+
+    emit(lambda: show(ledger(), target_id, version=version))
+
+
+@target.command("activate")
+def target_activate(target_id: str):
+    from invest.targets import activate
+
+    emit(lambda: activate(ledger(), target_id))
+
+
+@target.command("archive")
+def target_archive(target_id: str):
+    from invest.targets import archive
+
+    emit(lambda: archive(ledger(), target_id))
+
+
+@target.command("diff")
+def target_diff(target_id: str, version: int = typer.Option(None)):
+    from invest.targets import diff
+
+    emit(lambda: diff(ledger(), target_id, version=version))
+
+
+@security.command("register")
+def security_register(file: str):
+    emit(lambda: ledger().register_security(read_json(file)))

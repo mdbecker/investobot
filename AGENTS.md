@@ -26,3 +26,5 @@
 - Execution prices are activity facts, not portfolio valuation marks. Scenario prices are explicit hypothetical assumptions only. Cross-account/security transfers remain review-required and unsupported for recording.
 - Tax estimates require whole-position lot consistency. Explicit unknown source timestamps block authoritative taxable estimates; legacy timestamps warn. Preserve exact fees separately from gross execution prices.
 - Use the external agent's browser for current qualitative research. Use invest tools list/describe and invest schema for deterministic CLI inputs, outputs and mutation scopes. Market cache writes are distinct from actual portfolio mutations.
+- Target weights are fractions totaling 1 within 0.000001. Target versions are immutable; activation changes metadata only and never adopts holdings.
+- Planning permission must be explicit per account and canonical security ID. Missing permitted-securities rules mean unknown eligibility. Canonical security registration stores sourced metadata only, never fabricated zero-share holdings.

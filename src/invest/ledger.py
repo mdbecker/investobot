@@ -9,7 +9,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from invest.models import DomainError, Snapshot, decimal
+from invest.models import DomainError, SecurityInput, Snapshot, decimal
 
 TABLES = [
     "accounts",
@@ -22,6 +22,9 @@ TABLES = [
     "market_data_cache",
     "fund_holdings_cache",
     "trade_proposals",
+    "targets",
+    "target_versions",
+    "plans",
 ]
 
 
@@ -32,7 +35,7 @@ class Ledger:
         self.connection = sqlite3.connect(self.path)
         self.connection.execute("PRAGMA foreign_keys=ON")
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
-        if version > 1:
+        if version > 2:
             raise DomainError("Database schema is newer than this application", 3)
         if version == 0:
             with self.connection:
@@ -41,6 +44,11 @@ class Ledger:
                         f"CREATE TABLE {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)"
                     )
                 self.connection.execute("PRAGMA user_version=1")
+        if version < 2:
+            with self.connection:
+                for table in ("targets", "target_versions", "plans"):
+                    self.connection.execute(f"CREATE TABLE IF NOT EXISTS {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
+                self.connection.execute("PRAGMA user_version=2")
 
     def rows(self, table):
         if table not in TABLES:
@@ -80,6 +88,21 @@ class Ledger:
         if len(matches) != 1:
             raise DomainError("Security is unknown or ambiguous", 3)
         return matches[0]
+
+    def register_security(self, payload):
+        data = SecurityInput.model_validate(payload).model_dump(mode="json")
+        matches = [s for s in self.rows("securities") if any(data.get(k) and data[k] == s.get(k) for k in ("cusip", "isin", "figi"))]
+        if not matches:
+            matches = [s for s in self.rows("securities") if s["ticker"] == data["ticker"]]
+        if len(matches) > 1 or (matches and any(data.get(k) and matches[0].get(k) and data[k] != matches[0][k] for k in ("cusip", "isin", "figi"))):
+            raise DomainError("Security identifiers conflict", 3)
+        if matches and (matches[0].get("currency") != data["currency"] or matches[0].get("asset_type") != data["asset_type"]):
+            raise DomainError("Security classification conflicts with accepted metadata", 3)
+        existing = matches[0] if matches else {}
+        data = dict(existing, **{k: v for k, v in data.items() if v is not None}, id=existing.get("id", str(uuid.uuid4())))
+        with self.connection:
+            self.put("securities", data["id"], data)
+        return data
 
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")

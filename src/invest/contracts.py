@@ -46,6 +46,7 @@ PURPOSES = {
     "market.history": "Retrieve adjusted history with dates, provenance and metrics.",
     "market.quote": "Retrieve public quote observations without updating portfolio marks.",
     "security.screen": "Retrieve structured security candidates using supplied filters.",
+    "security.register": "Register verified security metadata without creating holdings or activity.",
     "bond.analyze": "Calculate deterministic bond measures from supplied terms.",
     "target.save": "Save a hypothetical target as a new immutable version.",
     "target.list": "List saved hypothetical target portfolios.",
@@ -73,6 +74,7 @@ SCOPES = {
     "report.export": "requested_output_file",
     "prompt.save": "user_prompt_files",
     "prompt.delete": "user_prompt_files",
+    "security.register": "security_metadata",
 }
 CACHE_TOOLS = {
     "portfolio.exposure", "portfolio.risk", "fund.holdings", "fund.compare", "fund.search",
@@ -83,6 +85,7 @@ JSON_MODELS = {
     "portfolio.apply": "Snapshot",
     "portfolio.record-activity": "Activity",
     "target.save": "TargetInput",
+    "security.register": "SecurityInput",
 }
 JSON_CONTRACTS = {
     "portfolio.simulate": "Nonempty array of BUY, SELL or MOVE_CASH hypothetical actions. "
