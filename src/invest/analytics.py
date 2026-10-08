@@ -14,7 +14,7 @@ def exposure(state, client, refresh=False):
     total = sum((decimal(p["market_value"]) for p in state["positions"]), ZERO) + sum(
         (decimal(c["amount"]) for c in state["cash_balances"]), ZERO
     )
-    unknown, entries, warnings, provenance = ZERO, [], [], {}
+    unknown, entries, warnings, provenance, fund_coverage = ZERO, [], [], {}, {}
     securities = {s["id"]: s for s in state["securities"]}
     for position in state["positions"]:
         value = decimal(position["market_value"])
@@ -34,6 +34,12 @@ def exposure(state, client, refresh=False):
             coverage = sum(
                 (decimal(h["weight"]) for h in data["holdings"] if h["weight"] is not None), ZERO
             )
+            fund_coverage[position["security"]] = {
+                "reported_weight": str(coverage),
+                "represented_weight": "0",
+                "source": data.get("source"),
+                "data_as_of": data.get("data_as_of"),
+            }
             if coverage > 1:
                 warnings.append(
                     f"{position['security']}: weights exceed 100%; entire fund unresolved"
@@ -50,10 +56,19 @@ def exposure(state, client, refresh=False):
                         holding,
                         direct=ZERO,
                         indirect=amount,
-                        contribution=dict(source, fund=position["security"], value=str(amount)),
+                        contribution=dict(
+                            source,
+                            fund=position["security"],
+                            value=str(amount),
+                            source=data.get("source"),
+                            data_as_of=data.get("data_as_of"),
+                        ),
                     )
                 )
                 allocated += amount
+            fund_coverage[position["security"]]["represented_weight"] = str(
+                allocated / value if value else ZERO
+            )
             unknown += value - allocated
         elif asset == "OTHER":
             unknown += value
@@ -85,6 +100,14 @@ def exposure(state, client, refresh=False):
         )
     merged, sectors, asset_types = {}, {}, {}
     for row, identity in zip(entries, normalized_identities(entries)):
+        confidence = (
+            "STRONG"
+            if any(row.get(key) for key in ("isin", "cusip", "figi"))
+            else "CASH"
+            if row.get("ticker") == "CASH"
+            else "LOWER_CONFIDENCE_TICKER"
+        )
+        row["contribution"]["identifier_confidence"] = confidence
         target = merged.setdefault(
             identity,
             dict(
@@ -95,8 +118,11 @@ def exposure(state, client, refresh=False):
                 indirect_value=ZERO,
                 total_value=ZERO,
                 contributions=[],
+                identifier_confidence=confidence,
             ),
         )
+        if confidence == "LOWER_CONFIDENCE_TICKER":
+            target["identifier_confidence"] = confidence
         target["direct_value"] += row["direct"]
         target["indirect_value"] += row["indirect"]
         amount = row["direct"] + row["indirect"]
@@ -120,6 +146,7 @@ def exposure(state, client, refresh=False):
         "by_sector": {k: str(v) for k, v in sectors.items()},
         "by_asset_type_known": {k: str(v) for k, v in asset_types.items()},
         "provenance": provenance,
+        "fund_coverage": fund_coverage,
         "warnings": list(dict.fromkeys(warnings)),
     }
 
@@ -219,7 +246,7 @@ def risk(state, client, refresh=False):
             correlations={},
             usable_period=None,
         )
-    aligned = pd.DataFrame(series).dropna()
+    aligned = pd.DataFrame(series).sort_index().dropna()
     if len(aligned) < 3:
         return dict(
             base,

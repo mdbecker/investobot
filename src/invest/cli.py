@@ -62,6 +62,9 @@ def import_page(
     account: str = typer.Option(...),
     institution: str = "generic",
     tax_status: str = "TAXABLE",
+    as_of: str = typer.Option(None),
+    positions_complete: bool = False,
+    lots_complete: bool = False,
 ):
     emit(
         lambda: parse_html(
@@ -69,6 +72,9 @@ def import_page(
             account,
             institution,
             tax_status,
+            as_of=as_of,
+            positions_complete=positions_complete,
+            lots_complete=lots_complete,
         )
     )
 
@@ -79,8 +85,8 @@ def reconcile(file: str):
 
 
 @portfolio.command()
-def apply(file: str):
-    emit(lambda: ledger().apply(read_json(file)))
+def apply(file: str, allow_older: bool = False, justification: str = typer.Option(None)):
+    emit(lambda: ledger().apply(read_json(file), allow_older=allow_older, justification=justification))
 
 
 @portfolio.command()
@@ -140,6 +146,7 @@ def tax_analyze(
     sale_date: str = typer.Option(...),
     method: str = "FIFO",
     lot_ids: str = "",
+    fee: str = "0",
 ):
     from invest.config import load_config
     from invest.tax import analyze
@@ -155,6 +162,7 @@ def tax_analyze(
             method=method,
             lot_ids=lot_ids.split(",") if lot_ids else None,
             rates=load_config().get("tax"),
+            fee=fee,
         )
     )
 
@@ -248,24 +256,27 @@ def replacements(original: str, candidates: list[str] = typer.Argument(...)):
 
 @app.command("schema")
 def schema():
-    from invest.models import Snapshot
+    from invest.contracts import schema_contract
 
-    emit(
-        lambda: {
-            "snapshot": Snapshot.model_json_schema(),
-            "output_contract": {
-                "successful_output": "JSON object",
-                "diagnostics": "stderr JSON",
-                "exit_codes": {
-                    "0": "success",
-                    "1": "invalid input",
-                    "2": "external data unavailable",
-                    "3": "inconsistent portfolio state",
-                    "4": "internal error",
-                },
-            },
-        }
-    )
+    emit(schema_contract)
+
+
+tools = typer.Typer()
+app.add_typer(tools, name="tools")
+
+
+@tools.command("list")
+def tool_list():
+    from invest.contracts import tools_list
+
+    emit(tools_list)
+
+
+@tools.command("describe")
+def tool_describe(name: str):
+    from invest.contracts import tools_describe
+
+    emit(lambda: tools_describe(name))
 
 
 @market.command("quote")

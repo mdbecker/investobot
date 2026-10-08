@@ -41,6 +41,13 @@ def simulate(state, client, actions, rates=None):
     for action in actions:
         kind = action.get("type")
         if kind == "MOVE_CASH":
+            accounts = {a["id"]: a for a in working["accounts"]}
+            a = accounts.get(action["account_id"])
+            b = accounts.get(action["to_account"])
+            if not a or not b or a["tax_status"] != b["tax_status"] or a["tax_status"] == "OTHER":
+                raise DomainError("Cross-tax-treatment movements require manual contribution/rollover review", 3)
+            if action.get("classification") != "CASH_TRANSFER":
+                raise DomainError("Cash movement requires explicit CASH_TRANSFER classification", 3)
             amount = decimal(action["amount"])
             source = next(
                 (c for c in working["cash_balances"] if c["account_id"] == action["account_id"]),
@@ -76,11 +83,12 @@ def simulate(state, client, actions, rates=None):
                 action["account_id"],
                 action["security"],
                 str(qty),
-                str(price - fee / qty),
+                str(price),
                 action["date"],
                 method=action.get("method", "FIFO"),
                 lot_ids=action.get("lot_ids"),
                 rates=rates,
+                fee=str(fee),
             )
             analyses.append(analysis)
             warnings.extend(analysis["warnings"])

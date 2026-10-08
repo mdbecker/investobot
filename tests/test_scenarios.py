@@ -52,6 +52,7 @@ def setup(ctx, tax_status):
         ],
         "cash": "500",
         "source_hash": "synthetic",
+        "source_timestamp": "2026-10-08",
     }
     ctx["ledger"].apply(snapshot)
     ctx["ledger"].apply(
@@ -168,11 +169,16 @@ def zero(ctx):
 @when("I simulate a cash transfer to another account")
 def transfer(ctx):
     from invest.scenarios import simulate
+    # A classified transfer between accounts with the same tax treatment.
+    with ctx["ledger"].connection:
+        account = next(a for a in ctx["ledger"].rows("accounts") if a["id"] == "other")
+        account["tax_status"] = "TAXABLE"
+        ctx["ledger"].put("accounts", "other", account)
 
     ctx["result"] = simulate(
         ctx["ledger"].state(),
         ctx["client"],
-        [{"type": "MOVE_CASH", "account_id": "primary", "to_account": "other", "amount": "100"}],
+        [{"type": "MOVE_CASH", "account_id": "primary", "to_account": "other", "amount": "100", "classification": "CASH_TRANSFER"}],
     )
 
 

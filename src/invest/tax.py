@@ -3,6 +3,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+from invest.market import normalized_identities
 from invest.models import DomainError, decimal
 
 ZERO = Decimal(0)
@@ -46,6 +47,89 @@ def _matches(item, security):
     return item.get("security") in {security["id"], security.get("ticker")}
 
 
+def _known_date(value):
+    if value is None:
+        return None
+    try:
+        return _date(str(value)[:10])
+    except DomainError:
+        return None
+
+
+def _prerequisites(state, position, security, as_of):
+    warnings = []
+    inventory = [
+        lot
+        for lot in state["lots"]
+        if position
+        and lot["account_id"] == position["account_id"]
+        and _matches(lot, security)
+        and decimal(lot["remaining_quantity"]) > 0
+    ]
+    invalid = not position or position.get("lot_state") == "UNRESOLVED"
+    if position and sum((decimal(l["remaining_quantity"]) for l in inventory), ZERO) != decimal(
+        position["quantity"]
+    ):
+        invalid = True
+    for lot in inventory:
+        acquired = _known_date(lot.get("acquisition_date"))
+        if (
+            acquired is None
+            or acquired > as_of
+            or lot.get("cost_basis") is None
+            or decimal(lot["quantity"]) <= 0
+            or decimal(lot["remaining_quantity"]) > decimal(lot["quantity"])
+        ):
+            invalid = True
+    if invalid:
+        warnings.append(
+            "Lot/basis state unresolved or quantities, acquisition dates and basis inconsistent"
+        )
+    if not position or "source_timestamp" not in position:
+        freshness = "LEGACY_UNKNOWN"
+        warnings.append("Legacy source timestamp unavailable; valuation freshness is unknown")
+    else:
+        source_date = _known_date(position["source_timestamp"])
+        if source_date is None:
+            freshness = "UNKNOWN"
+            invalid = True
+            warnings.append(
+                "Source timestamp unknown; import time does not establish valuation freshness"
+            )
+        elif source_date < as_of:
+            freshness = "STALE"
+            warnings.append(
+                "Source valuation predates analysis date; verify current holdings before acting"
+            )
+        elif source_date > as_of:
+            freshness = "UNKNOWN"
+            invalid = True
+            warnings.append("Source valuation is later than the analysis date")
+        else:
+            freshness = "KNOWN"
+    return {
+        "lot_inventory": "INSUFFICIENT_DATA" if invalid else "COMPLETE",
+        "household_history": "COMPLETE"
+        if all(
+            a.get("history_complete", False)
+            for a in state["accounts"]
+            if a.get("account_type") not in {"bank", "cash"}
+        )
+        else "INCOMPLETE",
+        "source_freshness": freshness,
+    }, warnings
+
+
+def _output(result):
+    result.update(
+        realized_short_term_gain_loss=result["short_term_gain_loss"],
+        realized_long_term_gain_loss=result["long_term_gain_loss"],
+        estimated_current_tax_effect=result["estimated_tax_effect"],
+        potential_wash_sale_conflict=result["wash_sale"]["status"] == "POTENTIAL_CONFLICT",
+    )
+    return result
+
+
 def _rate_config(rates):
     if not rates:
         return None
@@ -71,13 +155,14 @@ def _rate(term, rates):
 
 def lots(state, as_of):
     as_of = _date(as_of)
-    taxable = {a["id"] for a in state["accounts"] if a["tax_status"] == "TAXABLE"}
+    taxable = {a["id"] for a in state["accounts"] if a.get("tax_status") == "TAXABLE"}
     results, warnings = [], []
     for lot in state["lots"]:
         if lot["account_id"] not in taxable or decimal(lot["remaining_quantity"]) <= 0:
             continue
         result = dict(lot)
-        result["term"] = _term(lot["acquisition_date"], as_of)
+        acquired = _known_date(lot.get("acquisition_date"))
+        result["term"] = _term(acquired, as_of) if acquired else None
         result["cost_basis"] = None
         result["current_value"] = None
         result["unrealized_gain_loss"] = None
@@ -91,7 +176,13 @@ def lots(state, as_of):
             ),
             None,
         )
-        if _date(lot["acquisition_date"]) > as_of:
+        security = _security(state, lot.get("security_id") or lot["security"])
+        completeness, prerequisites = _prerequisites(state, position, security, as_of)
+        result["tax_data_completeness"] = completeness
+        result["warnings"].extend(prerequisites)
+        if completeness["lot_inventory"] == "INSUFFICIENT_DATA":
+            pass
+        elif acquired is None or acquired > as_of:
             result["warnings"].append("Lot acquired after analysis date")
         elif lot.get("cost_basis") is None or decimal(lot["quantity"]) <= 0:
             result["warnings"].append("Lot basis unavailable")
@@ -140,13 +231,28 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
     )
     if not complete:
         warnings.append("Household purchase history is incomplete")
+    securities = [dict(row, identifier=row["id"]) for row in state["securities"]]
+    identities = dict(zip((row["id"] for row in securities), normalized_identities(securities)))
+
+    def matches(item):
+        if item.get("security_id"):
+            return (
+                identities.get(item["security_id"], item["security_id"])
+                == identities[security["id"]]
+            )
+        return _matches(item, security)
+
     if loss:
         acquisitions = []
         for activity in state["activities"]:
-            if activity.get("type") == "BUY" and _matches(activity, security):
+            if activity.get("type") == "BUY" and matches(activity):
                 acquisitions.append(dict(activity, source="activity"))
         for lot in state["lots"]:
-            if lot["id"] not in excluded_lots and _matches(lot, security):
+            if (
+                lot["id"] not in excluded_lots
+                and matches(lot)
+                and decimal(lot["remaining_quantity"]) > 0
+            ):
                 acquired = dict(lot, date=lot["acquisition_date"], source="lot")
                 # A dated lot and its recorded purchase are one known acquisition.
                 matched = next(
@@ -166,7 +272,13 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
                 if matched is None:
                     acquisitions.append(acquired)
         for acquired in acquisitions:
-            if begin <= _date(acquired["date"]) <= end:
+            acquired_date = _known_date(acquired.get("date"))
+            if acquired_date is None:
+                warnings.append(
+                    "Known acquisition has an unavailable date; wash-sale history is incomplete"
+                )
+                complete = False
+            elif begin <= acquired_date <= end:
                 conflicts.append(
                     {
                         "id": acquired.get("id"),
@@ -184,6 +296,9 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
     warnings.append(
         "Future acquisitions and unloaded household or spouse accounts may change wash-sale treatment"
     )
+    warnings.append(
+        "Substantially-identical securities with different identifiers require human review"
+    )
     return {
         "status": status,
         "conflicts": conflicts,
@@ -195,7 +310,16 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
 
 
 def analyze(
-    state, account, security, quantity, price, sale_date, method="FIFO", lot_ids=None, rates=None
+    state,
+    account,
+    security,
+    quantity,
+    price,
+    sale_date,
+    method="FIFO",
+    lot_ids=None,
+    rates=None,
+    fee="0",
 ):
     """Analyze a proposed sale; quantity=None sells the selected specific lots in full."""
     account_row = next((a for a in state["accounts"] if account in {a["id"], a.get("name")}), None)
@@ -209,7 +333,7 @@ def analyze(
         raise DomainError("Unsupported lot selection method")
     if price < 0:
         raise DomainError("Sale price must be nonnegative")
-    if method == "MIN_TAX" and configured is None:
+    if method == "MIN_TAX" and configured is None and account_row.get("tax_status") == "TAXABLE":
         raise DomainError("MIN_TAX requires configured tax rates")
     available = [
         dict(lot)
@@ -242,6 +366,10 @@ def analyze(
     )
     if position is None or quantity > decimal(position["quantity"]):
         raise DomainError("Sale exceeds known position", 3)
+    fee = decimal(fee)
+    if fee < 0 or fee > price * quantity:
+        raise DomainError("Sale fee must be nonnegative and cannot exceed gross proceeds")
+    completeness, warnings = _prerequisites(state, position, security_row, sale_date)
     result = {
         "status": "OK",
         "account_id": account_id,
@@ -257,13 +385,21 @@ def analyze(
         "long_term_gain_loss": None,
         "estimated_tax_effect": None,
         "tax_estimate_status": "UNAVAILABLE" if configured else "NOT_CONFIGURED",
-        "warnings": [],
+        "warnings": warnings,
+        "sale_fee": _number(fee),
+        "tax_data_completeness": completeness,
+        "assumptions": [
+            "Fees reduce proceeds and are allocated by selected share quantity",
+            "Configured marginal rates ignore brackets, carryforwards and loss deduction limits",
+            "No wash-sale basis adjustments; estimated loss effects are not guaranteed savings",
+        ],
     }
-    if account_row["tax_status"] == "OTHER":
+    if account_row.get("tax_status") not in {"TAXABLE", "TAX_FREE", "TAX_DEFERRED"}:
         result["status"] = "INSUFFICIENT_DATA"
+        completeness["lot_inventory"] = "INSUFFICIENT_DATA"
         result["warnings"].append("Account tax status is unknown; no taxable gain is estimated")
         result["wash_sale"] = _wash(state, security_row, sale_date, True, set())
-        return result
+        return _output(result)
     if account_row["tax_status"] != "TAXABLE":
         result.update(
             realized_gain_loss="0",
@@ -273,12 +409,17 @@ def analyze(
         )
         result["warnings"].append("Sale is in a non-taxable account; no taxable gain is estimated")
         result["wash_sale"] = _wash(state, security_row, sale_date, False, set())
-        return result
-    if sum((decimal(l["remaining_quantity"]) for l in available), ZERO) < quantity or any(
-        l.get("cost_basis") is None
-        or decimal(l["quantity"]) <= 0
-        or _date(l["acquisition_date"]) > sale_date
-        for l in available
+        return _output(result)
+    if (
+        completeness["lot_inventory"] == "INSUFFICIENT_DATA"
+        or sum((decimal(l["remaining_quantity"]) for l in available), ZERO) < quantity
+        or any(
+            l.get("cost_basis") is None
+            or decimal(l["quantity"]) <= 0
+            or _known_date(l.get("acquisition_date")) is None
+            or _known_date(l.get("acquisition_date")) > sale_date
+            for l in available
+        )
     ):
         result["status"] = "INSUFFICIENT_DATA"
         result["warnings"].append(
@@ -288,7 +429,8 @@ def analyze(
         result["wash_sale"]["status"] = (
             "POTENTIAL_CONFLICT" if result["wash_sale"]["conflicts"] else "INSUFFICIENT_DATA"
         )
-        return result
+        completeness["lot_inventory"] = "INSUFFICIENT_DATA"
+        return _output(result)
     for lot in available:
         lot["_basis"] = decimal(lot["cost_basis"]) / decimal(lot["quantity"])
         lot["_term"] = _term(lot["acquisition_date"], sale_date)
@@ -305,12 +447,15 @@ def analyze(
             )
         )
     remaining, st, lt, estimate, loss = quantity, ZERO, ZERO, ZERO, False
+    remaining_fee = fee
     excluded, retained = set(), {}
     for lot in available:
         if remaining <= 0:
             break
         used = min(remaining, decimal(lot["remaining_quantity"]))
-        basis, proceeds = used * lot["_basis"], used * price
+        allocated_fee = remaining_fee if used == remaining else fee * used / quantity
+        remaining_fee -= allocated_fee
+        basis, proceeds = used * lot["_basis"], used * price - allocated_fee
         gain = proceeds - basis
         result["selected_lots"].append(
             {
@@ -319,6 +464,8 @@ def analyze(
                 "quantity": _number(used),
                 "basis": _number(basis),
                 "proceeds": _number(proceeds),
+                "gross_proceeds": _number(used * price),
+                "fee": _number(allocated_fee),
                 "gain_loss": _number(gain),
                 "term": lot["_term"],
             }
@@ -349,7 +496,7 @@ def analyze(
             "Estimated tax effect excludes wash-sale adjustments; loss savings are not guaranteed"
         )
     result["wash_sale"] = _wash(state, security_row, sale_date, loss, excluded, retained)
-    return result
+    return _output(result)
 
 
 def harvest_candidates(state, as_of):

@@ -18,7 +18,7 @@ STATIC = Path(__file__).parent / "static"
 ANALYSIS_INPUTS = {
     "exposure": {"refresh"},
     "tax_lots": {"as_of"},
-    "tax_analyze": {"account", "security", "quantity", "price", "sale_date", "method", "lot_ids"},
+    "tax_analyze": {"account", "security", "quantity", "price", "sale_date", "method", "lot_ids", "fee"},
     "harvest": {"as_of"},
     "simulate": {"actions"},
     "risk": {"refresh"},
@@ -69,6 +69,7 @@ def analysis(ledger, tool, inputs):
             method=inputs.get("method", "FIFO"),
             lot_ids=inputs.get("lot_ids"),
             rates=config.get("tax"),
+            fee=inputs.get("fee", "0"),
         )
     if tool == "simulate":
         return scenarios.simulate(state, client, inputs["actions"], rates=config.get("tax"))
@@ -182,13 +183,15 @@ def create_server(db_path, host="0.0.0.0", port=8765):
                         institution=payload.get("institution", "generic"),
                         tax_status=payload.get("tax_status", "TAXABLE"),
                         as_of=payload.get("as_of") or None,
+                        positions_complete=payload.get("positions_complete", False),
+                        lots_complete=payload.get("lots_complete", False),
                     )
                 elif self.path == "/api/reconcile":
                     result = ledger.reconcile(payload["snapshot"])
                 elif self.path == "/api/apply":
                     if payload.get("confirm") is not True:
                         raise DomainError("Explicit confirmation is required to apply a snapshot")
-                    result = ledger.apply(payload["snapshot"])
+                    result = ledger.apply(payload["snapshot"], allow_older=payload.get("allow_older") is True, justification=payload.get("justification"))
                 elif self.path == "/api/activity":
                     result = ledger.record_activity(
                         payload["activity"], yes=payload.get("confirm") is True

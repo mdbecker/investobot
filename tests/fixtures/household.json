@@ -1,28 +1,159 @@
 [
   {
-    "account":{"id":"demo-taxable","name":"Synthetic taxable","institution":"vanguard","account_type":"brokerage","tax_status":"TAXABLE","history_complete":true},
-    "positions":[
-      {"security":"AAA","name":"Synthetic broad fund","asset_type":"ETF","quantity":"10","market_value":"1000","price":"100","cost_basis":"1200","as_of":"2026-10-08"},
-      {"security":"AAPL","name":"Synthetic direct equity","asset_type":"STOCK","quantity":"2","market_value":"200","price":"100","cost_basis":"100","as_of":"2026-10-08"},
-      {"security":"BOND","name":"Synthetic fixed coupon","asset_type":"BOND","quantity":"1","market_value":"1000","price":"1000","as_of":"2026-10-08"}
+    "account": {
+      "id": "demo-taxable",
+      "name": "Synthetic taxable",
+      "institution": "vanguard",
+      "account_type": "brokerage",
+      "tax_status": "TAXABLE",
+      "history_complete": true
+    },
+    "positions": [
+      {
+        "security": "AAA",
+        "name": "Synthetic broad fund",
+        "asset_type": "ETF",
+        "quantity": "10",
+        "market_value": "1000",
+        "price": "100",
+        "cost_basis": "1200",
+        "as_of": "2026-10-08"
+      },
+      {
+        "security": "AAPL",
+        "name": "Synthetic direct equity",
+        "asset_type": "STOCK",
+        "quantity": "2",
+        "market_value": "200",
+        "price": "100",
+        "cost_basis": "100",
+        "as_of": "2026-10-08"
+      },
+      {
+        "security": "BOND",
+        "name": "Synthetic fixed coupon",
+        "asset_type": "BOND",
+        "quantity": "1",
+        "market_value": "1000",
+        "price": "1000",
+        "as_of": "2026-10-08"
+      }
     ],
-    "lots":[
-      {"id":"demo-old","security":"AAA","acquisition_date":"2024-01-01","quantity":"5","remaining_quantity":"5","cost_basis":"700"},
-      {"id":"demo-new","security":"AAA","acquisition_date":"2026-09-01","quantity":"5","remaining_quantity":"5","cost_basis":"500"},
-      {"id":"demo-equity","security":"AAPL","acquisition_date":"2024-01-01","quantity":"2","remaining_quantity":"2","cost_basis":"100"}
-    ],"cash":"1000","source_hash":"SYNTHETIC-TAXABLE"
+    "lots": [
+      {
+        "id": "demo-old",
+        "security": "AAA",
+        "acquisition_date": "2024-01-01",
+        "quantity": "5",
+        "remaining_quantity": "5",
+        "cost_basis": "700"
+      },
+      {
+        "id": "demo-new",
+        "security": "AAA",
+        "acquisition_date": "2026-09-01",
+        "quantity": "5",
+        "remaining_quantity": "5",
+        "cost_basis": "500"
+      },
+      {
+        "id": "demo-equity",
+        "security": "AAPL",
+        "acquisition_date": "2024-01-01",
+        "quantity": "2",
+        "remaining_quantity": "2",
+        "cost_basis": "100"
+      }
+    ],
+    "cash": "1000",
+    "source_hash": "SYNTHETIC-TAXABLE",
+    "source_timestamp": "2026-10-08",
+    "positions_complete": true,
+    "lots_complete": true
   },
   {
-    "account":{"id":"demo-traditional","name":"Synthetic Traditional IRA","institution":"fidelity","account_type":"traditional_ira","tax_status":"TAX_DEFERRED","history_complete":true},
-    "positions":[{"security":"AAA","asset_type":"ETF","quantity":"2","market_value":"200","price":"100","as_of":"2026-10-08"},{"security":"BBB","asset_type":"ETF","quantity":"5","market_value":"500","price":"100","as_of":"2026-10-08"}],
-    "lots":[{"id":"demo-ira-buy","security":"AAA","acquisition_date":"2026-10-01","quantity":"2","remaining_quantity":"2","cost_basis":"200"}],"cash":"500","source_hash":"SYNTHETIC-TRADITIONAL"
+    "account": {
+      "id": "demo-traditional",
+      "name": "Synthetic Traditional IRA",
+      "institution": "fidelity",
+      "account_type": "traditional_ira",
+      "tax_status": "TAX_DEFERRED",
+      "history_complete": true
+    },
+    "positions": [
+      {
+        "security": "AAA",
+        "asset_type": "ETF",
+        "quantity": "2",
+        "market_value": "200",
+        "price": "100",
+        "as_of": "2026-10-08"
+      },
+      {
+        "security": "BBB",
+        "asset_type": "ETF",
+        "quantity": "5",
+        "market_value": "500",
+        "price": "100",
+        "as_of": "2026-10-08"
+      }
+    ],
+    "lots": [
+      {
+        "id": "demo-ira-buy",
+        "security": "AAA",
+        "acquisition_date": "2026-10-01",
+        "quantity": "2",
+        "remaining_quantity": "2",
+        "cost_basis": "200"
+      }
+    ],
+    "cash": "500",
+    "source_hash": "SYNTHETIC-TRADITIONAL",
+    "source_timestamp": "2026-10-08",
+    "positions_complete": true,
+    "lots_complete": true
   },
   {
-    "account":{"id":"demo-roth","name":"Synthetic Roth IRA","institution":"netbenefits","account_type":"roth_ira","tax_status":"TAX_FREE","history_complete":true},
-    "positions":[{"security":"PART","name":"Synthetic mutual fund partial data","asset_type":"MUTUAL_FUND","quantity":"5","market_value":"500","price":"100","as_of":"2026-10-08"}],"cash":"100","source_hash":"SYNTHETIC-ROTH"
+    "account": {
+      "id": "demo-roth",
+      "name": "Synthetic Roth IRA",
+      "institution": "netbenefits",
+      "account_type": "roth_ira",
+      "tax_status": "TAX_FREE",
+      "history_complete": true
+    },
+    "positions": [
+      {
+        "security": "PART",
+        "name": "Synthetic mutual fund partial data",
+        "asset_type": "MUTUAL_FUND",
+        "quantity": "5",
+        "market_value": "500",
+        "price": "100",
+        "as_of": "2026-10-08"
+      }
+    ],
+    "cash": "100",
+    "source_hash": "SYNTHETIC-ROTH",
+    "source_timestamp": "2026-10-08",
+    "positions_complete": true,
+    "lots_complete": true
   },
   {
-    "account":{"id":"demo-bank","name":"Synthetic bank","institution":"pnc","account_type":"bank","tax_status":"OTHER","history_complete":false},
-    "positions":[],"cash":"2000","source_hash":"SYNTHETIC-BANK"
+    "account": {
+      "id": "demo-bank",
+      "name": "Synthetic bank",
+      "institution": "pnc",
+      "account_type": "bank",
+      "tax_status": "OTHER",
+      "history_complete": false
+    },
+    "positions": [],
+    "cash": "2000",
+    "source_hash": "SYNTHETIC-BANK",
+    "source_timestamp": "2026-10-08",
+    "positions_complete": true,
+    "lots_complete": true
   }
 ]

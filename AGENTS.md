@@ -24,3 +24,5 @@
 - Source timestamps and import timestamps are distinct. Older snapshots require an explicit, justified override; unknown source dates remain unknown.
 - Confirmed activity requires activity_id. Identical repeats are no-ops; conflicting repeats fail atomically. Unknown executed lot selection must never become FIFO.
 - Execution prices are activity facts, not portfolio valuation marks. Scenario prices are explicit hypothetical assumptions only. Cross-account/security transfers remain review-required and unsupported for recording.
+- Tax estimates require whole-position lot consistency. Explicit unknown source timestamps block authoritative taxable estimates; legacy timestamps warn. Preserve exact fees separately from gross execution prices.
+- Use the external agent's browser for current qualitative research. Use invest tools list/describe and invest schema for deterministic CLI inputs, outputs and mutation scopes. Market cache writes are distinct from actual portfolio mutations.
