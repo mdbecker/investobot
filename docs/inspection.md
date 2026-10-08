@@ -64,9 +64,23 @@ symlinks, oversized files and invalid slugs are rejected.
 3. Paste or open HTML. Raw HTML remains in memory, is cleared after preview and
    never enters SQLite or server logs. Keep saved private files outside Git.
 4. Preview normalized quantities, valuations, lots and warnings, then compare
-   with accepted state. Differences do not establish transactions.
-5. Confirm and accept only when authorized. Older-source overrides require a
-   separate explicit checkbox and recorded justification.
+   with accepted state. Differences do not establish transactions. Account
+   metadata discrepancies show incoming and accepted values and explain that
+   holdings acceptance preserves account configuration. Use the CLI's separate
+   previewed `account update --file` and confirmed `--yes` for corrections.
+5. Review source-date status and latest known source date. Ordinary acceptance
+   is blocked when an older dated or changed undated snapshot would supersede
+   dated state. A separate deliberate override requires a nonempty explanation.
+   First undated imports remain available with warnings. No source date is
+   inferred from import time, even after an override.
+
+Correct an existing unknown security type through the CLI's previewed
+`security classify SECURITY_ID --asset-type ETF --source "Verified reference"`,
+then explicitly confirm with `--confirm`. Current holdings retain quantities,
+values, basis and lots; historical snapshots remain fixed. Later incomplete imports
+preserve the corrected type. Classification/account corrections and accepted
+snapshot changes can make saved plans stale, so inspect current plan status
+before considering a previously exported report.
 
 Vanguard, Fidelity NetBenefits and PNC aliases remain provisional until real
 anonymized HTML samples validate their table shapes. No real samples have been

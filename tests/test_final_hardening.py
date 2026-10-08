@@ -161,6 +161,8 @@ def quantity_freshness(ctx):
 @given('a dated retirement account without tax lots')
 def retirement(ctx):
     taxable(ctx)
+    ctx['ledger'].update_account('tax', {'tax_status': 'TAX_FREE',
+        'reason': 'Synthetic retirement account fixture', 'source': 'Synthetic statement'}, yes=True)
     ctx['snap']['account']['tax_status'] = 'TAX_FREE'
     ctx['snap']['lots'] = []
     ctx['snap']['lots_complete'] = True

@@ -48,6 +48,8 @@ PURPOSES = {
     "market.quote": "Retrieve public quote observations without updating portfolio marks.",
     "security.screen": "Retrieve structured security candidates using supplied filters.",
     "security.register": "Register verified security metadata without creating holdings or activity.",
+    "security.classify": "Preview or confirm a sourced correction from OTHER; known-type conflicts require review.",
+    "account.update": "Preview or confirm reasoned, sourced authoritative account metadata changes.",
     "bond.analyze": "Calculate deterministic bond measures from supplied terms.",
     "target.save": "Save a hypothetical target as a new immutable version.",
     "target.list": "List saved hypothetical target portfolios.",
@@ -76,6 +78,8 @@ SCOPES = {
     "prompt.save": "user_prompt_files",
     "prompt.delete": "user_prompt_files",
     "security.register": "security_metadata",
+    "security.classify": "security_metadata",
+    "account.update": "account_metadata",
 }
 CACHE_TOOLS = {
     "portfolio.exposure", "portfolio.risk", "fund.holdings", "fund.compare", "fund.search",
@@ -87,6 +91,7 @@ JSON_MODELS = {
     "portfolio.record-activity": "Activity",
     "target.save": "TargetInput",
     "security.register": "SecurityInput",
+    "account.update": "AccountUpdate",
 }
 JSON_CONTRACTS = {
     "portfolio.simulate": "Nonempty array of BUY, SELL or MOVE_CASH hypothetical actions. "

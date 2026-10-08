@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let snapshot = null;
+let snapshotReconciliation = null;
 let activityPreview = null;
 const pretty = value => JSON.stringify(value, null, 2);
 let displayCurrency = 'USD';
@@ -53,7 +54,12 @@ async function refresh() {
   $('plan-comparison').hidden = true;
   await Promise.all([refreshTargets(), refreshPlans(), refreshPrompts()]);
 }
-function clearPreview() { snapshot = null; $('preview-area').hidden = true; $('reconcile-area').hidden = true; $('accept-confirm').checked = false; $('older-confirm').checked = false; $('older-justification').value = ''; $('apply').disabled = true; }
+function updateSnapshotAcceptance() {
+  const overrideChecked = $('older-confirm').checked;
+  const overrideReady = (!snapshotReconciliation?.override_required || overrideChecked) && (!overrideChecked || $('older-justification').value.trim().length > 0);
+  $('apply').disabled = !snapshot || !snapshotReconciliation || !$('accept-confirm').checked || !overrideReady;
+}
+function clearPreview() { snapshot = null; snapshotReconciliation = null; $('preview-area').hidden = true; $('reconcile-area').hidden = true; $('accept-confirm').checked = false; $('older-confirm').checked = false; $('older-justification').value = ''; $('apply').disabled = true; }
 async function run(action) { try { await action(); } catch(error) { notice(error.message, true); } }
 $('refresh').addEventListener('click',()=>run(refresh));
 $('import-form').addEventListener('input',clearPreview);
@@ -72,10 +78,25 @@ $('import-form').addEventListener('submit',event=>{ event.preventDefault(); run(
 $('reconcile').addEventListener('click',()=>run(async()=>{
   if (!snapshot) throw new Error('Preview an account page first.');
   const result = await api('reconcile',{snapshot}); $('reconcile-json').textContent=pretty(result); $('reconcile-area').hidden=false;
+  snapshotReconciliation = result;
+  $('accept-confirm').checked = false;
+  $('older-confirm').checked = false;
+  $('older-justification').value = '';
+  let warnings = $('snapshot-review-warnings');
+  if (!warnings) { warnings = el('div', undefined, 'warnings'); warnings.id = 'snapshot-review-warnings'; $('reconcile-json').before(warnings); }
+  const messages = [...(result.warnings || [])];
+  if (result.account_metadata_discrepancies?.length) messages.push('Incoming account metadata differs. Snapshot acceptance preserves account configuration. Use invest account update for a reviewed correction.');
+  if (result.source_date_status === 'UNKNOWN_SOURCE_DATE') messages.push('Source date is unknown. Import time does not establish freshness.');
+  if (result.source_date_status === 'OLDER_THAN_ACCEPTED') messages.push('Source date is older than previously accepted observations.');
+  if (result.override_required) messages.push(`Ordinary acceptance is blocked. Latest known source date: ${result.latest_known_source_date || 'Unknown'}. Review and explicitly override with an explanation.`);
+  warnings.textContent = messages.join(' · '); warnings.hidden = !messages.length;
+  updateSnapshotAcceptance();
 }));
-$('accept-confirm').addEventListener('change',()=>{$('apply').disabled=!$('accept-confirm').checked;});
+for (const id of ['accept-confirm','older-confirm']) $(id).addEventListener('change', updateSnapshotAcceptance);
+$('older-justification').addEventListener('input', updateSnapshotAcceptance);
 $('apply').addEventListener('click',()=>run(async()=>{
-  if (!$('accept-confirm').checked || !snapshot) throw new Error('Review and confirm the snapshot first.');
+  updateSnapshotAcceptance();
+  if ($('apply').disabled) throw new Error('Reconcile and confirm the snapshot; required freshness overrides need an explanation.');
   await api('apply',{snapshot,confirm:true,allow_older:$('older-confirm').checked,justification:$('older-justification').value || null}); clearPreview(); await refresh(); notice('Snapshot accepted. Review saved plans for stale source state.');
 }));
 function clearActivity() { activityPreview = null; $('activity-confirm').checked=false; $('activity-save').disabled=true; $('activity-result').hidden=true; }

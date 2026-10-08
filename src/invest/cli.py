@@ -103,15 +103,28 @@ tax = typer.Typer()
 fund = typer.Typer()
 market = typer.Typer()
 security = typer.Typer()
+account = typer.Typer()
 bond = typer.Typer()
 for group, name in [
     (tax, "tax"),
     (fund, "fund"),
     (market, "market"),
     (security, "security"),
+    (account, "account"),
     (bond, "bond"),
 ]:
     app.add_typer(group, name=name)
+
+
+@security.command("classify")
+def security_classify(security_id: str, asset_type: str = typer.Option(...),
+                      source: str = typer.Option(...), confirm: bool = False):
+    emit(lambda: ledger().classify_security(security_id, asset_type, source, confirm=confirm))
+
+
+@account.command("update")
+def account_update(account_id: str, file: str = typer.Option(...), yes: bool = False):
+    emit(lambda: ledger().update_account(account_id, read_json(file), yes=yes))
 
 
 def client():

@@ -33,8 +33,15 @@ docker compose run --rm -T app invest portfolio apply - < local-data/snapshot.js
 docker compose run --rm -T app invest portfolio overview
 ```
 
-Identical repeated snapshots are no-ops. Older source snapshots fail unless
-explicitly overridden with a recorded justification:
+Reconciliation reports `source_date_status`, `latest_known_source_date` and
+`override_required`. Status is `KNOWN_CURRENT`, `OLDER_THAN_ACCEPTED`,
+`UNKNOWN_SOURCE_DATE`, or `NO_PRIOR_DATED_STATE`. First undated imports and
+updates without prior dated state carry warnings. Same-date/newer observations
+remain subject to ordinary reconciliation.
+
+Identical repeated snapshots are no-ops. Older source snapshots and changed
+undated snapshots superseding dated state fail unless explicitly overridden
+with a recorded justification:
 
 ```sh
 docker compose run --rm -T app invest portfolio apply - --allow-older \
@@ -44,6 +51,58 @@ docker compose run --rm -T app invest portfolio apply - --allow-older \
 
 Actual changes make plans with different source state stale. Raw HTML is never
 persisted; keep or delete your own private file deliberately.
+An override records `OLDER_SOURCE_OVERRIDE` or `UNKNOWN_SOURCE_DATE_OVERRIDE`.
+It does not date an undated observation or restore authoritative tax freshness.
+Removing a known source date counts as a change even if quantities and values
+match: a nonidentical undated import over dated state still requires review.
+
+## Correct classification and account configuration
+
+Find the canonical security ID in `portfolio overview`. Verify classification
+using issuer documentation, then preview and explicitly confirm:
+
+```sh
+docker compose run --rm -T app invest security classify SECURITY_ID \
+  --asset-type ETF --source "Human-verified issuer documentation and date"
+docker compose run --rm -T app invest security classify SECURITY_ID \
+  --asset-type ETF --source "Human-verified issuer documentation and date" --confirm
+```
+
+Replace the ID and provenance with verified facts. Only an existing OTHER
+classification can change to a known type; a different known type is rejected.
+Current positions inherit the correction without changing quantity, valuation,
+basis or lots. Historical snapshots stay unchanged. Subsequent unknown source
+classifications preserve the correction; contradictory known types require review.
+
+Routine snapshots preserve existing `account_type`, `tax_status`,
+`history_complete`, `currency`, `institution`, `name` and `active`. Initial accepted
+metadata establishes a new account's configuration. Reconciliation reports
+`account_metadata_discrepancies` while allowing valid holdings updates. Change
+configuration separately, using a file such as `local-data/account-changes.json`:
+
+```json
+{
+  "account_type": "Roth IRA",
+  "tax_status": "TAX_FREE",
+  "reason": "Correct the previously entered account classification",
+  "source": "Human-verified account documentation"
+}
+```
+
+Replace the example with the account's actual verified fields and provenance:
+
+```sh
+docker compose run --rm -T app invest account update ACCOUNT_ID \
+  --file /app/local-data/account-changes.json
+docker compose run --rm -T app invest account update ACCOUNT_ID \
+  --file /app/local-data/account-changes.json --yes
+```
+
+Only supplied supported fields change. ID is immutable; currency changes require
+no existing positions or cash balances. Nonempty reason/source are required.
+Previews never write; confirmed updates are atomic and audited; identical repeats
+add no audit entry. Recheck saved plans after either correction: current status
+can become STALE while saved assumptions and historical report content remain fixed.
 
 ## Tax-loss harvesting and fund comparison
 

@@ -32,6 +32,28 @@ class Account(BaseModel):
     history_complete: StrictBool = False
 
 
+AssetType = Literal["STOCK", "ETF", "MUTUAL_FUND", "TREASURY", "BOND", "OTHER"]
+
+
+class ClassificationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    asset_type: AssetType
+    source: str = Field(min_length=1, max_length=1000)
+
+
+class AccountUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    reason: str = Field(min_length=1, max_length=1000)
+    source: str = Field(min_length=1, max_length=1000)
+    name: str = Field(default=None, min_length=1, max_length=200)
+    institution: str = Field(default=None, min_length=1, max_length=200)
+    account_type: str = Field(default=None, min_length=1, max_length=200)
+    tax_status: TaxStatus = None
+    currency: str = Field(default=None, pattern=r"^[A-Z]{3}$")
+    active: StrictBool = None
+    history_complete: StrictBool = None
+
+
 class Position(BaseModel):
     model_config = ConfigDict(extra="allow")
     security: str

@@ -38,8 +38,11 @@ tax calculations. Known source dates stay source dates; absent dates stay unknow
 A position's fallback `as_of` does not make an unknown source timestamp current.
 
 Application rejects inconsistent duplicates, invalid amounts, conflicting
-identifiers and excessive lot quantities atomically. Older snapshots need an
-explicit override plus recorded justification. Identical acceptance is a no-op.
+identifiers and excessive lot quantities atomically. Older dated snapshots and
+changed undated snapshots superseding dated observations need an explicit
+`allow_older` override plus recorded justification. Accepted audit records
+distinguish `OLDER_SOURCE_OVERRIDE` and `UNKNOWN_SOURCE_DATE_OVERRIDE`.
+An override never turns import time into a source date. Identical acceptance is a no-op.
 Accepted normalized snapshots and activity audit history survive later changes;
 no raw account HTML is persisted in any table or server log. Reconciliation reports
 values/conflicts and never invents activities from state differences.
@@ -51,6 +54,28 @@ aliases and cannot merge conflicting strong identities. Names alone do not prove
 identity. Registration permits a researched future investment without creating
 holdings or prices; unknown classification must never be guessed. Targets use
 canonical UUIDs plus reserved `CASH`.
+
+`security classify` previews an existing security correction and requires
+`--confirm` plus nonempty provenance to write. OTHER can become a supported known
+type; different known classifications conflict. `classification_history` stores
+`previous_type`, `new_type`, `source` and `changed_at` on the security JSON record.
+All corresponding current positions inherit the type, preserving financial
+amounts and lots. Unknown later imports cannot revert the accepted type;
+contradictory known types are rejected atomically. Historical snapshots are fixed.
+
+Existing account configuration (`account_type`, `tax_status`, `history_complete`,
+`currency`, `institution`, `name`, `active`) survives routine snapshot application.
+New accounts start with their initially accepted metadata. Observed holdings,
+lots, known balances and dates can update separately. Reconciliation exposes
+`account_metadata_discrepancies` entries with `field`, `before` and `after`; it
+also reports `source_date_status`, `latest_known_source_date`, `override_required`.
+
+`account update` previews a supported partial update; `--yes` confirms it.
+`metadata_history` entries store `reason`, `source`, `changed_at` and `changes`.
+Account ID is immutable, unsupported fields fail, and currency cannot change
+when positions or cash balances exist. Updates are atomic and idempotent.
+Audit histories live in existing JSON rows and default safely for legacy records;
+no new table or schema-version change is required.
 
 ## Confirmed activity and valuation
 
@@ -92,7 +117,8 @@ conservative and not globally optimal.
 
 Displayed plan status becomes `STALE` when its source-state hash differs from the
 current canonical state; the persisted row is not rewritten. Recalculation creates
-a new plan. `READY_FOR_HUMAN_REVIEW` is not approval to trade and is unavailable
+a new plan. Classification corrections, account configuration changes and accepted
+snapshots participate in this detection. `READY_FOR_HUMAN_REVIEW` is not approval to trade and is unavailable
 when critical planning data remains unresolved. Report rendering uses persisted
 inputs/results without recalculation. Its saved status is historical, so check
 current `plan show` before considering an old report. Export confirms path and

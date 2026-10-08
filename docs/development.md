@@ -32,3 +32,79 @@ An isolated Docker Playwright browser walked through import → reconcile → ac
 Manual release gates remain: validate each provisional institution against real anonymized HTML, verify live FMP entitlement/response behavior with a user-provided market-data key, and review tax assumptions and execution fees before manually acting. Synthetic fixtures exercise the API boundary but do not establish institution support or live-provider completeness. Original docs/PRD.md remains preserved.
 
 Final committed-image verification: Docker rebuilt successfully; all 221 tests passed again with network disabled. The running localhost dashboard returned HTTP 200 and the public `invest tools describe plan.generate` entry point returned JSON. Existing Docker ledger volume was retained; the synthetic browser server was removed.
+
+## PRD v2.1 stabilization
+
+The original attachment is preserved in [PRD-v2.1.md](PRD-v2.1.md). Baseline:
+221 tests passed in Docker. Red commit `428e156` captures 34 expected new
+missing-behavior failures across ledger/CLI/WebUI, plus existing idempotency,
+registration-conflict and report-reproducibility passes. One initially undefined
+empty-provenance BDD step was repaired and rerun before committing; the resulting
+failure was the missing classification operation. Commit `4e053cf` adds the
+full synthetic storage scenario, observed failing for its missing fixture builder.
+
+Classification correction, authoritative account metadata and shared freshness
+policy use the existing ledger and plan state hashes. Audit arrays are optional
+JSON extensions with safe legacy read defaults; SQLite schema version 2 remains
+unchanged. A legacy synthetic retirement fixture now explicitly corrects account
+metadata before importing positions, matching the new financial boundary. The
+core regression gate passed 258 tests before storage measurement. No real pages,
+broker credentials, live providers or host dependency installations were used.
+
+Additional review exposed a provenance-only bypass: equal numeric values could
+still erase accepted source dates when an undated snapshot was applied. Red
+commit `d59eb1c` captures the observed missing override failure. Losing dated
+observation provenance counts as a change; previously accepted identical imports
+remain no-ops. The shared guard now also protects that case.
+
+All checks use the repository Docker runtime. CI builds the locked Python 3.12
+image and runs the full suite and explicit Ruff configuration with networking
+disabled. A local reproduction of those CI commands is verification evidence;
+GitHub Actions cannot run for this unpushed local branch.
+
+### Saved-plan storage assessment
+
+Disposable synthetic workload: 10 accounts, 1,000 total positions, 2,000 lots
+with actual synthetic acquisition dates and exact basis, 20 snapshots per account,
+and 20 independently generated alternative plans. The builder seeds validated
+normalized records directly to isolate saved-plan cost from repeated HTML parsing.
+Production planning, listing, retrieval and report export run unchanged with
+offline fixtures. No private ledger or provider API is involved.
+
+Isolated Docker measurement on October 8, 2026 (Python 3.12.12, Linux
+6.12.5-linuxkit aarch64, glibc 2.36):
+
+| Metric | Observed result |
+| --- | ---: |
+| SQLite size before plans (after fixture and target) | 12,009,472 bytes (11.45 MiB) |
+| SQLite size after 20 plans | 244,019,200 bytes (232.71 MiB) |
+| Growth from saved alternatives | 232,009,728 bytes (221.26 MiB) |
+| Average serialized plan JSON | 11,588,638.9 bytes (11.05 MiB) |
+| Generate all 20 plans | 44.379 seconds |
+| List all plans with current status | 17.866 seconds |
+| Retrieve one saved plan with current status | 0.836 seconds |
+| Export retrieved plan to Markdown | 0.0018 seconds |
+
+Sizes are actual SQLite file bytes and stored UTF-8 JSON bytes. Timings are one
+application call each, using a disposable database, without concurrent benchmark
+work; they are observations rather than machine-independent performance limits or
+an OS cold-cache benchmark. Export time excludes the separately timed retrieval.
+The fixture fixes financial facts, IDs and dates; generated plan UUIDs and creation
+timestamps retain normal behavior. Reproduce entirely in Docker:
+
+```sh
+docker compose run --rm --no-deps app uv run --locked python scripts/benchmark_plan_storage.py
+```
+
+The command emits JSON and removes its disposable database/report. Optional
+`--output /app/local-data/storage-assessment.json` preserves measurements in an
+ignored directory created by the user. Four BDD scenarios verify readable saved
+plans after later snapshots/reopening, byte-identical historical exports,
+independent assumptions and access under the full workload.
+
+Full source histories make saved alternatives materially large. Listing is
+noticeably slower because its existing per-plan inspection repeatedly loads plan
+rows and hashes live state. Retrieval and export succeeded, with no operational
+failure; the requested design is retained. Storage/listing optimization remains
+separately scoped work, with these measurements as evidence rather than a reason
+to introduce compression, new services or an unrequested schema redesign.

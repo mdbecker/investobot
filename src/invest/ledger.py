@@ -11,7 +11,15 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from invest.models import Activity, DomainError, SecurityInput, Snapshot, decimal
+from invest.models import (
+    AccountUpdate,
+    Activity,
+    ClassificationInput,
+    DomainError,
+    SecurityInput,
+    Snapshot,
+    decimal,
+)
 
 TABLES = [
     "accounts",
@@ -28,6 +36,13 @@ TABLES = [
     "target_versions",
     "plans",
 ]
+ACCOUNT_SETTINGS = ("account_type", "tax_status", "history_complete", "currency",
+                    "institution", "name", "active")
+
+
+def snapshot_fingerprint(snap):
+    return hashlib.sha256(json.dumps({k: v for k, v in snap.items()
+        if k not in {"imported_at", "status", "warnings"}}, sort_keys=True).encode()).hexdigest()
 
 
 class Ledger:
@@ -55,10 +70,17 @@ class Ledger:
     def rows(self, table):
         if table not in TABLES:
             raise ValueError("Unknown table")
-        return [
+        rows = [
             json.loads(r[0])
             for r in self.connection.execute(f"SELECT data FROM {table} ORDER BY id")
         ]
+        # JSON extensions need no destructive schema migration. Legacy records
+        # expose safe defaults without a read operation writing to the ledger.
+        history = {"accounts": "metadata_history", "securities": "classification_history"}.get(table)
+        if history:
+            for row in rows:
+                row.setdefault(history, [])
+        return rows
 
     def put(self, table, key, data):
         if table not in TABLES:
@@ -106,6 +128,57 @@ class Ledger:
             self.put("securities", data["id"], data)
         return data
 
+    def classify_security(self, security_id, asset_type, source, confirm=False):
+        correction = ClassificationInput.model_validate(dict(asset_type=asset_type, source=source))
+        security = next((s for s in self.rows("securities") if s["id"] == security_id), None)
+        if security is None:
+            raise DomainError("Classification requires an existing canonical security ID", 3)
+        previous = security.get("asset_type", "OTHER")
+        if previous != correction.asset_type and previous != "OTHER":
+            raise DomainError("Known security classification conflicts; manual review required", 3)
+        if previous == correction.asset_type:
+            return dict(status="UNCHANGED", security_id=security_id, committed=False)
+        result = dict(status="PREVIEW", security_id=security_id, previous_type=previous,
+                      new_type=correction.asset_type, source=correction.source, committed=False)
+        if confirm:
+            security["asset_type"] = correction.asset_type
+            security["classification_history"].append(dict(previous_type=previous,
+                new_type=correction.asset_type, source=correction.source,
+                changed_at=datetime.now(timezone.utc).isoformat()))
+            with self.connection:
+                self.put("securities", security_id, security)
+                for position in self.rows("positions"):
+                    if position["security_id"] == security_id:
+                        self.put("positions", position["id"], dict(position, asset_type=correction.asset_type))
+            result.update(status="APPLIED", committed=True)
+        return result
+
+    def update_account(self, account_id, payload, yes=False):
+        correction = AccountUpdate.model_validate(payload)
+        account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
+        if account is None:
+            raise DomainError("Account does not exist", 3)
+        supplied = correction.model_dump(mode="json", exclude_unset=True)
+        changes = {key: dict(before=account.get(key), after=value)
+                   for key, value in supplied.items()
+                   if key in ACCOUNT_SETTINGS and account.get(key) != value}
+        if "currency" in changes and (
+                any(p["account_id"] == account_id for p in self.rows("positions")) or
+                any(c["account_id"] == account_id for c in self.rows("cash_balances"))):
+            raise DomainError("Currency changes with positions or cash balances require an FX model", 3)
+        if not changes:
+            return dict(status="UNCHANGED", account_id=account_id, committed=False, changes={})
+        result = dict(status="PREVIEW", account_id=account_id, changes=changes, committed=False,
+                      reason=correction.reason, source=correction.source)
+        if yes:
+            account.update({key: value["after"] for key, value in changes.items()})
+            account["metadata_history"].append(dict(changes=changes, reason=correction.reason,
+                source=correction.source, changed_at=datetime.now(timezone.utc).isoformat()))
+            with self.connection:
+                self.put("accounts", account_id, account)
+            result.update(status="APPLIED", committed=True)
+        return result
+
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
@@ -128,10 +201,11 @@ class Ledger:
                     entry = dict(kind=field, security=symbol, before=before, after=after, status=status)
                     (changes if status == "CHANGED_VALUE" else observations).append(entry)
         account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
-        if account and any(account.get(k) != snap["account"].get(k)
-                           for k in ("tax_status", "account_type", "currency")):
+        discrepancies = [dict(field=k, before=account.get(k), after=snap["account"].get(k))
+                         for k in ACCOUNT_SETTINGS if account and account.get(k) != snap["account"].get(k)]
+        if discrepancies:
             changes.append(dict(kind="account_classification", status="CHANGED_VALUE",
-                                before=account, after=snap["account"]))
+                                before=account, after=snap["account"], applied=False))
         current_cash = next((c for c in self.rows("cash_balances") if c["account_id"] == account_id), None)
         if snap["cash_known"] and (not current_cash or decimal(current_cash["amount"]) != decimal(snap["cash"])):
             changes.append(dict(kind="cash", status="CHANGED_VALUE",
@@ -146,34 +220,55 @@ class Ledger:
             changes.append(dict(kind="lots", status="CHANGED_VALUE"))
         elif not snap["lots_complete"]:
             observations.append(dict(kind="lots", status="UNKNOWN_VALUE"))
-        dated = [s["source_timestamp"] for s in self.rows("snapshots")
-                 if s["account"]["id"] == account_id and s.get("source_timestamp")]
-        if dated and snap["source_timestamp"] and source_time(snap["source_timestamp"]) < max(map(source_time, dated)):
+        previous = [s for s in self.rows("snapshots") if s["account"]["id"] == account_id]
+        dated = [s["source_timestamp"] for s in previous if s.get("source_timestamp")]
+        latest_known = max(dated, key=source_time, default=None)
+        source_status = "NO_PRIOR_DATED_STATE"
+        if latest_known:
+            source_status = ("UNKNOWN_SOURCE_DATE" if snap["source_timestamp"] is None else
+                "OLDER_THAN_ACCEPTED" if source_time(snap["source_timestamp"]) < source_time(latest_known)
+                else "KNOWN_CURRENT")
+        elif snap["source_timestamp"]:
+            source_status = "KNOWN_CURRENT"
+        identical = any(s.get("fingerprint") == snapshot_fingerprint(snap) for s in previous)
+        # Applying an undated observation replaces current source timestamps,
+        # even when numerical values agree. Losing dated provenance is itself
+        # a change requiring review; only an identical accepted import is exempt.
+        override_required = not identical and (source_status == "OLDER_THAN_ACCEPTED" or
+            source_status == "UNKNOWN_SOURCE_DATE")
+        warnings = list(snap["warnings"])
+        if source_status == "OLDER_THAN_ACCEPTED":
             observations.append(dict(kind="freshness", status="CONFLICT"))
+            warnings.append("Older source date requires a reviewed override and justification")
         if snap["source_timestamp"] is None:
             observations.append(dict(kind="freshness", status="UNKNOWN_VALUE"))
+            warnings.append("Unknown source date; import time does not establish source freshness")
+            if override_required:
+                warnings.append("Undated changes may replace more trustworthy dated observations; override required")
+        if discrepancies:
+            warnings.append("Account configuration is preserved by snapshot application; use invest account update for reviewed corrections")
         known = {s["ticker"] for s in self.rows("securities")}
         return dict(account_id=account_id, changes=changes, observations=observations,
+                    account_metadata_discrepancies=discrepancies,
+                    source_date_status=source_status, latest_known_source_date=latest_known,
+                    override_required=override_required,
                     unidentified_securities=sorted(incoming.keys() - known),
-                    warnings=snap["warnings"] + (["State differences do not establish transactions"] if changes else []))
+                    warnings=warnings + (["State differences do not establish transactions"] if changes else []))
 
     def apply(self, snapshot, allow_older=False, justification=None):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
         # Import timestamps are provenance, never evidence of source freshness.
-        fingerprint = hashlib.sha256(json.dumps({k: v for k, v in snap.items()
-            if k not in {"imported_at", "status", "warnings"}}, sort_keys=True).encode()).hexdigest()
+        fingerprint = snapshot_fingerprint(snap)
         previous = [s for s in self.rows("snapshots") if s["account"]["id"] == account_id]
-        latest = max(previous, key=lambda s: s["imported_at"], default=None)
-        if latest and latest.get("fingerprint") == fingerprint:
-            return dict(status="UNCHANGED", snapshot_id=latest["id"], account_id=account_id, warnings=snap["warnings"])
-        dated = [source_time(s["source_timestamp"]) for s in previous if s.get("source_timestamp")]
-        if snap["source_timestamp"]:
-            older = bool(dated and source_time(snap["source_timestamp"]) < max(dated))
-            if older and (not allow_older or not justification or not justification.strip()):
-                raise DomainError("Older snapshot requires explicit override and justification", 3)
+        identical = next((s for s in previous if s.get("fingerprint") == fingerprint), None)
+        if identical:
+            return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id, warnings=snap["warnings"])
+        reconciliation = self.reconcile(snap)
         if allow_older and (not justification or not justification.strip()):
             raise DomainError("Snapshot override requires a justification")
+        if reconciliation["override_required"] and (not allow_older or not justification or not justification.strip()):
+            raise DomainError("Older or undated snapshot requires explicit override and justification", 3)
         if len({p["security"] for p in snap["positions"]}) != len(snap["positions"]):
             raise DomainError("Duplicate positions must be resolved before apply", 3)
         if len({l["id"] for l in snap["lots"]}) != len(snap["lots"]):
@@ -195,7 +290,8 @@ class Ledger:
             if pos is None or remaining > decimal(pos["quantity"]):
                 raise DomainError("Lot quantities exceed imported position", 3)
         with self.connection:
-            self.put("accounts", account_id, snap["account"])
+            account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
+            self.put("accounts", account_id, account or snap["account"])
             observed_ids = set()
             for p in snap["positions"]:
                 supplied = {key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)}
@@ -213,10 +309,18 @@ class Ledger:
                 sid = existing[0]["id"] if existing else str(uuid.uuid4())
                 observed_ids.add(sid)
                 security = dict(existing[0]) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
-                    asset_type=p["asset_type"], currency=snap["account"]["currency"], cusip=None, isin=None, figi=None)
+                    asset_type=p["asset_type"], currency=(account or snap["account"])["currency"], cusip=None, isin=None, figi=None)
                 security.update(ticker=p["security"], **supplied)
+                accepted_type = security.get("asset_type", "OTHER")
+                if accepted_type != "OTHER" and p["asset_type"] not in {"OTHER", accepted_type}:
+                    raise DomainError("Source security classification conflicts; manual review required", 3)
+                if accepted_type == "OTHER" and p["asset_type"] != "OTHER":
+                    security["asset_type"] = p["asset_type"]
+                    for current in self.rows("positions"):
+                        if current["security_id"] == sid:
+                            self.put("positions", current["id"], dict(current, asset_type=p["asset_type"]))
                 self.put("securities", sid, security)
-                p = dict(p, id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
+                p = dict(p, asset_type=security["asset_type"], id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
                          source_timestamp=snap["source_timestamp"])
                 prior_position = next((row for row in self.rows("positions") if row["id"] == p["id"]), None)
                 if (p.get("cost_basis") is None and prior_position and not snap["lots_complete"]
@@ -252,8 +356,10 @@ class Ledger:
                     amount=snap["cash"], as_of=snap["source_timestamp"], imported_at=snap["imported_at"]))
             audit_id = str(uuid.uuid4())
             self.put("snapshots", audit_id, dict(snap, id=audit_id, fingerprint=fingerprint,
-                override_justification=justification if allow_older else None))
-        return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id, warnings=snap["warnings"])
+                override_justification=justification if allow_older else None,
+                override_kind=("UNKNOWN_SOURCE_DATE_OVERRIDE" if snap["source_timestamp"] is None
+                    else "OLDER_SOURCE_OVERRIDE") if allow_older and reconciliation["override_required"] else None))
+        return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id, warnings=reconciliation["warnings"])
 
     def summary(self):
         return summarize(self.state())

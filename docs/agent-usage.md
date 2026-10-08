@@ -26,13 +26,9 @@ are strings. Discovery identifies persistent mutation scope: actual portfolio,
 market cache, hypothetical targets/plans, prompt files, or requested report file.
 A market cache write never changes accepted holdings, marks or tax lots.
 
-Native CLI execution is also available for users who deliberately choose a local
-Python environment (`uv sync --locked`, then `uv run invest ...`). To share a
-ledger, explicitly configure `INVEST_DB` in both environments: the container path
-must refer to the same mounted file as the host path. The default Compose ledger
-is `/data/portfolio.db` in a named volume; a host default is a different location.
-Back up and choose the database deliberately before changing runtimes. Dependency
-resolution, execution and tests for this implementation use Docker only.
+The Compose ledger is `/data/portfolio.db` in a named volume. `INVEST_DB` selects
+another explicit path; confirm its mount before using it. Back up the ledger
+before changing runtimes. Dependency resolution, execution and tests use Docker.
 
 ## Research and data provenance
 
@@ -65,7 +61,10 @@ institution HTML remain provisional until manually validated with real samples.
 Coverage defaults incomplete. Never mark positions or lots complete unless the
 human confirms the source covers the entire relevant inventory. Missing rows are
 not evidence of liquidation. Unknown source dates remain unknown. Older snapshots
-need an explicit justified override. Raw HTML must stay outside Git and must not
+and undated snapshots superseding dated state need an explicit justified override.
+Inspect `source_date_status`, `latest_known_source_date` and `override_required`
+before accepting. Override acceptance leaves unknown source dates unknown.
+Raw HTML must stay outside Git and must not
 be persisted in the database or logs.
 
 After manual execution, `portfolio record-activity ACTIVITY.json` previews the
@@ -75,6 +74,29 @@ conflicting retries fail. Unknown executed lot selection leaves basis unresolved
 it must never silently become FIFO. Execution prices are activity facts and do
 not replace portfolio valuation marks. Cross-account or security transfers need
 human classification and remain unsupported for recording.
+
+## Correct accepted metadata
+
+Use `security classify SECURITY_ID --asset-type ETF --source "Verified issuer
+reference"` to preview an existing security's classification; add `--confirm`
+only after verification. Supported types are STOCK, ETF, MUTUAL_FUND, TREASURY,
+BOND and OTHER. Only OTHER can change to a known type; conflicting known types
+require review. Registration cannot bypass this rule. Confirmation updates current
+positions without changing quantity, basis, lots or historical snapshots. Later
+unknown classifications preserve the accepted type.
+
+Snapshots update holdings, observed lots/balances and observation dates, while
+existing account configuration remains authoritative. Review
+`account_metadata_discrepancies`; they do not block valid holdings updates or
+authorize configuration changes. Use `account update ACCOUNT_ID --file FILE`
+to preview a separate correction, then `--yes` to confirm. The file contains only
+changed supported fields and nonempty `reason` and `source`; account ID cannot
+change. Currency changes are rejected when positions or cash balances exist.
+See [worked examples](workflows.md#correct-classification-and-account-configuration).
+
+Confirmed changes are audited; identical repeats are no-ops. Classification and
+account changes can make saved plans stale. Recheck `plan show` and generate a
+new plan rather than editing an immutable historical plan or report.
 
 ## Hypothetical analysis and planning
 

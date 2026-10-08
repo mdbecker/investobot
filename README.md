@@ -30,6 +30,15 @@ harvesting, fund comparisons, three alternative targets, plan comparison,
 reports and exact executed lots. [Agent instructions](docs/agent-usage.md) explain
 freshness, unknown data and mutation boundaries.
 
+Existing account configuration survives holdings imports. Correct an imported
+`OTHER` security with `security classify SECURITY_ID --asset-type ETF --source
+"Verified issuer reference"` (preview), then `--confirm` to accept. Use
+`account update ACCOUNT_ID --file /app/local-data/changes.json` (preview), then
+`--yes` for account configuration changes. See the
+[correction workflow](docs/workflows.md#correct-classification-and-account-configuration).
+Undated snapshots replacing dated state require `--allow-older` and a nonempty
+`--justification`; that override never establishes source freshness.
+
 ```sh
 # HTML stays outside Git; create the ignored local-data directory first.
 docker compose run --rm -T app invest portfolio import - \
@@ -115,13 +124,14 @@ verified institution support or vendor entitlement/coverage.
 
 Work on `main`, with conventional red/green BDD commits and no pushes. Preserve
 [original PRD](docs/PRD.md) and [PRD v2](docs/PRD-v2.md). Packages 1–3 gate planning.
+The [stabilization PRD v2.1](docs/PRD-v2.1.md) preserves the final MVP requirements.
 See [data model](docs/data-model.md), [targets](docs/targets.md),
 [plans and reports](docs/plans.md), [prompts](docs/prompts.md),
 [bonds](docs/bonds.md) and [development rules](AGENTS.md).
 
 ```sh
 docker compose run --rm -T app uv run --locked pytest
-docker compose run --rm -T app uv run ruff check --config pyproject.toml src tests
+docker compose run --rm -T app uv run --locked ruff check --config pyproject.toml src tests
 ```
 
 CI builds the same Python 3.12 Docker image and runs locked, offline checks.

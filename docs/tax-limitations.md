@@ -2,6 +2,18 @@
 
 This software is analytical tooling, not tax preparation. It never places trades or adjusts imported broker basis. Broker-provided basis remains authoritative; missing basis or lot detail produces `INSUFFICIENT_DATA` rather than a guessed value.
 
+Account tax status and transaction-history completeness are authoritative
+configuration: routine holdings snapshots cannot overwrite them. Correct these
+assumptions through a previewed `account update` with verified reason/source and
+explicit `--yes`. A classification correction changes current security types,
+not imported basis or acquisition dates. Both operations can make saved plans
+stale; historical report assumptions remain unchanged.
+
+Accepting an undated snapshot through a justified `--allow-older` override records
+the review decision only. Its source date remains unknown and authoritative
+taxable estimates remain blocked; neither confirmation nor import time establishes
+fresh holdings.
+
 Monetary calculations use Decimal. A lot's stored cost basis applies to its original quantity; remaining and proposed-sale basis are proportional to that original quantity. Long-term classification requires a sale later than the acquisition's one-year anniversary. Sale fees reduce proceeds and are allocated by sold shares, with any Decimal residue assigned to the final selected lot. Capital-loss deduction limits, carryforwards, bracket changes and filing-specific rules remain outside these estimates.
 
 Supported selection methods are FIFO, LIFO, HIFO, explicit ordered SPECIFIC lot IDs and MIN_TAX. MIN_TAX requires ordinary-income and long-term capital-gains rates; it sorts available lots by estimated current tax effect per share. Optional NIIT and state rates add to each term's rate. Negative estimated tax effect represents the rate-based effect of a loss, not guaranteed usable tax savings. Absent rates yield gains/losses without invented tax-dollar estimates.

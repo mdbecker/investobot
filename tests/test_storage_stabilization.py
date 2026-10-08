@@ -1,4 +1,5 @@
 import copy
+import runpy
 from pathlib import Path
 
 import pytest
@@ -112,9 +113,9 @@ def independent(ctx):
 
 @given("ten accounts with one thousand positions two thousand lots and twenty snapshots each")
 def workload(ctx):
-    from scripts.benchmark_plan_storage import build_fixture
-
-    ctx["workload"] = build_fixture(ctx["ledger"])
+    script = Path(__file__).resolve().parents[1] / "scripts" / "benchmark_plan_storage.py"
+    ctx["benchmark"] = runpy.run_path(str(script))
+    ctx["workload"] = ctx["benchmark"]["build_fixture"](ctx["ledger"])
     state = ctx["ledger"].state()
     assert len(state["accounts"]) == 10
     assert len(state["positions"]) == 1000
@@ -126,9 +127,8 @@ def workload(ctx):
 
 @when("twenty independent alternative plans are saved")
 def workload_plans(ctx):
-    from scripts.benchmark_plan_storage import measure
-
-    ctx["measurements"] = measure(ctx["ledger"], ctx["workload"], ctx["directory"])
+    ctx["measurements"] = ctx["benchmark"]["measure"](
+        ctx["ledger"], ctx["workload"], ctx["directory"])
 
 
 @then("all twenty plans can be listed retrieved and exported")
