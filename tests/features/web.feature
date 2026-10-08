@@ -38,3 +38,7 @@ Feature: Local inspection and explicit portfolio acceptance
     When I simulate buying an existing security through the workbench
     Then the simulation reports the changed cash
     And the database bytes are unchanged
+  Scenario: Inconsistent household state returns structured inspection errors
+    Given a household with unsupported mixed currencies
+    When I inspect that household summary
+    Then the API returns a JSON inconsistent-state error
