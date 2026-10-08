@@ -26,3 +26,14 @@ Import does not write; apply explicitly accepts normalized state. Raw pages are 
 Use Chrome for news, theses, SEC filings and qualitative research. Use the CLI for exact local balances, tax lots, holdings, exposure, time-series math, screens and simulations. Human execution is mandatory. See [agent usage](docs/agent-usage.md), [data model](docs/data-model.md), and [tax limitations](docs/tax-limitations.md).
 
 All successful commands print JSON. Errors print JSON to stderr: 1 invalid input, 2 external data unavailable, 3 inconsistent state, 4 internal error. SQLite data is in the Docker `ledger` volume. Native default paths use platformdirs; `INVEST_DB` overrides the database and `INVEST_CONFIG` overrides the local TOML config path.
+
+## Local inspection
+```sh
+docker compose up -d
+```
+Open http://localhost:8765. The page previews imported tables and reconciles changes before explicit acceptance; it never authenticates with institutions. See [inspection guide](docs/inspection.md).
+
+## Structured data setup
+Create your own Financial Modeling Prep account and obtain an API key with ETF holdings, fund metadata and adjusted historical-data entitlements. Set `FMP_API_KEY` in a local ignored `.env`, then recreate the container. Keys are never sent to brokerage sites. Tests use synthetic fixtures and need no account or internet. For a clearly labelled offline demonstration set `INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json` on a one-off container. See [sources](docs/data-sources.md) for freshness and entitlement limits.
+
+The complete command workflows are in [docs/workflows.md](docs/workflows.md). Bond inputs and conventions are in [docs/bonds.md](docs/bonds.md). Run style checks with `docker compose run --rm app uv run ruff check --config pyproject.toml src tests`.

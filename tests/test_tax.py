@@ -210,3 +210,44 @@ def short_term(context):
         next(lot for lot in context["lot_result"]["lots"] if lot["id"] == "old")["term"]
         == "SHORT_TERM"
     )
+
+
+@given('the old loss lot was acquired ten days ago')
+def recent_loss(context):
+    context['state']['lots'][0]['acquisition_date'] = '2026-09-28'
+
+
+@when('five shares of the old loss lot are sold')
+def partial_recent_sale(context):
+    sale(context, quantity='5', method='SPECIFIC', lot_ids=['old'])
+
+
+@then('the same lot is a potential conflict for five retained shares')
+def retained_replacement(context):
+    wash = context['result']['wash_sale']
+    assert wash['status'] == 'POTENTIAL_CONFLICT'
+    assert wash['conflicts'][0]['id'] == 'old'
+    assert wash['conflicts'][0]['quantity'] == '5'
+
+
+@when('all twenty shares are sold')
+def net_gain(context):
+    sale(context, quantity='20')
+
+
+@then('the net gain is one hundred with a potential wash conflict')
+def mixed_conflict(context):
+    assert context['result']['realized_gain_loss'] == '100'
+    assert context['result']['wash_sale']['status'] == 'POTENTIAL_CONFLICT'
+
+
+@then('the estimate explicitly excludes wash-sale adjustments and is not guaranteed savings')
+def estimate_assumptions(context):
+    assert context['result']['estimated_tax_effect'] == '-20'
+    assert context['result']['tax_estimate_status'] == 'UNADJUSTED_POTENTIAL_EFFECT'
+    assert any('not guaranteed' in warning for warning in context['result']['warnings'])
+
+
+@given('the account tax status is unknown')
+def unknown_tax_status(context):
+    context['state']['accounts'][0]['tax_status'] = 'OTHER'

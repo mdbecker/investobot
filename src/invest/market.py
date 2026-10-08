@@ -17,6 +17,7 @@ ENDPOINTS = {
     "holdings": "etf/holdings",
     "history": "historical-price-eod/dividend-adjusted",
     "metadata": "etf/info",
+    "profile": "profile",
 }
 
 
@@ -84,10 +85,11 @@ class MarketClient:
         table = "fund_holdings_cache" if kind == "holdings" else "market_data_cache"
         cached = next((row for row in self.ledger.rows(table) if row.get("id") == key), None)
         now = datetime.now(UTC)
+        ttl = 604800 if kind == "profile" else 86400
         if cached and not refresh:
             try:
                 age = (now - datetime.fromisoformat(cached["retrieved_at"])).total_seconds()
-                if 0 <= age < 86400:
+                if 0 <= age < ttl:
                     return dict(cached, cached=True)
             except (ValueError, KeyError, TypeError):
                 pass
@@ -108,6 +110,7 @@ class MarketClient:
             retrieved_at=now.isoformat(),
             data_as_of=as_of,
             cached=False,
+            cache_ttl_seconds=ttl,
         )
         with self.ledger.connection:
             self.ledger.put(table, key, result)
@@ -249,28 +252,97 @@ class MarketClient:
 
         return self._cached("metadata", ticker, refresh, normalize)
 
+    def security_metadata(self, ticker, refresh=False):
+        def normalize(rows):
+            data = rows[0] if rows else {}
+            asset_type = (
+                "ETF"
+                if data.get("isEtf") is True
+                else "MUTUAL_FUND"
+                if data.get("isFund") is True
+                else "STOCK"
+                if data.get("isEtf") is False and data.get("isFund") is False
+                else None
+            )
+            return {
+                "status": "AVAILABLE" if rows else "DATA_UNAVAILABLE",
+                "name": data.get("companyName"),
+                "sector": data.get("sector"),
+                "industry": data.get("industry"),
+                "country": data.get("country"),
+                "currency": data.get("currency"),
+                "asset_type": asset_type,
+                "isin": _alias(data.get("isin")),
+                "cusip": _alias(data.get("cusip")),
+                "figi": _alias(data.get("figi")),
+                "warnings": [] if rows else ["Security metadata unavailable"],
+            }
+
+        return self._cached("profile", ticker, refresh, normalize)
+
+
+def normalized_identities(rows):
+    """Bridge explicit strong aliases, then unambiguous ticker-only observations.
+
+    A shared ticker never joins different strong identities. Security names do
+    not establish identity. Results correspond to input row order.
+    """
+    parents = {}
+
+    def root(alias):
+        parents.setdefault(alias, alias)
+        while parents[alias] != alias:
+            parents[alias] = parents[parents[alias]]
+            alias = parents[alias]
+        return alias
+
+    def aliases(row):
+        return [f"{key.upper()}:{row[key]}" for key in ("isin", "cusip", "figi") if row.get(key)]
+
+    for row in rows:
+        strong = aliases(row)
+        for alias in strong[1:]:
+            parents[root(alias)] = root(strong[0])
+        if strong:
+            root(strong[0])
+    components = {}
+    for alias in parents:
+        components.setdefault(root(alias), set()).add(alias)
+    priority = {"ISIN": 0, "CUSIP": 1, "FIGI": 2}
+    labels = {
+        key: min(value, key=lambda a: (priority[a.split(":")[0]], a))
+        for key, value in components.items()
+    }
+    ticker_ids = {}
+    for row in rows:
+        strong = aliases(row)
+        if strong and row.get("ticker"):
+            ticker_ids.setdefault(row["ticker"], set()).add(labels[root(strong[0])])
+    result = []
+    for row in rows:
+        strong = aliases(row)
+        matches = ticker_ids.get(row.get("ticker"), set())
+        result.append(
+            labels[root(strong[0])]
+            if strong
+            else next(iter(matches))
+            if len(matches) == 1
+            else row["identifier"]
+        )
+    return result
+
 
 def _matched_weights(a, b):
-    """Match available aliases only when the alias identifies a single strong identity."""
-    rows = a + b
-    alias_ids = {}
-    for row in rows:
-        for key in ("isin", "cusip", "figi", "ticker"):
-            if row.get(key):
-                alias_ids.setdefault((key, row[key]), set()).add(row["identifier"])
-    # Prefer strong identifiers and bridge ticker-only records to a unique strong alias.
+    identities = normalized_identities(a + b)
     maps = []
+    index = 0
     for group in (a, b):
         weights = {}
         for row in group:
+            identity = identities[index]
+            index += 1
             if row["weight"] is None or row["identifier"].startswith("UNRESOLVED:"):
                 continue
-            candidates = set()
-            for key in ("isin", "cusip", "figi", "ticker"):
-                if row.get(key):
-                    candidates.update(alias_ids.get((key, row[key]), set()))
-            strong = {c for c in candidates if not c.startswith("TICKER:")}
-            identity = next(iter(strong)) if len(strong) == 1 else row["identifier"]
             weights[identity] = weights.get(identity, ZERO) + _number(row["weight"])
         maps.append(weights)
     return maps

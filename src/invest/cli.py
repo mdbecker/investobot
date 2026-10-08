@@ -183,3 +183,17 @@ def fund_compare(a: str, b: str, refresh: bool = False):
 @market.command("history")
 def history(ticker: str, refresh: bool = False):
     emit(lambda: client().history(ticker, refresh=refresh))
+
+
+@portfolio.command("exposure")
+def portfolio_exposure(refresh: bool = False):
+    from invest.analytics import exposure
+
+    emit(lambda: exposure(ledger().state(), client(), refresh))
+
+
+@bond.command("analyze")
+def bond_analyze(file: str):
+    from invest.bonds import analyze
+
+    emit(lambda: analyze(read_json(file)))

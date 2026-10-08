@@ -64,3 +64,27 @@ Feature: Deterministic tax analysis of known household state
     Given a taxable portfolio with an old high basis lot and a recent low basis lot
     When the old lot is inspected on its acquisition anniversary
     Then its holding period is short term
+
+  Scenario: A partial sale retains recently acquired replacement shares
+    Given a taxable portfolio with an old high basis lot and a recent low basis lot
+    And the old loss lot was acquired ten days ago
+    When five shares of the old loss lot are sold
+    Then the same lot is a potential conflict for five retained shares
+
+  Scenario: A net gain sale still checks loss lots for household conflicts
+    Given a taxable portfolio with an old high basis lot and a recent low basis lot
+    And household purchase history is "IRA"
+    When all twenty shares are sold
+    Then the net gain is one hundred with a potential wash conflict
+
+  Scenario: Conflicting loss estimates disclose unadjusted tax assumptions
+    Given a taxable portfolio with an old high basis lot and a recent low basis lot
+    And household purchase history is "IRA"
+    When the sale is analyzed with "configured" tax rates
+    Then the estimate explicitly excludes wash-sale adjustments and is not guaranteed savings
+
+  Scenario: Unknown account tax status does not imply a tax-free sale
+    Given a taxable portfolio with an old high basis lot and a recent low basis lot
+    And the account tax status is unknown
+    When a loss sale is analyzed
+    Then tax analysis reports insufficient data
