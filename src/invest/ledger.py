@@ -155,7 +155,31 @@ class Ledger:
                     if item["account_id"] == account_id:
                         self.connection.execute(f"DELETE FROM {table} WHERE id=?", (item["id"],))
             for p in snap["positions"]:
-                existing = [s for s in self.rows("securities") if s["ticker"] == p["security"]]
+                supplied = {
+                    key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)
+                }
+                existing = [
+                    s
+                    for s in self.rows("securities")
+                    if any(s.get(key) == value for key, value in supplied.items())
+                ]
+                if not existing:
+                    existing = [
+                        s
+                        for s in self.rows("securities")
+                        if s["ticker"] == p["security"]
+                        and not any(
+                            s.get(key) and s[key] != value for key, value in supplied.items()
+                        )
+                    ]
+                if len(existing) > 1 or (
+                    existing
+                    and any(
+                        existing[0].get(key) and existing[0][key] != value
+                        for key, value in supplied.items()
+                    )
+                ):
+                    raise DomainError("Security aliases conflict; resolve identity explicitly", 3)
                 sid = existing[0]["id"] if existing else str(uuid.uuid4())
                 security = (
                     existing[0]
@@ -171,6 +195,7 @@ class Ledger:
                         "figi": None,
                     }
                 )
+                security = dict(security, ticker=p["security"], **supplied)
                 self.put("securities", sid, security)
                 p = dict(p, id=f"{account_id}:{sid}", account_id=account_id, security_id=sid)
                 self.put("positions", p["id"], p)
@@ -220,6 +245,8 @@ def summarize(state):
     accounts, taxes, allocation = {}, {}, {"CASH": str(cash)}
     warnings = []
     for a in state["accounts"]:
+        if not any(c["account_id"] == a["id"] for c in state["cash_balances"]):
+            warnings.append(f"{a['id']}: cash balance unavailable; total excludes unknown cash")
         total = sum(
             (decimal(p["market_value"]) for p in state["positions"] if p["account_id"] == a["id"]),
             Decimal("0"),
@@ -321,6 +348,8 @@ def activity_change(state, activity):
         )
         if kind == "BUY":
             delta = -(qty * price + fee)
+            if p.get("cost_basis") is not None:
+                p["cost_basis"] = str(decimal(p["cost_basis"]) + qty * price + fee)
             lid = str(uuid.uuid4())
             state["lots"].append(
                 dict(

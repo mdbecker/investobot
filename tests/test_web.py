@@ -120,40 +120,79 @@ def oversized(context):
 def too_large(context):
     assert context["response"][0] == 413
 
-@when('I request tax lots analysis')
+
+@when("I request tax lots analysis")
 def tax_lots_request(context):
-    context['response'] = request(context, '/api/analyze', {'tool':'tax_lots','input':{'as_of':'2026-10-08'}})
+    context["response"] = request(
+        context, "/api/analyze", {"tool": "tax_lots", "input": {"as_of": "2026-10-08"}}
+    )
 
-@then('the workbench returns structured lot analysis')
+
+@then("the workbench returns structured lot analysis")
 def lots_result(context):
-    assert context['response'][0] == 200
-    assert context['response'][1]['lots'] == []
-    assert 'warnings' in context['response'][1]
+    assert context["response"][0] == 200
+    assert context["response"][1]["lots"] == []
+    assert "warnings" in context["response"][1]
 
-@when('I request an arbitrary execution tool')
+
+@when("I request an arbitrary execution tool")
 def unknown_tool(context):
-    context['response'] = request(context, '/api/analyze', {'tool':'shell','input':{'command':'echo unsafe'}})
+    context["response"] = request(
+        context, "/api/analyze", {"tool": "shell", "input": {"command": "echo unsafe"}}
+    )
 
-@then('the workbench rejects the tool as invalid input')
+
+@then("the workbench rejects the tool as invalid input")
 def unknown_rejected(context):
-    assert context['response'][0] == 400
-    assert context['response'][1]['code'] == 1
+    assert context["response"][0] == 400
+    assert context["response"][1]["code"] == 1
 
-@given('a synthetic accepted cash-funded account')
+
+@given("a synthetic accepted cash-funded account")
 def cash_funded(context):
-    snapshot = request(context, '/api/import', {'html':HTML + '<table><tr><th>Symbol</th><th>Market Value</th></tr><tr><td>CASH</td><td>500</td></tr></table>', 'account_id':'synthetic'})[1]
-    assert request(context, '/api/apply', {'snapshot':snapshot,'confirm':True})[0] == 200
-    context['before_bytes'] = context['path'].read_bytes()
+    snapshot = request(
+        context,
+        "/api/import",
+        {
+            "html": HTML
+            + "<table><tr><th>Symbol</th><th>Market Value</th></tr><tr><td>CASH</td><td>500</td></tr></table>",
+            "account_id": "synthetic",
+        },
+    )[1]
+    assert request(context, "/api/apply", {"snapshot": snapshot, "confirm": True})[0] == 200
+    context["before_bytes"] = context["path"].read_bytes()
 
-@when('I simulate buying an existing security through the workbench')
+
+@when("I simulate buying an existing security through the workbench")
 def simulate_request(context):
-    context['response'] = request(context, '/api/analyze', {'tool':'simulate','input':{'actions':[{'type':'BUY','account_id':'synthetic','security':'VTI','quantity':'1','price':'100','date':'2026-10-08','fee':'0'}]}})
+    context["response"] = request(
+        context,
+        "/api/analyze",
+        {
+            "tool": "simulate",
+            "input": {
+                "actions": [
+                    {
+                        "type": "BUY",
+                        "account_id": "synthetic",
+                        "security": "VTI",
+                        "quantity": "1",
+                        "price": "100",
+                        "date": "2026-10-08",
+                        "fee": "0",
+                    }
+                ]
+            },
+        },
+    )
 
-@then('the simulation reports the changed cash')
+
+@then("the simulation reports the changed cash")
 def simulation_cash(context):
-    assert context['response'][0] == 200
-    assert context['response'][1]['after']['cash'] == '400'
+    assert context["response"][0] == 200
+    assert context["response"][1]["after"]["cash"] == "400"
 
-@then('the database bytes are unchanged')
+
+@then("the database bytes are unchanged")
 def db_unchanged(context):
-    assert context['before_bytes'] == context['path'].read_bytes()
+    assert context["before_bytes"] == context["path"].read_bytes()

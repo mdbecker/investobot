@@ -280,6 +280,87 @@ class MarketClient:
 
         return self._cached("profile", ticker, refresh, normalize)
 
+    def screen(self, filters):
+        """Fresh provider screener response; validation belongs to discovery."""
+        if self.fixture_path:
+            try:
+                rows = json.loads(self.fixture_path.read_text()).get("screen", [])
+            except (OSError, ValueError, AttributeError) as exc:
+                raise DomainError("Synthetic discovery fixture is invalid", 2) from exc
+        else:
+            if not self.api_key:
+                raise DomainError("FMP_API_KEY is required for structured discovery", 2)
+            params = {
+                key: str(value).lower() if isinstance(value, bool) else str(value)
+                for key, value in filters.items()
+            }
+            try:
+                response = httpx.get(
+                    "https://financialmodelingprep.com/stable/company-screener",
+                    params=dict(params, apikey=self.api_key),
+                    timeout=20,
+                )
+                response.raise_for_status()
+                rows = response.json()
+            except (httpx.HTTPError, ValueError) as exc:
+                raise DomainError(
+                    "FMP screening unavailable; check connection and entitlement", 2
+                ) from exc
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise DomainError("Provider screener returned an unexpected data format", 2)
+        if self.fixture_path:
+            numeric_fields = {
+                "marketCap": "marketCap",
+                "price": "price",
+                "beta": "beta",
+                "volume": "volume",
+                "avgVolume": "volAvg",
+                "dividend": "lastAnnualDividend",
+            }
+            matched = []
+            for row in rows:
+                passes = True
+                for key, value in filters.items():
+                    if key == "limit":
+                        continue
+                    suffix = (
+                        "MoreThan"
+                        if key.endswith("MoreThan")
+                        else "LowerThan"
+                        if key.endswith("LowerThan")
+                        else None
+                    )
+                    if suffix:
+                        field = numeric_fields[key.removesuffix(suffix)]
+                        current = row.get(field)
+                        passes = (
+                            passes
+                            and current is not None
+                            and (
+                                _number(current) > _number(value)
+                                if suffix == "MoreThan"
+                                else _number(current) < _number(value)
+                            )
+                        )
+                    else:
+                        passes = passes and row.get(key) == value
+                if passes:
+                    matched.append(row)
+            rows = matched[: int(filters.get("limit", 1000))]
+        now = datetime.now(UTC).isoformat()
+        limit = int(filters.get("limit", 1000))
+        return {
+            "status": "AVAILABLE",
+            "candidates": rows,
+            "source": self.source,
+            "retrieved_at": now,
+            "data_as_of": None,
+            "partial": len(rows) >= limit,
+            "warnings": ["Candidate limit reached; screen may be incomplete"]
+            if len(rows) >= limit
+            else [],
+        }
+
 
 def normalized_identities(rows):
     """Bridge explicit strong aliases, then unambiguous ticker-only observations.

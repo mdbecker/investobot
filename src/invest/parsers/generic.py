@@ -79,6 +79,9 @@ def parse_html(html, account_id, institution="generic", tax_status="TAXABLE", as
                 as_of=as_of or date.today().isoformat(),
             )
             acquired = values.get("acquisition_date")
+            for identifier in ("cusip", "isin", "figi"):
+                if values.get(identifier):
+                    position[identifier] = values[identifier].strip().upper()
             if acquired and basis is not None:
                 try:
                     acquisition = date.fromisoformat(acquired)

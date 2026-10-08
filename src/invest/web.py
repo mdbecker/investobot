@@ -15,6 +15,71 @@ from invest.parsers.generic import parse_html
 MAX_BODY = 2_000_000
 STATIC = Path(__file__).parent / "static"
 
+ANALYSIS_INPUTS = {
+    "exposure": {"refresh"},
+    "tax_lots": {"as_of"},
+    "tax_analyze": {"account", "security", "quantity", "price", "sale_date", "method", "lot_ids"},
+    "harvest": {"as_of"},
+    "simulate": {"actions"},
+    "risk": {"refresh"},
+    "fund_holdings": {"ticker", "refresh"},
+    "fund_compare": {"a", "b", "refresh"},
+    "bond_analyze": {"terms"},
+}
+
+
+def analysis(ledger, tool, inputs):
+    """A closed set of direct service calls; analysis does not write provider caches."""
+    from datetime import date
+
+    from invest import analytics, bonds, market, scenarios, tax
+    from invest.config import load_config
+
+    if not isinstance(tool, str) or tool not in ANALYSIS_INPUTS:
+        raise DomainError("Unknown analysis tool")
+    if not isinstance(inputs, dict) or set(inputs) - ANALYSIS_INPUTS[tool]:
+        raise DomainError("Invalid or unsupported analysis input fields")
+    if "refresh" in inputs and type(inputs["refresh"]) is not bool:
+        raise DomainError("refresh must be a JSON boolean")
+    config = load_config()
+    client = scenarios.readonly_client(
+        market.MarketClient(
+            ledger,
+            api_key=os.environ.get("FMP_API_KEY") or config.get("fmp", {}).get("api_key"),
+            fixture_path=os.environ.get("INVEST_FIXTURES"),
+        )
+    )
+    state = ledger.state()
+    refresh = inputs.get("refresh", False)
+    as_of = inputs.get("as_of") or date.today().isoformat()
+    if tool == "exposure":
+        return analytics.exposure(state, client, refresh)
+    if tool == "tax_lots":
+        return tax.lots(state, as_of)
+    if tool == "harvest":
+        return tax.harvest_candidates(state, as_of)
+    if tool == "tax_analyze":
+        return tax.analyze(
+            state,
+            inputs["account"],
+            inputs["security"],
+            inputs["quantity"],
+            inputs["price"],
+            inputs["sale_date"],
+            method=inputs.get("method", "FIFO"),
+            lot_ids=inputs.get("lot_ids"),
+            rates=config.get("tax"),
+        )
+    if tool == "simulate":
+        return scenarios.simulate(state, client, inputs["actions"], rates=config.get("tax"))
+    if tool == "risk":
+        return analytics.risk(state, client, refresh)
+    if tool == "fund_holdings":
+        return client.holdings(inputs["ticker"], refresh=refresh)
+    if tool == "fund_compare":
+        return market.compare(client, inputs["a"], inputs["b"], refresh=refresh)
+    return bonds.analyze(inputs["terms"])
+
 
 def create_server(db_path, host="0.0.0.0", port=8765):
     """Create a single-request-at-a-time local server; Docker publishes to loopback only."""
@@ -122,6 +187,8 @@ def create_server(db_path, host="0.0.0.0", port=8765):
                     result = ledger.record_activity(
                         payload["activity"], yes=payload.get("confirm") is True
                     )
+                elif self.path == "/api/analyze":
+                    result = analysis(ledger, payload.get("tool"), payload.get("input", {}))
                 else:
                     self.reply(404, {"error": "Route not found", "code": 1})
                     return

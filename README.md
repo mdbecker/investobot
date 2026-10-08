@@ -37,3 +37,20 @@ Open http://localhost:8765. The page previews imported tables and reconciles cha
 Create your own Financial Modeling Prep account and obtain an API key with ETF holdings, fund metadata and adjusted historical-data entitlements. Set `FMP_API_KEY` in a local ignored `.env`, then recreate the container. Keys are never sent to brokerage sites. Tests use synthetic fixtures and need no account or internet. For a clearly labelled offline demonstration set `INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json` on a one-off container. See [sources](docs/data-sources.md) for freshness and entitlement limits.
 
 The complete command workflows are in [docs/workflows.md](docs/workflows.md). Bond inputs and conventions are in [docs/bonds.md](docs/bonds.md). Run style checks with `docker compose run --rm app uv run ruff check --config pyproject.toml src tests`.
+
+## Analysis commands
+```sh
+docker compose run --rm app invest tax lots
+docker compose run --rm app invest portfolio exposure
+docker compose run --rm app invest fund compare VTI ITOT
+docker compose run --rm app invest market history VTI
+docker compose run --rm app invest portfolio risk
+docker compose run --rm app invest portfolio simulate /app/local-data/actions.json
+docker compose run --rm app invest security screen /app/local-data/filters.json
+docker compose run --rm app invest fund search /app/local-data/fund-filters.json
+docker compose run --rm app invest fund replacements VTI ITOT SCHB
+docker compose run --rm app invest bond analyze /app/local-data/bond.json
+docker compose run --rm app invest schema
+```
+
+[Discovery](docs/discovery.md) documents supported provider filters and ranking. Replacement scores measure similarity only and never determine substantially-identical tax treatment. All account state and actions remain local.

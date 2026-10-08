@@ -182,7 +182,14 @@ def fund_compare(a: str, b: str, refresh: bool = False):
 
 @market.command("history")
 def history(ticker: str, refresh: bool = False):
-    emit(lambda: client().history(ticker, refresh=refresh))
+    from invest.analytics import series_metrics
+
+    def result():
+        data = client().history(ticker, refresh=refresh)
+        data["analytics"] = series_metrics(data["prices"]) if len(data["prices"]) >= 3 else None
+        return data
+
+    emit(result)
 
 
 @portfolio.command("exposure")
@@ -216,3 +223,46 @@ def portfolio_risk(refresh: bool = False):
     from invest.analytics import risk
 
     emit(lambda: risk(ledger().state(), client(), refresh))
+
+
+@security.command("screen")
+def security_screen(file: str):
+    from invest.discovery import screen
+
+    emit(lambda: screen(client(), read_json(file)))
+
+
+@fund.command("search")
+def fund_search(file: str):
+    from invest.discovery import search
+
+    emit(lambda: search(client(), read_json(file)))
+
+
+@fund.command("replacements")
+def replacements(original: str, candidates: list[str] = typer.Argument(...)):
+    from invest.discovery import replacements as rank
+
+    emit(lambda: rank(client(), original, candidates))
+
+
+@app.command("schema")
+def schema():
+    from invest.models import Snapshot
+
+    emit(
+        lambda: {
+            "snapshot": Snapshot.model_json_schema(),
+            "output_contract": {
+                "successful_output": "JSON object",
+                "diagnostics": "stderr JSON",
+                "exit_codes": {
+                    "0": "success",
+                    "1": "invalid input",
+                    "2": "external data unavailable",
+                    "3": "inconsistent portfolio state",
+                    "4": "internal error",
+                },
+            },
+        }
+    )

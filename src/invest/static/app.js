@@ -68,3 +68,57 @@ $('activity-save').addEventListener('click',()=>run(async()=>{
   await refresh(); notice('Manually executed activity recorded in your ledger.');
 }));
 run(refresh);
+const analysisTemplates = {
+  exposure: {},
+  tax_lots: {as_of:'2026-10-08'},
+  tax_analyze: {account:'your-account-alias',security:'VTI',quantity:'1',price:'100',sale_date:'2026-10-08',method:'FIFO'},
+  harvest: {as_of:'2026-10-08'},
+  simulate: {actions:[{type:'BUY',account_id:'your-account-alias',security:'VTI',quantity:'1',price:'100',date:'2026-10-08',fee:'0'}]},
+  risk: {},
+  fund_holdings: {ticker:'VTI'},
+  fund_compare: {a:'VTI',b:'ITOT'},
+  bond_analyze: {terms:{face_value:'1000',coupon:'0.05',issue_date:'2021-01-15',maturity:'2031-01-15',settlement_date:'2026-10-08',frequency:2,clean_price:'98',day_count:'ACTUAL_ACTUAL_BOND'}}
+};
+const analysisHints = {
+  exposure:'Uses loaded positions. Unresolved fund holdings and classifications remain explicit unknown exposure.',
+  tax_lots:'Uses imported basis and local prices. Optional as_of is an ISO date; omitted dates use the server current date.',
+  tax_analyze:'Supply a loaded account alias/security and your assumed sale price/date. Methods: FIFO, LIFO, HIFO, SPECIFIC (with lot_ids), MIN_TAX (requires configured rates).',
+  harvest:'Examines known taxable losses. Missing basis or prices remain insufficient data.',
+  simulate:'Edit hypothetical BUY, SELL or MOVE_CASH actions. Existing security identifiers must resolve; no holdings or cash are persisted.',
+  risk:'Historical data requires FMP configuration or explicit synthetic fixture mode. Missing history is disclosed.',
+  fund_holdings:'Requires FMP configuration or explicit fixture mode. Data source/as-of metadata identifies synthetic, partial or unavailable data.',
+  fund_compare:'Compares complete available holdings and history. Similarity does not determine wash-sale legality.',
+  bond_analyze:'Template values are synthetic known terms. Replace them with researched terms; coupon is an annual decimal fraction and clean price is per 100 face value.'
+};
+function selectAnalysis() {
+  const tool=$('analysis-tool').value; $('analysis-input').value=pretty(analysisTemplates[tool]);
+  $('analysis-hint').textContent=analysisHints[tool]; $('analysis-result').hidden=true;
+}
+$('analysis-tool').addEventListener('change',selectAnalysis);
+$('analysis-example').addEventListener('click',selectAnalysis);
+$('analysis-run').addEventListener('click',()=>run(async()=>{
+  const button=$('analysis-run'); button.disabled=true; button.textContent='Calculating…'; $('analysis-result').hidden=true;
+  try {
+    const tool=$('analysis-tool').value; const input=JSON.parse($('analysis-input').value);
+    const result=await api('analyze',{tool,input}); $('analysis-json').textContent=pretty(result);
+    $('analysis-title').textContent=$('analysis-tool').selectedOptions[0].textContent;
+    $('analysis-metrics').replaceChildren();
+    const selected = [
+      ['status','Status'],['total_value','Portfolio value'],['unknown_exposure_percentage','Unknown exposure %'],
+      ['overlap','Weighted overlap'],['active_share','Active share'],['realized_gain_loss','Realized gain/loss'],
+      ['annualized_volatility','Annualized volatility'],['maximum_drawdown','Maximum drawdown'],
+      ['short_term_gain_loss','Short-term gain/loss'],['long_term_gain_loss','Long-term gain/loss'],
+      ['yield_to_maturity','Yield to maturity'],['modified_duration','Modified duration'],['source','Data source']
+    ];
+    for(const [key,label] of selected) if(result[key]!==undefined && result[key]!==null) {
+      const card=el('div',undefined,'result-metric'); card.append(el('span',label),el('strong',String(result[key]))); $('analysis-metrics').append(card);
+    }
+    for(const [key,label] of [['lots','Tax lots'],['exposures','Underlying exposures'],['holdings','Fund holdings'],['candidates','Candidates']]) if(Array.isArray(result[key])) {
+      const card=el('div',undefined,'result-metric'); card.append(el('span',label),el('strong',String(result[key].length))); $('analysis-metrics').append(card);
+    }
+    if(result.before && result.after) {const card=el('div',undefined,'result-metric');card.append(el('span','Cash before → after'),el('strong',`${money(result.before.cash)} → ${money(result.after.cash)}`));$('analysis-metrics').append(card);}
+    $('analysis-warnings').textContent=(result.warnings||[]).join(' · '); $('analysis-warnings').hidden=!(result.warnings||[]).length;
+    $('analysis-result').hidden=false; notice('Analysis complete. Your ledger and provider cache have not changed.');
+  } finally {button.disabled=false;button.textContent='Run analysis';}
+}));
+selectAnalysis();

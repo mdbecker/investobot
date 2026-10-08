@@ -1,6 +1,9 @@
 """Provisional aliases, deliberately not institution-specific page guarantees."""
 
 ALIASES = {
+    "cusip": ["cusip"],
+    "isin": ["isin"],
+    "figi": ["figi"],
     "security": ["symbol", "ticker", "investment", "fund"],
     "name": ["description", "name", "security name", "investment name"],
     "quantity": ["quantity", "shares", "units", "share balance"],

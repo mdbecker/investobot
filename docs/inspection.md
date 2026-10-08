@@ -46,3 +46,28 @@ Requests require local Host headers and POSTs require a matching Origin.
 Bodies larger than 2 MB are rejected. Responses use the CLI domain error-code
 convention inside JSON; invalid requests return HTTP 400, inconsistent state
 409, and internal failures 500. Security rejections return 403.
+
+## Analysis workbench
+
+The workbench calls the same deterministic domain functions as the CLI,
+without launching commands or subprocesses. Choose household exposure, tax
+lots, proposed-sale analysis, harvest candidates, scenario simulation,
+historical risk, fund holdings, fund comparison, or known-bond calculations.
+Edit the input JSON template with your actual loaded account aliases and
+researched terms. The bond and trade templates are synthetic examples, not
+holdings or suggested trades. Dates in templates are examples to replace.
+
+`POST /api/analyze` accepts `{"tool":"tax_lots","input":{"as_of":"2026-10-08"}}`.
+Allowed tool names are `exposure`, `tax_lots`, `tax_analyze`, `harvest`,
+`simulate`, `risk`, `fund_holdings`, `fund_compare`, and `bond_analyze`.
+Unknown tools or fields are input errors. Each result shows key metrics,
+missing-data warnings, and complete inspectable JSON.
+
+All workbench operations use a read-only provider-cache wrapper: fetching
+market data can use existing cache entries but never inserts or changes cache
+entries or canonical portfolio state. FMP settings come from `FMP_API_KEY` or
+local configuration, never from browser-entered credentials. Explicit
+`INVEST_FIXTURES` settings select synthetic data, whose result provenance stays
+labeled `SYNTHETIC_FMP_FIXTURE`. No API key is needed for local-state analysis;
+market-dependent results require configured data or return missing-data errors
+and warnings. Nothing applies a simulated portfolio.
