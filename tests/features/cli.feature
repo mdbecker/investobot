@@ -9,3 +9,6 @@ Feature: One machine-readable investment executable
     Given an empty local ledger
     When I request tax lots
     Then the command emits valid JSON on stdout
+  Scenario: Malformed command syntax uses input error JSON
+    When I invoke an unknown subcommand
+    Then the command exits one with JSON on stderr

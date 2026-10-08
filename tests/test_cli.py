@@ -39,3 +39,6 @@ def output(ctx):
     assert ctx['result'].exit_code == 0
     assert 'lots' in json.loads(ctx['result'].stdout)
     assert ctx['result'].stderr == ''
+@when('I invoke an unknown subcommand')
+def syntax(ctx):
+    ctx['result'] = ctx['runner'].invoke(app, ['portfolio','does-not-exist'])
