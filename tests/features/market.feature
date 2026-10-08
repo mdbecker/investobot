@@ -38,3 +38,13 @@ Feature: Complete available structured fund data
     Given synthetic provider responses
     When I retrieve security metadata for AAPL
     Then the profile supplies classifications with a seven day cache policy
+  Scenario: Public quotes retain provenance without changing ledger prices
+    Given synthetic provider responses
+    When I retrieve an AAPL quote
+    Then the quote has a fifteen minute cache and source timestamps
+    And the public quote leaves portfolio state unchanged
+  Scenario: Quotes older than fifteen minutes are refreshed
+    Given synthetic provider responses
+    And a sixteen minute old AAPL quote
+    When I retrieve an AAPL quote
+    Then the expired quote price is replaced

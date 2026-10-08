@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -191,3 +192,40 @@ def profile_metadata(context):
     assert result["source"] == "SYNTHETIC_FMP_FIXTURE"
     assert result["cache_ttl_seconds"] == 604800
     assert context["client"].security_metadata("AAPL")["cached"] is True
+
+
+@when('I retrieve an AAPL quote')
+def quote(context):
+    context['before'] = context['ledger'].state()
+    context['result'] = context['client'].quote('AAPL')
+
+
+@then('the quote has a fifteen minute cache and source timestamps')
+def quote_meta(context):
+    result = context['result']
+    assert result['status'] == 'AVAILABLE'
+    assert Decimal(result['price']) == Decimal('200.25')
+    assert result['cache_ttl_seconds'] == 900
+    assert result['source'] == 'SYNTHETIC_FMP_FIXTURE'
+    assert result['retrieved_at']
+    assert result['data_as_of'] == datetime.fromtimestamp(1791475200, UTC).isoformat()
+
+
+@then('the public quote leaves portfolio state unchanged')
+def unchanged_quote(context):
+    assert context['ledger'].state() == context['before']
+
+
+@given('a sixteen minute old AAPL quote')
+def expired_quote(context):
+    context['ledger'].put('market_data_cache', 'SYNTHETIC_FMP_FIXTURE:quote:AAPL', {
+        'id':'SYNTHETIC_FMP_FIXTURE:quote:AAPL',
+        'retrieved_at':(datetime.now(UTC) - timedelta(minutes=16)).isoformat(),
+        'price':'1', 'cache_ttl_seconds':900})
+    context['ledger'].connection.commit()
+
+
+@then('the expired quote price is replaced')
+def quote_replaced(context):
+    assert Decimal(context['result']['price']) == Decimal('200.25')
+    assert context['result']['cached'] is False
