@@ -1,4 +1,4 @@
-# Invest Copilot
+# Investobot
 Local deterministic portfolio tooling for a browser-equipped agent. No trades, credentials, telemetry, cloud ledger or LLM calls. The original requirements are preserved in [docs/PRD.md](docs/PRD.md).
 
 ## Docker only
@@ -59,3 +59,5 @@ docker compose run --rm app invest schema
 
 ## Synthetic acceptance fixtures
 Tests include taxable, Traditional IRA, Roth IRA, bank/cash, equity, ETF, mutual fund, bond, multiple lots, recent IRA purchases and loss positions in `tests/fixtures/household.json`. They are invented and never loaded into your running ledger automatically. The inspection page starts empty. Provider fixture mode is explicit and marked SYNTHETIC_FMP_FIXTURE. Live FMP endpoints are implemented but were not exercised with your credentials.
+
+The application and Python distribution are named **Investobot** (`investobot`). The CLI remains `invest`, as specified in the PRD. Default data/config directories use `investobot` through platformdirs; `INVEST_DB` and `INVEST_CONFIG` still override them. Docker keeps the ledger at `/data/portfolio.db` in its existing data volume.

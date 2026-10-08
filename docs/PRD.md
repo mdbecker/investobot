@@ -1,4 +1,4 @@
-# MVP PRD — Local Tax-Aware Investment Copilot Tooling
+# MVP PRD — Investobot: Local Tax-Aware Investment Tooling
 
 ## 1. Product Summary
 
@@ -110,7 +110,7 @@ CLI tools exist when correctness, persistence, exhaustive datasets, normalizatio
 
 Primary user:
 
-A technically sophisticated individual managing multiple taxable and tax-advantaged investment accounts who wants an AI-assisted portfolio copilot without permitting AI-directed trade execution.
+A technically sophisticated individual managing multiple taxable and tax-advantaged investment accounts who wants an AI-assisted portfolio analysis without permitting AI-directed trade execution.
 
 Expected account types include:
 
@@ -203,7 +203,7 @@ Exit code:
 Default database:
 
 ```text
-~/.local/share/invest-copilot/portfolio.db
+~/.local/share/investobot/portfolio.db
 ```
 
 Use `platformdirs` so the location works correctly across supported operating systems.
@@ -211,7 +211,7 @@ Use `platformdirs` so the location works correctly across supported operating sy
 Configuration:
 
 ```text
-~/.config/invest-copilot/config.toml
+~/.config/investobot/config.toml
 ```
 
 ## Raw account HTML

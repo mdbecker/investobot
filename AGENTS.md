@@ -1,4 +1,4 @@
-# Project rules
+# Investobot project rules
 - Preserve docs/PRD.md. Single local Python app, sqlite3, Decimal, no ORM.
 - Work on main. No remotes or pushes. Conventional commits.
 - All execution, dependency resolution, lint and tests happen in Docker; install nothing on host.

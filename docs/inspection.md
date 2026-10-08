@@ -1,4 +1,4 @@
-# Local inspection site
+# Investobot local inspection site
 
 The inspection site is a thin view over the same SQLite ledger used by `invest`.
 It is included at the user's request as an explicit exception to the original
