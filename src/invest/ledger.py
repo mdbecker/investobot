@@ -69,6 +69,14 @@ class Ledger:
         account_id = snap['account']['id']
         if len({p['security'] for p in snap['positions']}) != len(snap['positions']):
             raise DomainError('Duplicate positions must be resolved before apply', 3)
+        for lot in snap['lots']:
+            if decimal(lot['remaining_quantity']) > decimal(lot['quantity']):
+                raise DomainError('Lot remaining quantity exceeds original quantity', 3)
+        for symbol in {lot['security'] for lot in snap['lots']}:
+            position = next((p for p in snap['positions'] if p['security'] == symbol), None)
+            remaining = sum((decimal(l['remaining_quantity']) for l in snap['lots'] if l['security'] == symbol), Decimal('0'))
+            if position is None or remaining > decimal(position['quantity']):
+                raise DomainError('Lot quantities exceed imported position', 3)
         with self.connection:
             self.put('accounts', account_id, snap['account'])
             for table in ['positions', 'lots']:
