@@ -65,7 +65,8 @@ def preview(context):
     context["activity"] = {
         "account_id": "synthetic",
         "security": "VTI",
-        "type": "BUY",
+        "activity_id": "synthetic-buy",
+            "type": "BUY",
         "quantity": "2",
         "price": "100",
         "date": "2026-10-08",

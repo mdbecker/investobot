@@ -86,6 +86,10 @@ def simulate(state, client, actions, rates=None):
             warnings.extend(analysis["warnings"])
         previous = copy.deepcopy(working)
         working, change = activity_change(working, action)
+        # Hypothetical marks are explicit scenario assumptions, never ledger price updates.
+        security = next(s for s in working["securities"] if action["security"] in {s["id"], s["ticker"]})
+        position = next(p for p in working["positions"] if p["account_id"] == action["account_id"] and p["security_id"] == security["id"])
+        position.update(price=str(action["price"]), market_value=str(decimal(position["quantity"]) * decimal(action["price"])), as_of=action["date"])
         if analysis and analysis["selected_lots"]:
             # The chosen analytical lots, not an implicit FIFO fallback, govern hypothetical state.
             sold = {lot["id"]: decimal(lot["quantity"]) for lot in analysis["selected_lots"]}
@@ -95,6 +99,7 @@ def simulate(state, client, actions, rates=None):
                     lot["remaining_quantity"] = str(
                         decimal(lot["remaining_quantity"]) - sold[lot["id"]]
                     )
+            position["lot_state"] = "RESOLVED"
         working["activities"].append(dict(action, id=f"scenario-{len(working['activities'])}"))
     before_exposure = exposure(before_state, client)
     after_exposure = exposure(working, client)

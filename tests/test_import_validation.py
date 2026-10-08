@@ -97,6 +97,7 @@ def activity(ctx):
     ctx["ledger"].record_activity(
         {
             "account_id": "example",
+            "activity_id": "synthetic-buy",
             "type": "BUY",
             "security": "VTI",
             "quantity": "1",
@@ -133,7 +134,8 @@ def missing_buy(ctx):
         ctx["ledger"].record_activity(
             {
                 "account_id": "example",
-                "type": "BUY",
+                "activity_id": "synthetic-buy",
+            "type": "BUY",
                 "security": "VTI",
                 "quantity": "1",
                 "price": "100",

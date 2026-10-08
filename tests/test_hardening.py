@@ -69,6 +69,7 @@ def purchase(ctx):
         {
             "account_id": "synthetic",
             "security": "OLD",
+            "activity_id": "synthetic-buy",
             "type": "BUY",
             "quantity": "2",
             "price": "100",

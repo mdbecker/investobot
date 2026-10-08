@@ -22,3 +22,5 @@
 - PRD v2 is preserved in docs/PRD-v2.md; packages 1–3 gate planning features.
 - Snapshot positions/lots coverage defaults incomplete. Never delete unobserved inventory without explicit complete coverage; retained quantity mismatches set lot_state=UNRESOLVED.
 - Source timestamps and import timestamps are distinct. Older snapshots require an explicit, justified override; unknown source dates remain unknown.
+- Confirmed activity requires activity_id. Identical repeats are no-ops; conflicting repeats fail atomically. Unknown executed lot selection must never become FIFO.
+- Execution prices are activity facts, not portfolio valuation marks. Scenario prices are explicit hypothetical assumptions only. Cross-account/security transfers remain review-required and unsupported for recording.

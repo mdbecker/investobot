@@ -218,6 +218,16 @@ class Ledger:
         return summarize(self.state())
 
     def record_activity(self, activity, yes=False):
+        activity = copy.deepcopy(activity)
+        aid = activity.get("activity_id")
+        if not isinstance(aid, str) or not aid.strip():
+            raise DomainError("Every confirmed activity requires a unique activity_id")
+        prior = next((a for a in self.rows("activities") if a.get("activity_id") == aid), None)
+        content = {k: v for k, v in activity.items() if k not in {"id", "recorded_at"}}
+        if prior:
+            if {k: v for k, v in prior.items() if k not in {"id", "recorded_at"}} != content:
+                raise DomainError("Activity ID already exists with different content", 3)
+            return dict(status="UNCHANGED", activity_id=aid, committed=False)
         state = self.state()
         changed, result = activity_change(state, activity)
         if yes:
@@ -225,9 +235,9 @@ class Ledger:
                 for table in ["positions", "cash_balances", "lots"]:
                     for item in changed[table]:
                         self.put(table, item["id"], item)
-                aid = str(uuid.uuid4())
-                self.put("activities", aid, dict(activity, id=aid))
-        return dict(result, status="RECORDED" if yes else "PREVIEW", committed=yes)
+                self.put("activities", aid, dict(content, id=aid,
+                    recorded_at=datetime.now(timezone.utc).isoformat()))
+        return dict(result, activity_id=aid, status="RECORDED" if yes else "PREVIEW", committed=yes)
 
 
 def household_currency(state):
@@ -299,6 +309,10 @@ def activity_change(state, activity):
         "CASH_WITHDRAWAL",
     }:
         raise DomainError("Unsupported activity type")
+    if kind in {"TRANSFER_IN", "TRANSFER_OUT"}:
+        raise DomainError("Security transfers require explicit classification and manual review; unsupported in MVP")
+    if activity.get("to_account") or activity.get("from_account"):
+        raise DomainError("Cross-account movement requires explicit classification and manual review", 3)
     cash = next((c for c in state["cash_balances"] if c["account_id"] == account_id), None)
     if not cash:
         raise DomainError("Cash balance is unknown", 3)
@@ -335,17 +349,23 @@ def activity_change(state, activity):
                 quantity="0",
                 market_value="0",
                 cost_basis=None,
+                as_of=activity["date"],
+                source_timestamp=None,
             )
             state["positions"].append(p)
         selling = kind in {"SELL", "TRANSFER_OUT"}
         if selling and qty > decimal(p["quantity"]):
             raise DomainError("Sale/transfer exceeds known position", 3)
-        p["quantity"] = str(decimal(p["quantity"]) + (-qty if selling else qty))
-        p["price"], p["market_value"], p["as_of"] = (
-            str(price),
-            str(decimal(p["quantity"]) * price),
-            activity["date"],
-        )
+        old_qty = decimal(p["quantity"])
+        market_price = decimal(p["price"]) if p.get("price") is not None else (
+            decimal(p["market_value"]) / old_qty if old_qty else None)
+        p["quantity"] = str(old_qty + (-qty if selling else qty))
+        if market_price is not None:
+            p["market_value"] = str(decimal(p["quantity"]) * market_price)
+        else:
+            p["market_value"] = "0"
+            p["valuation_state"] = "UNRESOLVED"
+        # Execution price belongs to the activity, not the remaining portfolio mark.
         if kind == "BUY":
             delta = -(qty * price + fee)
             if p.get("cost_basis") is not None:
@@ -366,13 +386,31 @@ def activity_change(state, activity):
         elif kind == "SELL":
             delta = qty * price - fee
         if selling:
-            remaining = qty
-            for lot in sorted(state["lots"], key=lambda l: l["acquisition_date"]):
-                if lot["account_id"] == account_id and lot["security_id"] == security["id"]:
-                    used = min(remaining, decimal(lot["remaining_quantity"]))
+            allocations = activity.get("lot_allocations")
+            if allocations is None:
+                p["lot_state"] = "UNRESOLVED"
+                p["cost_basis"] = None
+            else:
+                if not isinstance(allocations, list) or not allocations:
+                    raise DomainError("Supply nonempty executed lot allocations")
+                if len({a["lot_id"] for a in allocations}) != len(allocations):
+                    raise DomainError("Duplicate executed lot allocation")
+                if sum((decimal(a["quantity"]) for a in allocations), Decimal("0")) != qty:
+                    raise DomainError("Executed lot allocations must equal sold quantity", 3)
+                basis_removed = Decimal("0")
+                for allocation in allocations:
+                    lot = next((l for l in state["lots"] if l["id"] == allocation["lot_id"]
+                        and l["account_id"] == account_id and l["security_id"] == security["id"]), None)
+                    used = decimal(allocation["quantity"])
+                    if lot is None or used <= 0 or used > decimal(lot["remaining_quantity"]):
+                        raise DomainError("Executed lot allocation exceeds available lot shares", 3)
+                    basis_removed += decimal(lot["cost_basis"]) * used / decimal(lot["quantity"])
                     lot["remaining_quantity"] = str(decimal(lot["remaining_quantity"]) - used)
-                    remaining -= used
-            p["cost_basis"] = None  # source snapshot remains authoritative
+                if p.get("cost_basis") is not None:
+                    p["cost_basis"] = str(decimal(p["cost_basis"]) - basis_removed)
+                represented = sum((decimal(l["remaining_quantity"]) for l in state["lots"]
+                    if l["account_id"] == account_id and l["security_id"] == security["id"]), Decimal("0"))
+                p["lot_state"] = "RESOLVED" if represented == decimal(p["quantity"]) else "UNRESOLVED"
     else:
         amount = decimal(activity["amount"])
         if amount <= 0:
