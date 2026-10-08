@@ -107,6 +107,14 @@ def analyze(terms):
         ql.DateGeneration.Backward,
         False,
     )
+    if any(not schedule.isRegular(i) for i in range(1, len(schedule))):
+        return {
+            "status": "INSUFFICIENT_DATA",
+            "warnings": [
+                "Irregular coupon stub requires explicit schedule conventions; no metrics calculated"
+            ],
+            "conventions": conventions,
+        }
     try:
         bond = ql.FixedRateBond(0, face, schedule, [coupon], day_count, ql.Unadjusted, 100, issue)
         ytm = ql.BondFunctions.bondYield(

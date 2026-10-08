@@ -130,7 +130,7 @@ def lots(state, as_of):
     return {"lots": results, "warnings": warnings, "as_of": as_of.isoformat()}
 
 
-def _wash(state, security, sale_date, loss, excluded_lots):
+def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=None):
     begin, end = sale_date - timedelta(days=30), sale_date + timedelta(days=30)
     conflicts, warnings = [], []
     complete = all(
@@ -149,12 +149,21 @@ def _wash(state, security, sale_date, loss, excluded_lots):
             if lot["id"] not in excluded_lots and _matches(lot, security):
                 acquired = dict(lot, date=lot["acquisition_date"], source="lot")
                 # A dated lot and its recorded purchase are one known acquisition.
-                if not any(
-                    a["account_id"] == acquired["account_id"]
-                    and a.get("date") == acquired["date"]
-                    and str(a.get("quantity")) == str(acquired.get("quantity"))
-                    for a in acquisitions
-                ):
+                matched = next(
+                    (
+                        a
+                        for a in acquisitions
+                        if a["account_id"] == acquired["account_id"]
+                        and a.get("date") == acquired["date"]
+                        and decimal(a.get("quantity", 0)) == decimal(acquired.get("quantity", 0))
+                    ),
+                    None,
+                )
+                if retained_quantities and lot["id"] in retained_quantities:
+                    acquired["quantity"] = _number(retained_quantities[lot["id"]])
+                    if matched is not None:
+                        matched["quantity"] = acquired["quantity"]
+                if matched is None:
                     acquisitions.append(acquired)
         for acquired in acquisitions:
             if begin <= _date(acquired["date"]) <= end:
@@ -247,8 +256,14 @@ def analyze(
         "short_term_gain_loss": None,
         "long_term_gain_loss": None,
         "estimated_tax_effect": None,
+        "tax_estimate_status": "UNAVAILABLE" if configured else "NOT_CONFIGURED",
         "warnings": [],
     }
+    if account_row["tax_status"] == "OTHER":
+        result["status"] = "INSUFFICIENT_DATA"
+        result["warnings"].append("Account tax status is unknown; no taxable gain is estimated")
+        result["wash_sale"] = _wash(state, security_row, sale_date, True, set())
+        return result
     if account_row["tax_status"] != "TAXABLE":
         result.update(
             realized_gain_loss="0",
@@ -290,7 +305,7 @@ def analyze(
             )
         )
     remaining, st, lt, estimate, loss = quantity, ZERO, ZERO, ZERO, False
-    excluded = set()
+    excluded, retained = set(), {}
     for lot in available:
         if remaining <= 0:
             break
@@ -317,6 +332,8 @@ def analyze(
         loss |= gain < 0
         if used == decimal(lot["remaining_quantity"]):
             excluded.add(lot["id"])
+        else:
+            retained[lot["id"]] = decimal(lot["remaining_quantity"]) - used
         remaining -= used
     result.update(
         realized_gain_loss=_number(st + lt),
@@ -326,7 +343,12 @@ def analyze(
     )
     if not configured:
         result["warnings"].append("Tax rates absent; no dollar tax effect estimated")
-    result["wash_sale"] = _wash(state, security_row, sale_date, loss, excluded)
+    else:
+        result["tax_estimate_status"] = "UNADJUSTED_POTENTIAL_EFFECT"
+        result["warnings"].append(
+            "Estimated tax effect excludes wash-sale adjustments; loss savings are not guaranteed"
+        )
+    result["wash_sale"] = _wash(state, security_row, sale_date, loss, excluded, retained)
     return result
 
 
