@@ -52,3 +52,10 @@ Feature: Financial and runtime release safeguards
     Given a fully known dated synthetic taxable account
     When an agent creates three targets and plans and exports their reports
     Then their comparison uses the same source state and old reports remain reproducible
+  Scenario: Missing account classification remains unknown
+    When an unclassified account page is normalized
+    Then its tax treatment is OTHER rather than assumed taxable
+  Scenario: Missing cash does not replace known cash with zero
+    Given a fully known dated synthetic taxable account
+    When a partial normalized snapshot supplies no cash information
+    Then the previously known cash balance remains

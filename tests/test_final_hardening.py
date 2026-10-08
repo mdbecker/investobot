@@ -251,3 +251,31 @@ def alternatives(ctx):
     assert len(ctx['comparison']['plans']) == 3
     assert ctx['original_hash'] == ctx['reproduced']
     assert hashlib.sha256((ctx['tmp'] / 'after.md').read_bytes()).hexdigest() == ctx['original_hash']
+
+
+@when('an unclassified account page is normalized')
+def unclassified(ctx):
+    from invest.parsers.generic import parse_html
+
+    ctx['normalized'] = parse_html('<table><tr><th>Symbol</th><th>Quantity</th><th>Market Value</th></tr>'
+                                  '<tr><td>AAA</td><td>1</td><td>100</td></tr></table>', 'unknown')
+
+
+@then('its tax treatment is OTHER rather than assumed taxable')
+def unknown_classification(ctx):
+    assert ctx['normalized']['account']['tax_status'] == 'OTHER'
+
+
+@when('a partial normalized snapshot supplies no cash information')
+def no_cash(ctx):
+    ctx['snap']['positions_complete'] = False
+    ctx['snap']['lots_complete'] = False
+    ctx['snap']['source_timestamp'] = '2026-10-09'
+    del ctx['snap']['cash']
+    ctx['snap'].pop('cash_known', None)
+    ctx['ledger'].apply(ctx['snap'])
+
+
+@then('the previously known cash balance remains')
+def keep_cash(ctx):
+    assert Decimal(ctx['ledger'].summary()['cash']) == 500
