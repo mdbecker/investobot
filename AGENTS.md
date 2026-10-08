@@ -17,3 +17,5 @@
 - Quote refresh writes cache only, never canonical portfolio prices. Keep900-second quote TTL distinct from day/week data TTLs.
 - Docker builds copy uv.lock before dependency sync; use --locked. Exclude .venv and private local data from image contexts.
 - Runtime dependencies live at /opt/venv in a named Docker volume. Never mount a dependency volume inside the project bind mount: removing its host mountpoint can disrupt entry points on Docker Desktop.
+- Product name and distribution name are Investobot / investobot. Keep the public `invest` CLI contract. Default platformdirs directories use investobot.
+- When replacing a distribution name that shares the same CLI entry point, reinstall the current project after dependency pruning; removing the old distribution can remove that shared script.
