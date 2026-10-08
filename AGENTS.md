@@ -19,3 +19,6 @@
 - Runtime dependencies live at /opt/venv in a named Docker volume. Never mount a dependency volume inside the project bind mount: removing its host mountpoint can disrupt entry points on Docker Desktop.
 - Product name and distribution name are Investobot / investobot. Keep the public `invest` CLI contract. Default platformdirs directories use investobot.
 - When replacing a distribution name that shares the same CLI entry point, reinstall the current project after dependency pruning; removing the old distribution can remove that shared script.
+- PRD v2 is preserved in docs/PRD-v2.md; packages 1–3 gate planning features.
+- Snapshot positions/lots coverage defaults incomplete. Never delete unobserved inventory without explicit complete coverage; retained quantity mismatches set lot_state=UNRESOLVED.
+- Source timestamps and import timestamps are distinct. Older snapshots require an explicit, justified override; unknown source dates remain unknown.

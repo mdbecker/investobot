@@ -59,6 +59,8 @@ class Snapshot(BaseModel):
     lots: list[Lot] = []
     cash: Decimal = Field(default=Decimal("0"), ge=0)
     cash_known: bool = True
+    positions_complete: bool = False
+    lots_complete: bool = False
     source_timestamp: str | None = None
     imported_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     source_hash: str

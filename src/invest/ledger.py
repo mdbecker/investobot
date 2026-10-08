@@ -1,10 +1,11 @@
 """Small explicit SQLite ledger; mutations are atomic and preserve normalized audit history."""
 
 import copy
+import hashlib
 import json
 import sqlite3
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -81,147 +82,137 @@ class Ledger:
         return matches[0]
 
     def reconcile(self, snapshot):
-        snapshot = Snapshot.model_validate(snapshot).model_dump(mode="json")
-        account_id = snapshot["account"]["id"]
-        old = {p["security"]: p for p in self.rows("positions") if p["account_id"] == account_id}
-        changes = []
-        incoming = {p["security"]: p for p in snapshot["positions"]}
-        for security in sorted(old.keys() | incoming.keys()):
-            if security not in old or security not in incoming:
-                changes.append(
-                    {
-                        "kind": "new_position" if security not in old else "removed_position",
-                        "security": security,
-                    }
-                )
-            elif decimal(old[security]["quantity"]) != decimal(incoming[security]["quantity"]):
-                changes.append(
-                    {
-                        "kind": "quantity",
-                        "security": security,
-                        "before": old[security]["quantity"],
-                        "after": incoming[security]["quantity"],
-                    }
-                )
-        current_cash = next(
-            (c for c in self.rows("cash_balances") if c["account_id"] == account_id), None
-        )
-        if snapshot["cash_known"] and (
-            not current_cash or decimal(current_cash["amount"]) != decimal(snapshot["cash"])
-        ):
-            changes.append(
-                {
-                    "kind": "cash",
-                    "before": current_cash["amount"] if current_cash else None,
-                    "after": snapshot["cash"],
-                }
-            )
-        old_lots = [
-            {k: v for k, v in lot.items() if k not in {"account_id", "security_id"}}
-            for lot in self.rows("lots")
-            if lot["account_id"] == account_id
-        ]
-        if old_lots != snapshot["lots"]:
-            changes.append({"kind": "lots"})
-        known = {s["ticker"] for s in self.rows("securities")}
-        return {
-            "account_id": account_id,
-            "changes": changes,
-            "unidentified_securities": sorted(incoming.keys() - known),
-            "warnings": snapshot["warnings"]
-            + (["State differences do not establish transactions"] if changes else []),
-        }
-
-    def apply(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
+        old = {p["security"]: p for p in self.rows("positions") if p["account_id"] == account_id}
+        incoming = {p["security"]: p for p in snap["positions"]}
+        changes, observations = [], []
+        for symbol in sorted(old.keys() | incoming.keys()):
+            if symbol not in incoming:
+                entry = {"kind": "removed_position", "security": symbol,
+                         "status": "CHANGED_VALUE" if snap["positions_complete"] else "UNKNOWN_VALUE"}
+                (changes if snap["positions_complete"] else observations).append(entry)
+            elif symbol not in old:
+                changes.append({"kind": "new_position", "security": symbol, "status": "CHANGED_VALUE"})
+            else:
+                for field in ("quantity", "price", "market_value", "cost_basis"):
+                    before, after = old[symbol].get(field), incoming[symbol].get(field)
+                    status = "UNKNOWN_VALUE" if after is None else (
+                        "CONFIRMED_VALUE" if before is not None and decimal(before) == decimal(after)
+                        else "CHANGED_VALUE")
+                    entry = dict(kind=field, security=symbol, before=before, after=after, status=status)
+                    (changes if status == "CHANGED_VALUE" else observations).append(entry)
+        account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
+        if account and any(account.get(k) != snap["account"].get(k)
+                           for k in ("tax_status", "account_type", "currency")):
+            changes.append(dict(kind="account_classification", status="CHANGED_VALUE",
+                                before=account, after=snap["account"]))
+        current_cash = next((c for c in self.rows("cash_balances") if c["account_id"] == account_id), None)
+        if snap["cash_known"] and (not current_cash or decimal(current_cash["amount"]) != decimal(snap["cash"])):
+            changes.append(dict(kind="cash", status="CHANGED_VALUE",
+                                before=current_cash["amount"] if current_cash else None, after=snap["cash"]))
+        elif not snap["cash_known"]:
+            observations.append(dict(kind="cash", status="UNKNOWN_VALUE"))
+        old_lots = [{k: v for k, v in lot.items() if k not in {"account_id", "security_id"}}
+                    for lot in self.rows("lots") if lot["account_id"] == account_id]
+        if snap["lots"] and sorted(old_lots, key=lambda l: l["id"]) != sorted(snap["lots"], key=lambda l: l["id"]):
+            changes.append(dict(kind="lots", status="CHANGED_VALUE"))
+        elif snap["lots_complete"] and old_lots != snap["lots"]:
+            changes.append(dict(kind="lots", status="CHANGED_VALUE"))
+        elif not snap["lots_complete"]:
+            observations.append(dict(kind="lots", status="UNKNOWN_VALUE"))
+        dated = [s["source_timestamp"] for s in self.rows("snapshots")
+                 if s["account"]["id"] == account_id and s.get("source_timestamp")]
+        if dated and snap["source_timestamp"] and source_time(snap["source_timestamp"]) < max(map(source_time, dated)):
+            observations.append(dict(kind="freshness", status="CONFLICT"))
+        if snap["source_timestamp"] is None:
+            observations.append(dict(kind="freshness", status="UNKNOWN_VALUE"))
+        known = {s["ticker"] for s in self.rows("securities")}
+        return dict(account_id=account_id, changes=changes, observations=observations,
+                    unidentified_securities=sorted(incoming.keys() - known),
+                    warnings=snap["warnings"] + (["State differences do not establish transactions"] if changes else []))
+
+    def apply(self, snapshot, allow_older=False, justification=None):
+        snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
+        account_id = snap["account"]["id"]
+        # Import timestamps are provenance, never evidence of source freshness.
+        fingerprint = hashlib.sha256(json.dumps({k: v for k, v in snap.items()
+            if k not in {"imported_at", "status", "warnings"}}, sort_keys=True).encode()).hexdigest()
+        previous = [s for s in self.rows("snapshots") if s["account"]["id"] == account_id]
+        latest = max(previous, key=lambda s: s["imported_at"], default=None)
+        if latest and latest.get("fingerprint") == fingerprint:
+            return dict(status="UNCHANGED", snapshot_id=latest["id"], account_id=account_id, warnings=snap["warnings"])
+        dated = [source_time(s["source_timestamp"]) for s in previous if s.get("source_timestamp")]
+        if snap["source_timestamp"]:
+            older = bool(dated and source_time(snap["source_timestamp"]) < max(dated))
+            if older and (not allow_older or not justification or not justification.strip()):
+                raise DomainError("Older snapshot requires explicit override and justification", 3)
+        if allow_older and (not justification or not justification.strip()):
+            raise DomainError("Snapshot override requires a justification")
         if len({p["security"] for p in snap["positions"]}) != len(snap["positions"]):
             raise DomainError("Duplicate positions must be resolved before apply", 3)
+        if len({l["id"] for l in snap["lots"]}) != len(snap["lots"]):
+            raise DomainError("Duplicate lot identifiers", 3)
         for lot in snap["lots"]:
             if decimal(lot["remaining_quantity"]) > decimal(lot["quantity"]):
                 raise DomainError("Lot remaining quantity exceeds original quantity", 3)
-        for symbol in {lot["security"] for lot in snap["lots"]}:
-            position = next((p for p in snap["positions"] if p["security"] == symbol), None)
-            remaining = sum(
-                (decimal(l["remaining_quantity"]) for l in snap["lots"] if l["security"] == symbol),
-                Decimal("0"),
-            )
-            if position is None or remaining > decimal(position["quantity"]):
+        for symbol in {l["security"] for l in snap["lots"]}:
+            pos = next((p for p in snap["positions"] if p["security"] == symbol), None)
+            if pos is None and not snap["positions_complete"]:
+                pos = next((p for p in self.rows("positions") if p["account_id"] == account_id and p["security"] == symbol), None)
+            remaining = sum((decimal(l["remaining_quantity"]) for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
+            if pos is None or remaining > decimal(pos["quantity"]):
                 raise DomainError("Lot quantities exceed imported position", 3)
         with self.connection:
             self.put("accounts", account_id, snap["account"])
-            for table in ["positions", "lots"]:
-                for item in self.rows(table):
-                    if item["account_id"] == account_id:
-                        self.connection.execute(f"DELETE FROM {table} WHERE id=?", (item["id"],))
+            observed_ids = set()
             for p in snap["positions"]:
-                supplied = {
-                    key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)
-                }
-                existing = [
-                    s
-                    for s in self.rows("securities")
-                    if any(s.get(key) == value for key, value in supplied.items())
-                ]
+                supplied = {key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)}
+                existing = [s for s in self.rows("securities") if any(s.get(k) == v for k, v in supplied.items())]
                 if not existing:
-                    existing = [
-                        s
-                        for s in self.rows("securities")
-                        if s["ticker"] == p["security"]
-                        and not any(
-                            s.get(key) and s[key] != value for key, value in supplied.items()
-                        )
-                    ]
-                if len(existing) > 1 or (
-                    existing
-                    and any(
-                        existing[0].get(key) and existing[0][key] != value
-                        for key, value in supplied.items()
-                    )
-                ):
+                    existing = [s for s in self.rows("securities") if s["ticker"] == p["security"]
+                                and not any(s.get(k) and s[k] != v for k, v in supplied.items())]
+                if len(existing) > 1 or (existing and any(existing[0].get(k) and existing[0][k] != v for k, v in supplied.items())):
                     raise DomainError("Security aliases conflict; resolve identity explicitly", 3)
                 sid = existing[0]["id"] if existing else str(uuid.uuid4())
-                security = (
-                    existing[0]
-                    if existing
-                    else {
-                        "id": sid,
-                        "ticker": p["security"],
-                        "name": p["name"],
-                        "asset_type": p["asset_type"],
-                        "currency": snap["account"]["currency"],
-                        "cusip": None,
-                        "isin": None,
-                        "figi": None,
-                    }
-                )
-                security = dict(security, ticker=p["security"], **supplied)
+                observed_ids.add(sid)
+                security = dict(existing[0]) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
+                    asset_type=p["asset_type"], currency=snap["account"]["currency"], cusip=None, isin=None, figi=None)
+                security.update(ticker=p["security"], **supplied)
                 self.put("securities", sid, security)
-                p = dict(p, id=f"{account_id}:{sid}", account_id=account_id, security_id=sid)
+                p = dict(p, id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
+                         source_timestamp=snap["source_timestamp"])
                 self.put("positions", p["id"], p)
+            if snap["positions_complete"]:
+                for p in self.rows("positions"):
+                    if p["account_id"] == account_id and p["security_id"] not in observed_ids:
+                        self.connection.execute("DELETE FROM positions WHERE id=?", (p["id"],))
+                        for l in self.rows("lots"):
+                            if l["account_id"] == account_id and l["security_id"] == p["security_id"]:
+                                self.connection.execute("DELETE FROM lots WHERE id=?", (l["id"],))
+            if snap["lots_complete"]:
+                for lot in self.rows("lots"):
+                    if lot["account_id"] == account_id:
+                        self.connection.execute("DELETE FROM lots WHERE id=?", (lot["id"],))
             for lot in snap["lots"]:
                 sid = self.resolve(lot["security"])["id"]
-                lot = dict(lot, account_id=account_id, security_id=sid)
-                self.put("lots", lot["id"], lot)
+                prior = next((l for l in self.rows("lots") if l["id"] == lot["id"]), None)
+                if prior and (prior["account_id"] != account_id or prior["security_id"] != sid):
+                    raise DomainError("Lot identifier belongs to another account/security", 3)
+                self.put("lots", lot["id"], dict(lot, account_id=account_id, security_id=sid))
+            for p in self.rows("positions"):
+                if p["account_id"] == account_id:
+                    remaining = sum((decimal(l["remaining_quantity"]) for l in self.rows("lots")
+                        if l["account_id"] == account_id and l["security_id"] == p["security_id"]), Decimal("0"))
+                    p["lot_state"] = "RESOLVED" if remaining == decimal(p["quantity"]) else "UNRESOLVED"
+                    self.put("positions", p["id"], p)
             if snap["cash_known"]:
-                self.put(
-                    "cash_balances",
-                    account_id,
-                    {
-                        "id": account_id,
-                        "account_id": account_id,
-                        "amount": snap["cash"],
-                        "as_of": snap["source_timestamp"] or snap["imported_at"],
-                    },
-                )
+                self.put("cash_balances", account_id, dict(id=account_id, account_id=account_id,
+                    amount=snap["cash"], as_of=snap["source_timestamp"], imported_at=snap["imported_at"]))
             audit_id = str(uuid.uuid4())
-            self.put("snapshots", audit_id, dict(snap, id=audit_id))
-        return {
-            "status": "APPLIED",
-            "snapshot_id": audit_id,
-            "account_id": account_id,
-            "warnings": snap["warnings"],
-        }
+            self.put("snapshots", audit_id, dict(snap, id=audit_id, fingerprint=fingerprint,
+                override_justification=justification if allow_older else None))
+        return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id, warnings=snap["warnings"])
 
     def summary(self):
         return summarize(self.state())
@@ -396,3 +387,11 @@ def activity_change(state, activity):
         "cash_after": str(after_cash),
         "warnings": ["Recorded activities do not establish complete household transaction history"],
     }
+
+
+def source_time(value):
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+    except (ValueError, AttributeError) as exc:
+        raise DomainError("Source timestamp must be an ISO date or datetime") from exc
