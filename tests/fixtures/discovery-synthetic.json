@@ -1,0 +1,25 @@
+{
+  "screen": [
+    {"symbol":"TECH","companyName":"Synthetic Technology","sector":"Technology","marketCap":2000000,"price":20,"isEtf":false,"isFund":false},
+    {"symbol":"SMALL","companyName":"Synthetic Small","sector":"Technology","marketCap":500000,"price":10,"isEtf":false,"isFund":false},
+    {"symbol":"BANK","companyName":"Synthetic Bank","sector":"Financial Services","marketCap":3000000,"price":30,"isEtf":false,"isFund":false},
+    {"symbol":"ORIGINAL","companyName":"Synthetic Original","isEtf":true,"isFund":false},
+    {"symbol":"SAME","companyName":"Synthetic Similar","isEtf":true,"isFund":false},
+    {"symbol":"DIFFERENT","companyName":"Synthetic Different","isEtf":true,"isFund":false}
+  ],
+  "holdings": {
+    "ORIGINAL":[{"asset":"AAPL","weightPercentage":"100"}],
+    "SAME":[{"asset":"AAPL","weightPercentage":"90"},{"asset":"MSFT","weightPercentage":"10"}],
+    "DIFFERENT":[{"asset":"JPM","weightPercentage":"100"}]
+  },
+  "history": {
+    "ORIGINAL":[{"date":"2026-10-05","adjClose":"100"},{"date":"2026-10-06","adjClose":"110"},{"date":"2026-10-07","adjClose":"99"}],
+    "SAME":[{"date":"2026-10-05","adjClose":"100"},{"date":"2026-10-06","adjClose":"110"},{"date":"2026-10-07","adjClose":"99"}],
+    "DIFFERENT":[{"date":"2026-10-05","adjClose":"100"},{"date":"2026-10-06","adjClose":"110"},{"date":"2026-10-07","adjClose":"99"}]
+  },
+  "metadata": {
+    "ORIGINAL":[{"symbol":"ORIGINAL","expenseRatio":"0.10","assetsUnderManagement":"1000000","issuer":"Synthetic One","isEtf":true,"benchmark":"Synthetic Index"}],
+    "SAME":[{"symbol":"SAME","expenseRatio":"0.05","assetsUnderManagement":"2000000","issuer":"Synthetic One","isEtf":true,"benchmark":"Synthetic Index"}],
+    "DIFFERENT":[{"symbol":"DIFFERENT","expenseRatio":"0.50","assetsUnderManagement":"3000000","issuer":"Synthetic Two","isEtf":true}]
+  }
+}
