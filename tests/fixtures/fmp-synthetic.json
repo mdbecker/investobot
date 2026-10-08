@@ -1,0 +1,12 @@
+{
+  "holdings": {
+    "AAA": [{"asset":" aapl ","name":"Synthetic Apple","isin":"US0378331005","weightPercentage":"60","shares":"60","marketValue":"600","updated":"2026-10-01","sector":"Technology"},{"asset":"MSFT","name":"Synthetic Microsoft","weightPercentage":"40","updated":"2026-10-01","sector":"Technology"}],
+    "BBB": [{"asset":"AAPL","name":"Synthetic Apple","weightPercentage":"30","updated":"2026-10-01","sector":"Technology"},{"asset":"MSFT","name":"Synthetic Microsoft","weightPercentage":"20","updated":"2026-10-01","sector":"Technology"},{"asset":"JPM","name":"Synthetic JPMorgan","weightPercentage":"50","updated":"2026-10-01","sector":"Financial Services"}],
+    "PART": [{"asset":"AAPL","name":"Synthetic Apple","weightPercentage":"20"}]
+  },
+  "history": {
+    "AAA": [{"date":"2026-09-28","adjClose":"100"},{"date":"2026-09-29","adjClose":"110"},{"date":"2026-09-30","adjClose":"99"},{"date":"2026-10-05","adjClose":"108.9"}],
+    "BBB": [{"date":"2026-09-28","adjClose":"200"},{"date":"2026-09-29","adjClose":"220"},{"date":"2026-09-30","adjClose":"198"},{"date":"2026-10-05","adjClose":"217.8"}]
+  },
+  "metadata": {"AAA":[{"symbol":"AAA","expenseRatio":"0.10","issuer":"Synthetic","aum":"1000000","isEtf":true}],"BBB":[{"symbol":"BBB","expenseRatio":"0.20","issuer":"Synthetic","aum":"2000000","isEtf":true}]}
+}
