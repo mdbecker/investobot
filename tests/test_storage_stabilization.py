@@ -108,3 +108,42 @@ def independent(ctx):
     identity = ctx["identity"]
     assert ctx["original"]["assumptions"]["prices"][identity]["price"] == "100"
     assert ctx["second"]["assumptions"]["prices"][identity]["price"] == "110"
+
+
+@given("ten accounts with one thousand positions two thousand lots and twenty snapshots each")
+def workload(ctx):
+    from scripts.benchmark_plan_storage import build_fixture
+
+    ctx["workload"] = build_fixture(ctx["ledger"])
+    state = ctx["ledger"].state()
+    assert len(state["accounts"]) == 10
+    assert len(state["positions"]) == 1000
+    assert len(state["lots"]) == 2000
+    assert len(state["snapshots"]) == 200
+    assert all(sum(s["account"]["id"] == a["id"] for s in state["snapshots"]) == 20
+               for a in state["accounts"])
+
+
+@when("twenty independent alternative plans are saved")
+def workload_plans(ctx):
+    from scripts.benchmark_plan_storage import measure
+
+    ctx["measurements"] = measure(ctx["ledger"], ctx["workload"], ctx["directory"])
+
+
+@then("all twenty plans can be listed retrieved and exported")
+def accessible(ctx):
+    result = ctx["measurements"]
+    assert result["plan_count"] == 20
+    assert result["listed_plan_count"] == 20
+    assert result["retrieved_plan_id"] in {p["id"] for p in ctx["ledger"].rows("plans")}
+    assert (ctx["directory"] / "benchmark-report.md").read_text().startswith("# ")
+
+
+@then("storage measurements cover database growth plan size and access times")
+def measurements(ctx):
+    result = ctx["measurements"]
+    assert result["database_bytes_after"] > result["database_bytes_before"] > 0
+    assert result["average_serialized_plan_bytes"] > 0
+    for key in ("list_seconds", "retrieve_seconds", "markdown_export_seconds"):
+        assert result[key] >= 0
