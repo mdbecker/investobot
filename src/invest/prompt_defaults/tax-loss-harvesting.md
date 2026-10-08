@@ -1,0 +1,3 @@
+# Tax-loss harvesting review
+
+Use invest to inspect accepted taxable positions, loss lots, acquisition dates, basis, and data freshness. Analyze proposed sales with the existing tax tools and inspect household wash-sale conflicts, including retirement purchases. Use your browser to research replacement funds and current conditions. Compare holdings overlap and simulate alternatives without changing actual holdings. Disclose unknown outside accounts, incomplete histories, future replacement risks, and estimated tax assumptions. Prepare a reviewable report with proposed lots and replacement candidates. A human decides and executes every trade.

@@ -384,3 +384,42 @@ def report_export(plan_id: str, output: str = typer.Option(...), format: str = "
     from invest.reports import export
 
     emit(lambda: export(persisted(ledger(), plan_id), output, format=format))
+
+
+prompt = typer.Typer()
+app.add_typer(prompt, name="prompt")
+
+
+@prompt.command("list")
+def prompt_list():
+    from invest.prompts import PromptLibrary
+
+    emit(lambda: PromptLibrary().list())
+
+
+@prompt.command("show")
+def prompt_show(prompt_id: str):
+    from invest.prompts import PromptLibrary
+
+    emit(lambda: PromptLibrary().show(prompt_id))
+
+
+@prompt.command("save")
+def prompt_save(prompt_id: str, file: str):
+    from invest.prompts import PromptLibrary
+
+    emit(lambda: PromptLibrary().save(prompt_id, sys.stdin.read() if file == "-" else Path(file).read_text()))
+
+
+@prompt.command("delete")
+def prompt_delete(prompt_id: str):
+    from invest.prompts import PromptLibrary
+
+    emit(lambda: PromptLibrary().delete(prompt_id))
+
+
+@portfolio.command("overview")
+def portfolio_overview():
+    from invest.web import overview
+
+    emit(lambda: overview(ledger()))

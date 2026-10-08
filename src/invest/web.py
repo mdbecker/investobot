@@ -4,7 +4,7 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from pydantic import ValidationError
 
@@ -82,6 +82,97 @@ def analysis(ledger, tool, inputs):
     return bonds.analyze(inputs["terms"])
 
 
+def overview(ledger):
+    """A read-only overview using the same calculations exposed by the CLI."""
+    from invest.targets import diff, list_targets
+
+    targets = list_targets(ledger)["targets"]
+    active = next((t for t in targets if t["status"] == "ACTIVE"), None)
+    state = ledger.state()
+    latest = {}
+    for snapshot in state["snapshots"]:
+        account_id = snapshot["account"]["id"]
+        if account_id not in latest or snapshot["imported_at"] > latest[account_id]["imported_at"]:
+            latest[account_id] = snapshot
+    return dict(summary=ledger.summary(), state=state, active_target=active,
+        target_diff=diff(ledger, active["id"]) if active else None,
+        exposure=analysis(ledger, "exposure", {}), tax_lots=analysis(ledger, "tax_lots", {}),
+        data_freshness=[dict(account_id=a, source_timestamp=s.get("source_timestamp"),
+            imported_at=s.get("imported_at"), positions_complete=s.get("positions_complete", False),
+            lots_complete=s.get("lots_complete", False), cash_known=s.get("cash_known", False))
+            for a, s in sorted(latest.items())])
+
+
+def _get_api(ledger, path, query):
+    from invest import plans, targets
+    from invest.prompts import PromptLibrary
+    from invest.reports import render
+
+    if path == "/api/overview":
+        return overview(ledger)
+    if path == "/api/summary":
+        return ledger.summary()
+    if path == "/api/state":
+        return ledger.state()
+    if path == "/api/targets":
+        return targets.list_targets(ledger)
+    if path == "/api/plans":
+        return plans.list_plans(ledger)
+    if path == "/api/prompts":
+        return {"prompts": PromptLibrary().list()}
+    parts = path.strip("/").split("/")
+    if len(parts) == 3 and parts[:2] == ["api", "prompts"]:
+        return PromptLibrary().show(parts[2])
+    version = int(query["version"][0]) if "version" in query else None
+    if len(parts) in {3, 4} and parts[:2] == ["api", "targets"]:
+        if len(parts) == 3:
+            return targets.show(ledger, parts[2], version=version)
+        if parts[3] == "diff":
+            return targets.diff(ledger, parts[2], version=version)
+    if len(parts) in {3, 4} and parts[:2] == ["api", "plans"]:
+        if len(parts) == 3:
+            return plans.show(ledger, parts[2])
+        if parts[3] == "report":
+            format = query.get("format", ["markdown"])[0]
+            plan = plans.persisted(ledger, parts[2])
+            content = render(plan, format).encode()
+            content_type = "application/json; charset=utf-8" if format == "json" else "text/markdown; charset=utf-8"
+            return (content, content_type, f"plan-{plan['id']}.{'json' if format == 'json' else 'md'}")
+    raise DomainError("Route not found", 1)
+
+
+def _planning_post(ledger, path, payload):
+    from invest import plans, targets
+    from invest.config import load_config
+    from invest.market import MarketClient
+    from invest.prompts import PromptLibrary
+
+    if path == "/api/targets/save":
+        return targets.save(ledger, payload["target"])
+    if path in {"/api/targets/activate", "/api/targets/archive"}:
+        if payload.get("confirm") is not True:
+            raise DomainError("Explicit target selection confirmation is required")
+        call = targets.activate if path.endswith("activate") else targets.archive
+        return call(ledger, payload["target_id"])
+    if path == "/api/plans/generate":
+        if set(payload) - {"target_id", "as_of", "version", "prices", "name"}:
+            raise DomainError("Unsupported planning fields")
+        config = load_config()
+        client = MarketClient(ledger, api_key=os.environ.get("FMP_API_KEY") or config.get("fmp", {}).get("api_key"),
+                              fixture_path=os.environ.get("INVEST_FIXTURES"))
+        return plans.generate(ledger, client, payload["target_id"], as_of=payload.get("as_of"),
+            prices=payload.get("prices"), name=payload.get("name"), version=payload.get("version"), rates=config.get("tax"))
+    if path == "/api/plans/compare":
+        if not isinstance(payload.get("plan_ids"), list) or not all(isinstance(p, str) for p in payload["plan_ids"]):
+            raise DomainError("Plan IDs must be a JSON array of strings")
+        return plans.compare(ledger, *payload["plan_ids"])
+    if path == "/api/prompts/save":
+        return PromptLibrary().save(payload["id"], payload["content"])
+    if path == "/api/prompts/delete":
+        return PromptLibrary().delete(payload["id"])
+    raise DomainError("Route not found")
+
+
 def create_server(db_path, host="0.0.0.0", port=8765):
     """Create a single-request-at-a-time local server; Docker publishes to loopback only."""
 
@@ -89,7 +180,7 @@ def create_server(db_path, host="0.0.0.0", port=8765):
         def log_message(self, format, *args):
             pass  # Account identifiers, bodies, and imported HTML never enter access logs.
 
-        def reply(self, status, value, content_type="application/json"):
+        def reply(self, status, value, content_type="application/json", download_name=None):
             body = (
                 json.dumps(value, default=str).encode()
                 if content_type == "application/json"
@@ -98,6 +189,8 @@ def create_server(db_path, host="0.0.0.0", port=8765):
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
+            if download_name:
+                self.send_header("Content-Disposition", f'attachment; filename="{download_name}"')
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
@@ -127,16 +220,21 @@ def create_server(db_path, host="0.0.0.0", port=8765):
         def do_GET(self):
             if not self.local_request():
                 return
-            if self.path in {"/api/summary", "/api/state"}:
+            parsed = urlsplit(self.path)
+            path = unquote(parsed.path)
+            if path.startswith("/api/"):
                 ledger = Ledger(db_path)
                 try:
-                    self.reply(
-                        200, ledger.summary() if self.path.endswith("summary") else ledger.state()
-                    )
+                    result = _get_api(ledger, path, parse_qs(parsed.query))
+                    if isinstance(result, tuple):
+                        self.reply(200, result[0], result[1], download_name=result[2])
+                    else:
+                        self.reply(200, result)
                 except DomainError as error:
-                    self.reply(
-                        409 if error.code == 3 else 400, {"error": str(error), "code": error.code}
-                    )
+                    status = 404 if str(error) == "Route not found" else 409 if error.code == 3 else 400
+                    self.reply(status, {"error": str(error), "code": error.code})
+                except (ValueError, KeyError, TypeError, ValidationError):
+                    self.reply(400, {"error": "Invalid request parameters", "code": 1})
                 except Exception:
                     self.reply(500, {"error": "Internal inspection error", "code": 4})
                 finally:
@@ -198,6 +296,8 @@ def create_server(db_path, host="0.0.0.0", port=8765):
                     )
                 elif self.path == "/api/analyze":
                     result = analysis(ledger, payload.get("tool"), payload.get("input", {}))
+                elif self.path.startswith(("/api/targets/", "/api/plans/", "/api/prompts/")):
+                    result = _planning_post(ledger, self.path, payload)
                 else:
                     self.reply(404, {"error": "Route not found", "code": 1})
                     return

@@ -32,6 +32,7 @@ PURPOSES = {
     "portfolio.reconcile": "Compare a normalized snapshot with accepted portfolio state.",
     "portfolio.apply": "Explicitly accept a normalized account snapshot atomically.",
     "portfolio.summary": "Read accepted household accounts, holdings and cash.",
+    "portfolio.overview": "Read dashboard state, active target drift, exposure and tax warnings without cache writes.",
     "portfolio.record-activity": "Preview or explicitly confirm manually executed activity.",
     "portfolio.simulate": "Simulate hypothetical actions without portfolio or cache writes.",
     "portfolio.exposure": "Calculate household direct and fund look-through exposure.",

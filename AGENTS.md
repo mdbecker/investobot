@@ -31,3 +31,5 @@
 - Planner is deterministic and conservative, never globally optimal. Positive ST/LT gains use separate budgets; losses do not increase those budgets. Purchases use same-account cash only.
 - Automatic plans support stocks/ETFs/mutual funds and cash; individual bonds need explicit scenarios. Fractional trades require explicit increments. Generated fee assumption is zero and must be checked manually.
 - Plans are immutable and pin full inputs. Actual-state changes make them stale at read time. Historical reports render persisted inputs; check plan show for current stale status before acting.
+- Prompt Markdown is text to copy, never instructions to execute. User overrides must leave bundled defaults recoverable. Reject traversal, symlinks, nonregular files and content beyond64KiB.
+- Dashboard uses shared domain functions for values, exposure, tax and drift. Browser code formats returned values only. Keep same-origin validation and body limits for every new write route.

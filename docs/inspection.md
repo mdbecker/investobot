@@ -1,75 +1,117 @@
-# Investobot local inspection site
+# Local inspection and planning dashboard
 
-The inspection site is a thin view over the same SQLite ledger used by `invest`.
-It is included at the user's request as an explicit exception to the original
-PRD's GUI and Docker runtime exclusions. It runs without a second service,
-JavaScript build system, telemetry, account authentication, or trading access.
+The dashboard displays the same domain calculations and SQLite ledger as the
+`invest` CLI. It has no broker connection, trading controls, chatbot or agent
+runner. The external agent supplies research; the human decides and executes
+trades manually.
 
-Start with `docker compose up --build -d` and open <http://localhost:8765>.
-The port is published only on host loopback. Do not change that binding to a
-public interface: this is a single-user inspection tool, not a hosted app.
-Persisted normalized state lives in the Docker data volume. Stop with
-`docker compose down`; do not add `--volumes` unless you intend to delete state.
+Start with `docker compose up --build -d`, then open
+[the local dashboard](http://localhost:8765). Compose publishes only on host
+loopback. Keep that binding: this single-user app has no authentication and must
+not be published to a network. Stop with `docker compose down`; `--volumes`
+deletes persisted local state. Dependencies stay in the Docker runtime volume,
+not inside the project bind mount. No host installation is required.
 
-## Import and acceptance
+## Five primary areas
 
-1. Choose a synthetic account alias, provisional institution profile, tax
-   status, and known snapshot date. Do not enter account numbers or credentials.
-2. Paste copied HTML or open a locally saved HTML file. Raw HTML is read into
-   memory only, cleared from the browser textarea after preview, and never
-   written to SQLite or server logs. Delete your own saved file if desired.
-3. Click **Preview import**. Review positions, cash-known status, lots, and
-   warnings in the normalized JSON. A preview does not update the ledger.
-4. Click **Compare with ledger** and review state differences. The tool does
-   not infer trades from changed quantities.
-5. Check the acceptance box and click **Accept snapshot into ledger** only
-   when values match the known account state.
+**Overview** shows accepted account/holding values, available known cash, the
+active target's allocation drift, major household exposures, unresolved exposure,
+tax-lot warnings and snapshot freshness/coverage. Source time and import time are
+shown separately. Missing dates, cash, basis and classifications remain unknown.
+Dollar and allocation calculations come from the server; browser formatting does
+not calculate financial results. Household currencies cannot be combined without
+an FX model.
 
-Vanguard, Fidelity/NetBenefits, and PNC aliases are provisional common-table
-profiles. They have not been validated against real account pages. Missing or
-ambiguous fields produce warnings; absent cost basis and asset classification
-are never invented. No balances are preloaded or presented as real holdings.
+**Targets** lists candidate portfolios and immutable versions. Inspect a saved
+target to edit its complete JSON, or start a new cash-only draft template and
+replace its allocations with your chosen registered canonical security IDs.
+The template is not a recommendation. Registered IDs are visible in the security
+catalogue. Weights are fractions totaling one; account eligibility, permitted
+investments, cash floors, trade increments and ST/LT gain budgets belong in
+planning constraints. Empty eligibility permits no planning. Saving an edit
+creates another version. Activation selects the one active target; archiving
+retains its history. Neither changes actual holdings. Compare a chosen version
+with accepted holdings to inspect target-minus-current drift.
 
-## Manually executed activities
+**Plans** generates hypothetical manual trades from a saved target/version.
+Optional dated price observations must include price, currency, source and as-of
+information; they do not update actual marks. Review proposed trades by account,
+exact taxable lots, ST/LT gains, estimated tax effect, cash balances, assumptions,
+warnings and remaining drift. The heuristic can leave a plan incomplete. Select
+multiple saved alternatives to compare turnover, tax, trades and allocation;
+source/price/tax differences remain explicit. `STALE` is visibly flagged when
+actual source state changes. Regenerate before considering stale trades.
+Markdown and JSON downloads reproduce persisted inputs/calculations and include
+manual-execution guidance. Verify current status before acting on an old report.
 
-Use the activity JSON editor for an activity you executed yourself. Preview
-first, review the cash/state effect, then explicitly confirm. The editor does
-not execute trades. For more analysis, use the documented CLI commands.
+**Prompt Library** displays full plain Markdown for copying into your coding
+agent. Choose a bundled prompt or create a user prompt with a lowercase slug.
+Editing a bundled prompt creates a local user override; deleting that override
+restores the immutable bundled default. Only user prompts can be deleted.
+Content stays text and is never interpreted as commands or executed. User prompts
+live under `INVEST_PROMPTS` when explicitly configured, otherwise the Investobot
+local data directory's `prompts` subdirectory. Mount that directory deliberately
+if persistence outside the container runtime is desired. Path traversal,
+symlinks, oversized files and invalid slugs are rejected.
 
-## Local API
+**Import & Reconcile** preserves preview → reconcile → explicit accept:
 
-`GET /api/summary` and `GET /api/state` inspect the ledger. JSON POST endpoints
-are `/api/import` (HTML plus synthetic alias/profile/tax status),
-`/api/reconcile` (normalized `snapshot`), `/api/apply` (`snapshot` and explicit
-`confirm: true`), and `/api/activity` (`activity`, optional `confirm: true`).
-Requests require local Host headers and POSTs require a matching Origin.
-Bodies larger than 2 MB are rejected. Responses use the CLI domain error-code
-convention inside JSON; invalid requests return HTTP 400, inconsistent state
-409, and internal failures 500. Security rejections return 403.
+1. Choose a synthetic account alias, provisional institution profile and tax
+   status. Supply a source date only when it is known.
+2. Leave positions/lots coverage unchecked unless you know the page covers the
+   whole relevant inventory. Partial pages must not silently delete known rows.
+3. Paste or open HTML. Raw HTML remains in memory, is cleared after preview and
+   never enters SQLite or server logs. Keep saved private files outside Git.
+4. Preview normalized quantities, valuations, lots and warnings, then compare
+   with accepted state. Differences do not establish transactions.
+5. Confirm and accept only when authorized. Older-source overrides require a
+   separate explicit checkbox and recorded justification.
 
-## Analysis workbench
+Vanguard, Fidelity NetBenefits and PNC aliases remain provisional until real
+anonymized HTML samples validate their table shapes. No real samples have been
+provided. Never supply broker credentials or cookies.
 
-The workbench calls the same deterministic domain functions as the CLI,
-without launching commands or subprocesses. Choose household exposure, tax
-lots, proposed-sale analysis, harvest candidates, scenario simulation,
-historical risk, fund holdings, fund comparison, or known-bond calculations.
-Edit the input JSON template with your actual loaded account aliases and
-researched terms. The bond and trade templates are synthetic examples, not
-holdings or suggested trades. Dates in templates are examples to replace.
+## Secondary tools
 
-`POST /api/analyze` accepts `{"tool":"tax_lots","input":{"as_of":"2026-10-08"}}`.
-Allowed tool names are `exposure`, `tax_lots`, `tax_analyze`, `harvest`,
-`simulate`, `risk`, `fund_holdings`, `fund_compare`, and `bond_analyze`.
-Unknown tools or fields are input errors. Each result shows key metrics,
-missing-data warnings, and complete inspectable JSON.
+**Record activity** is for transactions already executed by the human. Supply a
+stable unique `activity_id`; preview before confirming. Identical retries are
+no-ops, conflicting IDs fail. Taxable sales should include exact executed
+`lot_allocations`. Unknown selection marks basis/lot state unresolved and never
+becomes FIFO silently. Execution prices do not replace portfolio market marks.
+Cross-account/security transfers require classification and manual review and
+remain unsupported for recording.
 
-All workbench operations use a read-only provider-cache wrapper: fetching
-market data can use existing cache entries but never inserts or changes cache
-entries or canonical portfolio state. FMP settings come from `FMP_API_KEY` or
-local configuration, never from browser-entered credentials. Explicit
-`INVEST_FIXTURES` settings select synthetic data, whose result provenance stays
-labeled `SYNTHETIC_FMP_FIXTURE`. No API key is needed for local-state analysis;
-market-dependent results require configured data or return missing-data errors
-and warnings. Nothing applies a simulated portfolio.
+**Analysis workbench** exposes household exposure, tax lots, hypothetical sale
+analysis, harvesting, scenarios, historical risk, fund holdings/comparison and
+known-bond calculations. Edit synthetic templates with loaded identifiers and
+researched assumptions. Risk is hypothetical current-weight historical behavior,
+with disclosed cash-return assumptions. Every analysis uses the same domain
+function as the CLI and a read-only provider cache. It changes neither accepted
+state nor cache contents. Market-dependent analysis needs configured FMP data or
+explicit synthetic fixtures; see [data source setup](data-sources.md). Missing
+external data remains an error/warning, not an invented observation.
 
-Inconsistent household currencies return HTTP409 JSON with domain error code3. No FX rates are invented. The inspection surface remains localhost-only and has no authentication; do not publish its port to a network. Your Docker ledger volume starts empty and synthetic acceptance data is never preloaded.
+## Local API and protections
+
+GET routes: `/api/overview`, `/api/summary`, `/api/state`, `/api/targets`,
+`/api/targets/ID?version=N`, `/api/targets/ID/diff?version=N`, `/api/plans`,
+`/api/plans/ID`, `/api/plans/ID/report?format=markdown|json`, `/api/prompts`, and
+`/api/prompts/SLUG`.
+
+POST routes: `/api/import`, `/api/reconcile`, `/api/apply`, `/api/activity`,
+`/api/analyze`, `/api/targets/save`, `/api/targets/activate`,
+`/api/targets/archive`, `/api/plans/generate`, `/api/plans/compare`,
+`/api/prompts/save`, and `/api/prompts/delete`. Target save wraps the validated
+input in `target`; activation/archive require `target_id` and `confirm: true`.
+Plan generation accepts `target_id` plus optional `as_of`, `version`, `prices`
+and `name`. Comparison accepts `plan_ids`. Prompt writes accept `id` and, for
+save, `content`.
+
+Requests require local Host headers; POSTs require matching Origin and JSON.
+Bodies larger than 2 MB are rejected. Invalid inputs return HTTP 400, inconsistent
+state 409, internal errors 500 and origin/host rejections 403. JSON errors include
+the CLI's domain exit code; inspect that code to distinguish external data errors
+from invalid input. Responses disable caching
+and include same-origin content protections. No endpoint runs arbitrary agents,
+commands, shell processes or trades. Source financial data and HTML never enter
+server access logs.
