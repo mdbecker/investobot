@@ -20,3 +20,9 @@ Feature: Deterministic known-bond analysis
     Given a bond with an invalid payment frequency
     When I analyze the bond
     Then invalid bond input is rejected
+
+  Scenario: Do not calculate an irregular coupon stub without complete conventions
+    Given a synthetic fixed-rate bond with known terms
+    And an issue date that creates an irregular coupon stub
+    When I analyze the bond
+    Then bond analysis reports insufficient data without guessed metrics
