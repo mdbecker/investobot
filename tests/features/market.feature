@@ -30,3 +30,11 @@ Feature: Complete available structured fund data
     Given synthetic provider responses
     When I retrieve AAA history
     Then adjusted history identifies its usable period and gap warnings
+  Scenario: Strong security aliases bridge different provider identities
+    Given synthetic provider responses
+    When I compare CUSIPA and CUSIPB
+    Then ISIN and CUSIP aliases identify the same shared security
+  Scenario: Security metadata retains its own freshness policy
+    Given synthetic provider responses
+    When I retrieve security metadata for AAPL
+    Then the profile supplies classifications with a seven day cache policy

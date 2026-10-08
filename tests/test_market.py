@@ -162,3 +162,31 @@ def history_period(context):
     assert context["result"]["usable_period"] == {"start": "2026-09-28", "end": "2026-10-05"}
     assert context["result"]["warnings"]
     assert context["result"]["prices"][0]["adjusted_close"] == "100"
+
+
+@when('I compare CUSIPA and CUSIPB')
+def compare_aliases(context):
+    from invest.market import compare
+    context['result'] = compare(context['client'], 'CUSIPA', 'CUSIPB')
+
+
+@then('ISIN and CUSIP aliases identify the same shared security')
+def aliases_bridge(context):
+    assert Decimal(context['result']['overlap']) == 1
+    assert Decimal(context['result']['active_share']) == 0
+    assert context['result']['shared_holdings_count'] == 1
+
+
+@when('I retrieve security metadata for AAPL')
+def security_profile(context):
+    context['result'] = context['client'].security_metadata('AAPL')
+
+
+@then('the profile supplies classifications with a seven day cache policy')
+def profile_metadata(context):
+    result = context['result']
+    assert result['sector'] == 'Technology'
+    assert result['asset_type'] == 'STOCK'
+    assert result['source'] == 'SYNTHETIC_FMP_FIXTURE'
+    assert result['cache_ttl_seconds'] == 604800
+    assert context['client'].security_metadata('AAPL')['cached'] is True
