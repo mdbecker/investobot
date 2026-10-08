@@ -28,3 +28,6 @@
 - Use the external agent's browser for current qualitative research. Use invest tools list/describe and invest schema for deterministic CLI inputs, outputs and mutation scopes. Market cache writes are distinct from actual portfolio mutations.
 - Target weights are fractions totaling 1 within 0.000001. Target versions are immutable; activation changes metadata only and never adopts holdings.
 - Planning permission must be explicit per account and canonical security ID. Missing permitted-securities rules mean unknown eligibility. Canonical security registration stores sourced metadata only, never fabricated zero-share holdings.
+- Planner is deterministic and conservative, never globally optimal. Positive ST/LT gains use separate budgets; losses do not increase those budgets. Purchases use same-account cash only.
+- Automatic plans support stocks/ETFs/mutual funds and cash; individual bonds need explicit scenarios. Fractional trades require explicit increments. Generated fee assumption is zero and must be checked manually.
+- Plans are immutable and pin full inputs. Actual-state changes make them stale at read time. Historical reports render persisted inputs; check plan show for current stale status before acting.

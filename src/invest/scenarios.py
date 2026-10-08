@@ -92,22 +92,14 @@ def simulate(state, client, actions, rates=None):
             )
             analyses.append(analysis)
             warnings.extend(analysis["warnings"])
-        previous = copy.deepcopy(working)
-        working, change = activity_change(working, action)
+        simulated_action = dict(action)
+        if analysis and analysis["selected_lots"]:
+            simulated_action["lot_allocations"] = [{"lot_id": l["id"], "quantity": l["quantity"]} for l in analysis["selected_lots"]]
+        working, change = activity_change(working, simulated_action)
         # Hypothetical marks are explicit scenario assumptions, never ledger price updates.
         security = next(s for s in working["securities"] if action["security"] in {s["id"], s["ticker"]})
         position = next(p for p in working["positions"] if p["account_id"] == action["account_id"] and p["security_id"] == security["id"])
         position.update(price=str(action["price"]), market_value=str(decimal(position["quantity"]) * decimal(action["price"])), as_of=action["date"])
-        if analysis and analysis["selected_lots"]:
-            # The chosen analytical lots, not an implicit FIFO fallback, govern hypothetical state.
-            sold = {lot["id"]: decimal(lot["quantity"]) for lot in analysis["selected_lots"]}
-            working["lots"] = previous["lots"]
-            for lot in working["lots"]:
-                if lot["id"] in sold:
-                    lot["remaining_quantity"] = str(
-                        decimal(lot["remaining_quantity"]) - sold[lot["id"]]
-                    )
-            position["lot_state"] = "RESOLVED"
         working["activities"].append(dict(action, id=f"scenario-{len(working['activities'])}"))
     before_exposure = exposure(before_state, client)
     after_exposure = exposure(working, client)
@@ -139,6 +131,7 @@ def simulate(state, client, actions, rates=None):
     )
     return dict(
         status="INSUFFICIENT_TAX_DATA" if unknown else "SIMULATED",
+        hypothetical_state=working,
         before=summarize(before_state),
         after=summarize(working),
         before_exposure=before_exposure,

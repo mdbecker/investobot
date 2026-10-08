@@ -333,3 +333,54 @@ def target_diff(target_id: str, version: int = typer.Option(None)):
 @security.command("register")
 def security_register(file: str):
     emit(lambda: ledger().register_security(read_json(file)))
+
+
+plan = typer.Typer()
+report = typer.Typer()
+app.add_typer(plan, name="plan")
+app.add_typer(report, name="report")
+
+
+@plan.command("generate")
+def plan_generate(
+    target: str = typer.Option(...),
+    as_of: str = typer.Option(None),
+    prices: str = typer.Option(None),
+    name: str = typer.Option(None),
+    version: int = typer.Option(None),
+):
+    from invest.config import load_config
+    from invest.plans import generate
+
+    emit(lambda: generate(ledger(), client(), target, as_of=as_of,
+                          prices=read_json(prices) if prices else None, name=name,
+                          rates=load_config().get("tax"), version=version))
+
+
+@plan.command("list")
+def plan_list():
+    from invest.plans import list_plans
+
+    emit(lambda: list_plans(ledger()))
+
+
+@plan.command("show")
+def plan_show(plan_id: str):
+    from invest.plans import show
+
+    emit(lambda: show(ledger(), plan_id))
+
+
+@plan.command("compare")
+def plan_compare(plan_ids: list[str] = typer.Argument(...)):
+    from invest.plans import compare
+
+    emit(lambda: compare(ledger(), *plan_ids))
+
+
+@report.command("export")
+def report_export(plan_id: str, output: str = typer.Option(...), format: str = "markdown"):
+    from invest.plans import persisted
+    from invest.reports import export
+
+    emit(lambda: export(persisted(ledger(), plan_id), output, format=format))

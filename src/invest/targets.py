@@ -119,7 +119,11 @@ def archive(ledger, target_id):
 def diff(ledger, target_id, version=None):
     """Calculate target-minus-current drift with Decimal and canonical identities."""
     target = show(ledger, target_id, version)
-    state = ledger.state()
+    return allocation_diff(ledger.state(), target)
+
+
+def allocation_diff(state, target):
+    """Shared Decimal allocation comparison for accepted or hypothetical state."""
     summary = summarize(state)  # Reuses household currency validation and unknown-cash warnings.
     total = decimal(summary["total_value"])
     current = {"CASH": decimal(summary["cash"])}
@@ -142,7 +146,7 @@ def diff(ledger, target_id, version=None):
             "difference_weight": str(target_weight - current_weight),
         })
     return {
-        "target_id": target_id,
+        "target_id": target["id"],
         "target_version_id": target["version_id"],
         "target_version": target["version"],
         "currency": summary["currency"],
