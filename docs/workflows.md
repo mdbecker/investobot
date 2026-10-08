@@ -23,3 +23,13 @@ Create an activity JSON after you manually execute a trade:
 ```
 
 `portfolio record-activity /app/local-data/activity.json` previews state; add `--yes` to record it. Known cash and security identity are required. Purchase lots use provided execution cost. For sales, imported broker basis remains authoritative; verify with the next account snapshot.
+
+## Comparing alternatives
+```json
+[
+  {"type":"SELL","account_id":"taxable","security":"AAA","quantity":"5","price":"100","date":"2026-10-08","method":"HIFO"},
+  {"type":"BUY","account_id":"taxable","security":"BBB","quantity":"5","price":"100","date":"2026-10-08"}
+]
+```
+
+These symbols are synthetic fixtures, not recommendations. `portfolio simulate /app/local-data/actions.json` returns before/after cash, allocation, look-through exposure changes, selected lots, ST/LT gains and wash-sale warnings without writing the database (including caches). Compare alternatives and your long-term-gain budget yourself; use Chrome for current research. `portfolio risk` describes historical current-weight behavior. Only after human execution use confirmed activity recording or explicitly apply the next normalized account snapshot.

@@ -9,3 +9,6 @@
 - Independent agents own separate modules; coordinator owns shared models, ledger, CLI and integration. Agents do not commit: coordinator commits verified red/green states.
 - User requests Docker runtime and a local inspection site; this is an explicit exception to PRD runtime/UI exclusions. Keep UI thin and local.
 - Provisional institution aliases require real anonymized HTML validation before claiming institution support.
+- Coordinate test-file writes at commit boundaries; announce readiness and wait for parent authorization. A green run must match the exact committed file set.
+- Use explicit Ruff configuration: `uv run ruff check --config pyproject.toml src tests`; host/global style settings may otherwise leak into containers.
+- Simulations suppress cache writes too. Current-weight historical risk is hypothetical performance, with cash return assumptions disclosed.

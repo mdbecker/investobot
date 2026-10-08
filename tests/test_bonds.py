@@ -91,6 +91,7 @@ def insufficient(context):
 def rejected(context):
     assert context["error"].code == 1
 
-@given('an issue date that creates an irregular coupon stub')
+
+@given("an issue date that creates an irregular coupon stub")
 def irregular(context):
-    context['terms']['issue_date'] = '2021-03-10'
+    context["terms"]["issue_date"] = "2021-03-10"

@@ -197,3 +197,22 @@ def bond_analyze(file: str):
     from invest.bonds import analyze
 
     emit(lambda: analyze(read_json(file)))
+
+
+@portfolio.command("simulate")
+def portfolio_simulate(file: str):
+    from invest.config import load_config
+    from invest.scenarios import simulate
+
+    emit(
+        lambda: simulate(
+            ledger().state(), client(), read_json(file), rates=load_config().get("tax")
+        )
+    )
+
+
+@portfolio.command("risk")
+def portfolio_risk(refresh: bool = False):
+    from invest.analytics import risk
+
+    emit(lambda: risk(ledger().state(), client(), refresh))
