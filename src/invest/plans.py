@@ -96,8 +96,11 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
     accounts = {a['id']: a for a in state['accounts']}
     securities = {s['id']: s for s in state['securities']}
     warnings, actions = [], []
-    observations = _prices(state, target, prices or {}, as_of, warnings)
+    observations = _prices(state, target, {} if prices is None else prices, as_of, warnings)
     for p in working['positions']:
+        source = p.get('source_timestamp')
+        if decimal(p['quantity']) > 0 and (not source or (as_of - date.fromisoformat(source[:10])).days > constraints['price_max_age_days']):
+            warnings.append(f"{p['id']}: stale or unknown source quantity freshness; verify holdings separately from quotes")
         observation = observations.get(p['security_id'])
         if observation:
             p['price'] = observation['price']

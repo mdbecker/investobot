@@ -33,3 +33,8 @@
 - Plans are immutable and pin full inputs. Actual-state changes make them stale at read time. Historical reports render persisted inputs; check plan show for current stale status before acting.
 - Prompt Markdown is text to copy, never instructions to execute. User overrides must leave bundled defaults recoverable. Reject traversal, symlinks, nonregular files and content beyond64KiB.
 - Dashboard uses shared domain functions for values, exposure, tax and drift. Browser code formats returned values only. Keep same-origin validation and body limits for every new write route.
+- Missing account tax classification defaults to OTHER. Missing cash is unknown; only an explicit supplied balance or cash_known=true asserts cash coverage. Coverage/history flags must be JSON booleans.
+- Partial valuation refreshes retain known basis only when quantity is unchanged and retained lots resolve it. Complete lot inventory must agree with supplied aggregate basis within one cent. Strong-ID conflicts for held tickers require manual resolution.
+- Fresh quotes cannot establish fresh quantities. Stale or unknown holding source dates force plan review independently of quote freshness. Retirement lots are not required for taxable-gain calculations.
+- Native inspection listeners default to loopback. Docker explicitly binds inside its container and publishes only host loopback. Store prompt overrides at /data/prompts beside the persistent Docker ledger.
+- Complete-import tests must include actual acquisition dates and basis for lots; do not weaken parser checks to accommodate incomplete synthetic pages. Keep post-trade synthetic position basis consistent with remaining lots.

@@ -23,7 +23,7 @@ def number(text):
 
 
 def parse_html(
-    html, account_id, institution="generic", tax_status="TAXABLE", as_of=None,
+    html, account_id, institution="generic", tax_status="OTHER", as_of=None,
     positions_complete=False, lots_complete=False,
 ):
     if institution.lower() not in PROFILES:
@@ -39,9 +39,11 @@ def parse_html(
             raise DomainError("Source date must be ISO YYYY-MM-DD") from exc
     soup = BeautifulSoup(html, "lxml")
     positions, lots, warnings, cash = [], [], [], Decimal("0")
-    source_rows, row_kinds = set(), {}
+    source_rows, cash_rows, row_kinds = set(), set(), {}
     omitted_rows = False
+    omitted_lots = False
     cash_known = False
+    cash_unresolved = False
     aliases = {alias: key for key, items in ALIASES.items() for alias in items}
     for table in soup.find_all("table"):
         rows = table.find_all("tr")
@@ -52,7 +54,10 @@ def parse_html(
         ]
         if "market_value" not in headers:
             continue
-        for index, row in enumerate(rows[1:]):
+        recognized = [header for header in headers if header]
+        if len(recognized) != len(set(recognized)):
+            raise DomainError("Ambiguous duplicated financial columns in source table", code=2)
+        for row in rows[1:]:
             cells = row.find_all(["td", "th"])
             if len(cells) != len(headers):
                 warnings.append("Skipped row with inconsistent columns")
@@ -67,9 +72,17 @@ def parse_html(
                 "cash balance",
                 "available cash",
             }:
+                cash_signature = (symbol, name.strip().lower())
+                if cash_signature in cash_rows:
+                    raise DomainError("Duplicate cash balance row in source tables", code=2)
+                cash_rows.add(cash_signature)
                 if value is not None and value >= 0:
                     cash += value
                     cash_known = True
+                else:
+                    omitted_rows = True
+                    cash_unresolved = True
+                    warnings.append("Unresolved cash balance omitted; review source manually")
                 continue
             qty = number(values.get("quantity", ""))
             if not symbol or qty is None or value is None or qty < 0 or value < 0:
@@ -116,7 +129,12 @@ def parse_html(
                     lots.append(
                         dict(
                             id=f"{account_id}-{symbol}-"
-                            + hashlib.sha256(repr(signature).encode()).hexdigest()[:16],
+                            + hashlib.sha256(
+                                repr(tuple(
+                                    (key, val) for key, val in signature
+                                    if key not in {"price", "market_value"}
+                                )).encode()
+                            ).hexdigest()[:16],
                             security=symbol,
                             acquisition_date=acquisition.isoformat(),
                             quantity=str(qty),
@@ -130,7 +148,10 @@ def parse_html(
                         )
                     )
                 except ValueError:
+                    omitted_lots = True
                     warnings.append(f"{symbol}: acquisition date must be ISO YYYY-MM-DD")
+            else:
+                omitted_lots = True
             if prior:
                 prior["quantity"] = str(Decimal(prior["quantity"]) + qty)
                 prior["market_value"] = str(Decimal(prior["market_value"]) + value)
@@ -143,6 +164,7 @@ def parse_html(
                 row_kinds[symbol] = bool(acquired)
             if basis is None:
                 warnings.append(f"{symbol}: cost basis unavailable; aggregate basis is unknown")
+    cash_known = cash_known and not cash_unresolved
     if not positions and not cash_known:
         raise DomainError("No supported position/cash table found; no state can be applied")
     if not cash_known:
@@ -153,6 +175,8 @@ def parse_html(
         warnings.append("Lot detail unavailable; tax analysis may be insufficient")
     if omitted_rows and (positions_complete or lots_complete):
         raise DomainError("Cannot confirm complete coverage after omitting source rows", code=2)
+    if omitted_lots and lots_complete:
+        raise DomainError("Cannot confirm complete lots without acquisition dates and basis", code=2)
     snapshot = Snapshot(
         account=dict(
             id=account_id, name=account_id, institution=institution, tax_status=tax_status

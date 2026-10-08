@@ -173,7 +173,7 @@ def _planning_post(ledger, path, payload):
     raise DomainError("Route not found")
 
 
-def create_server(db_path, host="0.0.0.0", port=8765):
+def create_server(db_path, host="127.0.0.1", port=8765):
     """Create a single-request-at-a-time local server; Docker publishes to loopback only."""
 
     class Handler(BaseHTTPRequestHandler):
@@ -279,7 +279,7 @@ def create_server(db_path, host="0.0.0.0", port=8765):
                         payload["html"],
                         account_id=payload["account_id"],
                         institution=payload.get("institution", "generic"),
-                        tax_status=payload.get("tax_status", "TAXABLE"),
+                        tax_status=payload.get("tax_status", "OTHER"),
                         as_of=payload.get("as_of") or None,
                         positions_complete=payload.get("positions_complete", False),
                         lots_complete=payload.get("lots_complete", False),
@@ -327,7 +327,7 @@ def main():
     from invest.config import database_path
 
     path = os.environ.get("INVEST_DB") or database_path()
-    server = create_server(path)
+    server = create_server(path, host=os.environ.get("INVEST_BIND", "127.0.0.1"))
     print(json.dumps({"status": "RUNNING", "url": "http://localhost:8765"}), flush=True)
     try:
         server.serve_forever()

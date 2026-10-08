@@ -11,14 +11,15 @@ market data never modifies portfolio positions or tax lots.
 2. Check your plan's entitlement to holdings, fund metadata and dividend-adjusted
    history; endpoint access and available symbols vary by plan. The app does not
    subscribe or buy data for you.
-3. Set `FMP_API_KEY` in your shell environment before starting Docker Compose.
-   Keep keys out of version control. This is a public market-data API key, never
-   a brokerage credential.
+3. Set `FMP_API_KEY` in your shell environment or ignored `.env` before starting
+   Docker Compose. Keep keys out of version control and chat transcripts. This
+   is a public market-data API key, never a brokerage credential. Recreate the
+   running service after changing its environment.
 4. Run the CLI in Docker. Missing keys, timeouts, rejected access and unexpected
    provider payloads produce external-data errors (exit code 2). Error messages
    do not echo request URLs or keys.
 
-Official endpoint references checked during implementation:
+Official endpoint references for the implemented mappings:
 
 - [ETF and fund holdings](https://site.financialmodelingprep.com/developer/docs/stable/holdings)
   maps to `/stable/etf/holdings?symbol=...`.
@@ -43,8 +44,9 @@ three prices and nonconstant returns. It reports the usable period.
 Pass an explicit fixture path to select synthetic data. The checked-in
 `tests/fixtures/fmp-synthetic.json` contains invented funds AAA, BBB and PART,
 with invented holdings, history and expenses. It is not recorded market data,
-an investment suggestion or evidence of actual fund composition. Every result
-states `source: SYNTHETIC_FMP_FIXTURE`. No key or network access is needed.
+an investment suggestion or evidence of actual fund composition. Provider
+observations state `source: SYNTHETIC_FMP_FIXTURE`; analyses retain their source
+provenance. No key or network access is needed.
 
 Python API: `MarketClient(ledger, api_key=None, fixture_path=None)` supplies
 `holdings(ticker, refresh=False)`, `history(...)` and `metadata(...)`.
@@ -84,3 +86,73 @@ the underlying fund disclosures are recent. No background refresh occurs.
 
 OpenFIGI, Treasury and FRED are permitted future narrow sources in the PRD but
 are not required or called by this initial structured-data implementation.
+
+## Docker configuration and optional tax rates
+
+The default Compose service passes `FMP_API_KEY` from the shell/ignored `.env`.
+Run a clearly labelled offline command without an API key:
+
+```sh
+docker compose run --rm -T \
+  -e INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json \
+  app invest fund compare AAA BBB
+```
+
+If choosing local TOML configuration, copy
+[the configuration example](config.example.toml) into ignored
+`local-data/config.toml`. Never commit actual keys or financial assumptions. An
+explicit one-off container sees that file with:
+
+```sh
+docker compose run --rm -T -e INVEST_CONFIG=/app/local-data/config.toml \
+  app invest tax lots --as-of 2026-10-08
+```
+
+Optional `[tax]` entries are fractional rates represented as Decimal strings:
+`ordinary_income_rate`, `long_term_capital_gains_rate`, optional `niit_rate` and
+optional `state_capital_gains_rate`. Both ordinary-income and long-term rates are
+required for tax-dollar estimates. Supply only human-confirmed assumptions,
+following [tax limitations](tax-limitations.md); omitted rates remain unknown
+rather than becoming guessed tax savings. Pass the same configuration to plans
+being compared. For the running dashboard, set `INVEST_CONFIG` in a private
+Compose override/environment configuration and recreate the container; a host
+path is not automatically a container path.
+
+## Outstanding manual integration checks
+
+Generic HTML validation rejects ambiguous repeated cash labels and duplicate
+recognized financial columns. Malformed cash stays unknown and blocks claiming
+complete coverage. Complete tax-lot coverage requires parseable acquisition
+dates and known basis for position rows. Without broker lot IDs, generated lot
+identity uses normalized source facts and excludes price/market value so
+valuation-only updates remain stable. Changes to other source fields can still
+change identity; review matching manually for partial tax-lot pages rather than
+assuming a renamed/generated lot replaced historical inventory.
+
+Offline tests use synthetic fixtures and mock provider boundaries. They do not
+establish live endpoint entitlement, full fund coverage or actual institution
+support. Two release checks remain uncompleted:
+
+1. **Real institution HTML:** provide representative anonymized holdings, lots,
+   restricted retirement funds, mutual funds, bank/cash tables and partial pages
+   for Vanguard, Fidelity NetBenefits and PNC. Remove private account identifiers
+   and sensitive content; never commit raw private pages. Validate quantities,
+   valuations, basis, dates, identifiers and completeness against known expected
+   normalized facts. Update provisional parser aliases only after the actual
+   shapes are covered by tests. Dynamic/non-table pages can remain unsupported.
+2. **Live FMP:** the human supplies an FMP test API key locally and confirms
+   entitlements. In Docker, inspect `market quote TICKER --refresh`,
+   `fund holdings TICKER --refresh`, `market history TICKER --refresh` and
+   `fund compare TICKER_A TICKER_B --refresh` for researched supported symbols.
+   Compare observed formats, currency, weight coverage, date/provenance fields,
+   adjusted-return assumptions, refresh/TTL behavior and error handling with
+   official vendor data. Keep credentials/private diagnostics outside Git.
+   Unexpected shapes need anonymized regression fixtures and fixes before
+   claiming live compatibility.
+
+Manual validation must not place trades, supply broker credentials or overwrite
+canonical portfolio marks. Public quote refresh is cache-only. Automated tests
+and CI remain offline and never require secrets. Synthetic household fixtures
+are not automatically applied to a user's database. The source snapshot date is
+independent of its import time; no fixture or successful refresh can certify a
+real account's freshness or completeness.

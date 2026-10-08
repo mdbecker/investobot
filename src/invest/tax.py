@@ -56,19 +56,23 @@ def _known_date(value):
         return None
 
 
-def _prerequisites(state, position, security, as_of):
+def _prerequisites(state, position, security, as_of, lots_required=True):
     warnings = []
     inventory = [
         lot
         for lot in state["lots"]
-        if position
+        if lots_required
+        and position
         and lot["account_id"] == position["account_id"]
         and _matches(lot, security)
         and decimal(lot["remaining_quantity"]) > 0
     ]
-    invalid = not position or position.get("lot_state") == "UNRESOLVED"
-    if position and sum((decimal(l["remaining_quantity"]) for l in inventory), ZERO) != decimal(
-        position["quantity"]
+    invalid = lots_required and (not position or position.get("lot_state") == "UNRESOLVED")
+    if (
+        lots_required
+        and position
+        and sum((decimal(l["remaining_quantity"]) for l in inventory), ZERO)
+        != decimal(position["quantity"])
     ):
         invalid = True
     for lot in inventory:
@@ -108,7 +112,11 @@ def _prerequisites(state, position, security, as_of):
         else:
             freshness = "KNOWN"
     return {
-        "lot_inventory": "INSUFFICIENT_DATA" if invalid else "COMPLETE",
+        "lot_inventory": "NOT_REQUIRED"
+        if not lots_required
+        else "INSUFFICIENT_DATA"
+        if invalid
+        else "COMPLETE",
         "household_history": "COMPLETE"
         if all(
             a.get("history_complete", False)
@@ -253,7 +261,7 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
                 and matches(lot)
                 and decimal(lot["remaining_quantity"]) > 0
             ):
-                acquired = dict(lot, date=lot["acquisition_date"], source="lot")
+                acquired = dict(lot, date=lot.get("acquisition_date"), source="lot")
                 # A dated lot and its recorded purchase are one known acquisition.
                 matched = next(
                     (
@@ -369,7 +377,13 @@ def analyze(
     fee = decimal(fee)
     if fee < 0 or fee > price * quantity:
         raise DomainError("Sale fee must be nonnegative and cannot exceed gross proceeds")
-    completeness, warnings = _prerequisites(state, position, security_row, sale_date)
+    completeness, warnings = _prerequisites(
+        state,
+        position,
+        security_row,
+        sale_date,
+        lots_required=account_row.get("tax_status") not in {"TAX_FREE", "TAX_DEFERRED"},
+    )
     result = {
         "status": "OK",
         "account_id": account_id,

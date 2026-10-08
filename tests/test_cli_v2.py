@@ -40,8 +40,8 @@ def readonly(ctx):
 @given('a synthetic saved holdings page')
 def page(ctx):
     ctx['page'] = ctx['tmp'] / 'account.html'
-    ctx['page'].write_text('<table><tr><th>Symbol</th><th>Quantity</th><th>Market Value</th></tr>'
-                          '<tr><td>AAA</td><td>10</td><td>1000</td></tr></table>')
+    ctx['page'].write_text('<table><tr><th>Symbol</th><th>Quantity</th><th>Market Value</th><th>Cost Basis</th><th>Acquisition Date</th></tr>'
+                          '<tr><td>AAA</td><td>10</td><td>1000</td><td>800</td><td>2024-01-01</td></tr></table>')
 
 
 @when('the agent imports with a known date and confirmed complete coverage')

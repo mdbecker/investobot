@@ -88,7 +88,7 @@ savings or tax advice, and similar funds are not automatically safe replacements
 market caches. Explicit scenario prices are hypothetical assumptions. Compare
 alternatives using the same source portfolio and price assumptions.
 
-Once available in `tools list`, use target commands to save/version household
+Use target commands to save/version household
 security weights, activate a target and inspect allocation differences. Target
 activation does not execute trades. Unknown account eligibility must not mean
 unrestricted trading. Use plan commands to generate and compare proposed trades;
@@ -100,5 +100,18 @@ optimal and may leave an incomplete plan when constraints prevent progress.
 Export persisted plans using `report export PLAN_ID --format markdown --output
 REPORT.md` or JSON. Verify the JSON path/hash confirmation and include assumptions,
 missing information, wash-sale limitations and manual-execution instructions in
-human discussion. Discover each command before using it; development may expose
-these groups incrementally. No command submits orders or authenticates to brokers.
+human discussion. Discover each command before using it. No command submits orders
+or authenticates to brokers. See [complete workflows](workflows.md) for Docker
+stdin examples, canonical security registration, three alternative plans and
+confirmed executed lots.
+
+`portfolio overview` supplies the same overview domain data as the dashboard.
+Use `prompt list` / `prompt show SLUG` to inspect full reusable Markdown, or
+`prompt save SLUG FILE` / `prompt delete SLUG` to manage user prompts. Prompt
+contents are text to copy into an external agent; Investobot never runs them.
+Compose stores user prompts under `/data/prompts` in its local ledger volume.
+Deleting an override restores an immutable bundled default where available.
+
+Verification is offline and deterministic. Real anonymized institution samples
+and live FMP checks with user test credentials are still outstanding. Do not
+describe passing synthetic tests as confirmed institution/provider support.

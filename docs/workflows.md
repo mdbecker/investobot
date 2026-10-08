@@ -1,30 +1,196 @@
-# Human-operated workflows
-All commands below run inside Docker with `docker compose run --rm app invest ...`.
+# Human-operated agent workflows
 
-## Import and reconciliation
-1. Manually sign into Vanguard, Fidelity NetBenefits or PNC in your own browser. This app never receives credentials/cookies.
-2. Copy/save the relevant table as HTML. Retain this sensitive file outside Git. Use synthetic account aliases (`taxable`, `roth`, `bank`).
-3. `portfolio import /app/local-data/page.html --account taxable --institution vanguard --tax-status TAXABLE` prints a normalized snapshot. Redirect stdout into a JSON file locally.
-4. Inspect warnings, quantities, dates, cash and identifiers. No real institution HTML has been validated yet. If table parsing fails, ask for a parser update using an anonymized sample.
-5. `portfolio reconcile /app/local-data/snapshot.json` reports state differences, never inferred transactions.
-6. `portfolio apply /app/local-data/snapshot.json` explicitly accepts the state and stores a normalized audit record. Subsequent snapshots preserve activity history.
+Run all application commands in Docker from this checkout. `-T` disables terminal
+allocation so stdin and JSON redirection remain clean. Create an ignored
+`local-data` directory for private files; `/app/local-data` is the same directory
+inside the project bind mount. Replace example dates with known dates and example
+IDs with IDs returned by the CLI. Never place private files or credentials in Git.
 
-## Tax-loss harvesting
-Use `tax lots` then `tax harvest-candidates`; missing basis means insufficient analysis. Analyze a proposed sale with `tax analyze --account taxable --security VTI --quantity 25 --price 200 --sale-date 2026-10-08 --method HIFO`. Optional rates belong in local configuration. Review household acquisition conflicts and missing history; this tool cannot certify wash-sale safety.
+## Synchronize an account
 
-## Fund comparisons
-Configure FMP yourself; request `fund holdings VTI`, then `fund compare VTI ITOT`. Full available holdings, uncovered weights and original source dates matter more than only the largest positions. A similarity score does not establish tax legality. Use Chrome for qualitative fund research.
+The human signs into Vanguard, Fidelity NetBenefits or PNC directly and saves HTML.
+Institution aliases remain provisional until anonymized real pages pass tests.
+The agent receives only the supplied local file, never broker credentials/cookies.
 
-## Recording actual activity
-Create an activity JSON after you manually execute a trade:
-
-```json
-{"account_id":"taxable","type":"BUY","security":"VTI","quantity":"25","price":"142.17","date":"2026-10-08","fee":"0"}
+```sh
+docker compose run --rm -T app invest portfolio import - \
+  --account taxable --institution vanguard --tax-status TAXABLE \
+  --as-of 2026-10-08 < local-data/account.html > local-data/snapshot.json
+docker compose run --rm -T app invest portfolio reconcile - < local-data/snapshot.json
 ```
 
-`portfolio record-activity /app/local-data/activity.json` previews state; add `--yes` to record it. Known cash and security identity are required. Purchase lots use provided execution cost. For sales, imported broker basis remains authoritative; verify with the next account snapshot.
+Inspect quantity, valuation, basis, lot quantities, identifiers, cash and warnings.
+The explicit source date above must be supported by the page or human confirmation;
+otherwise omit it. `imported_at` does not prove freshness. Default incomplete
+coverage updates observed inventory without deleting absent rows. Add
+`--positions-complete` and/or `--lots-complete` only when the human confirms the
+entire relevant inventory is represented. Do not infer activity from differences.
 
-## Comparing alternatives
+Explicitly accept only after review/authorization:
+
+```sh
+docker compose run --rm -T app invest portfolio apply - < local-data/snapshot.json
+docker compose run --rm -T app invest portfolio overview
+```
+
+Identical repeated snapshots are no-ops. Older source snapshots fail unless
+explicitly overridden with a recorded justification:
+
+```sh
+docker compose run --rm -T app invest portfolio apply - --allow-older \
+  --justification "Human verified correction to the previously accepted source page" \
+  < local-data/corrected-snapshot.json
+```
+
+Actual changes make plans with different source state stale. Raw HTML is never
+persisted; keep or delete your own private file deliberately.
+
+## Tax-loss harvesting and fund comparison
+
+```sh
+docker compose run --rm -T app invest tax lots --as-of 2026-10-08
+docker compose run --rm -T app invest tax harvest-candidates --as-of 2026-10-08
+docker compose run --rm -T app invest tax analyze \
+  --account taxable --security VTI --quantity 25 --price 200 \
+  --sale-date 2026-10-08 --method HIFO --fee 5
+docker compose run --rm -T app invest fund holdings VTI
+docker compose run --rm -T app invest fund compare VTI ITOT
+```
+
+The price/date/quantity are hypothetical inputs to replace with researched
+assumptions; these are not recommended trades. Missing basis, unresolved lots or
+unknown source dates prevent reliable tax estimates. Review ST/LT results,
+household purchases including retirement accounts, unknown outside histories,
+future purchases and substantially-identical limitations. Current tax effects
+require explicitly configured rates and are never guaranteed savings.
+
+Use Chrome for current issuer disclosures and qualitative research. Compare all
+available fund holdings, partial/unresolved coverage and usable history periods.
+Similarity does not establish wash-sale legality. [FMP setup](data-sources.md)
+is required for live market data; explicit fixture mode works offline:
+
+```sh
+docker compose run --rm -T \
+  -e INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json \
+  app invest fund compare AAA BBB
+```
+
+## Register researched investments and save targets
+
+Targets use canonical registered security IDs plus `CASH`, not ticker/class labels.
+Inspect `portfolio overview`'s `state.securities` or position `security_id` fields.
+For a researched candidate not already registered, write a verified metadata
+payload to `local-data/security.json`:
+
+```json
+{
+  "ticker": "VTI",
+  "name": "Vanguard Total Stock Market ETF",
+  "asset_type": "ETF",
+  "currency": "USD",
+  "source": "Replace with your human-verified dated issuer reference"
+}
+```
+
+Verify every field and source before registration; this example illustrates the
+payload and is not a recommendation. Strong identifiers may be included when
+verified. Registration updates the local security catalogue, never holdings.
+
+```sh
+docker compose run --rm -T app invest security register - < local-data/security.json
+```
+
+Copy the returned `id` into target/constraint inputs. Research account access:
+restricted 401(k) accounts must name only permitted investments. Unknown access
+must not become unrestricted trading. A complete target file has this shape:
+
+```json
+{
+  "name": "Balanced candidate",
+  "description": "Explain the researched allocation rationale",
+  "target_allocations": {
+    "VERIFIED_EQUITY_SECURITY_ID": "0.65",
+    "VERIFIED_BOND_FUND_SECURITY_ID": "0.30",
+    "CASH": "0.05"
+  },
+  "planning_constraints": {
+    "eligible_accounts": ["taxable", "ira"],
+    "permitted_securities": {
+      "taxable": ["VERIFIED_EQUITY_SECURITY_ID", "VERIFIED_BOND_FUND_SECURITY_ID"],
+      "ira": ["VERIFIED_EQUITY_SECURITY_ID", "VERIFIED_BOND_FUND_SECURITY_ID"]
+    },
+    "cash_minimums": {"taxable": "500", "ira": "0"},
+    "short_term_gain_budget": "0",
+    "long_term_gain_budget": "5000",
+    "target_tolerance": "0.01"
+  }
+}
+```
+
+Replace every placeholder with actual canonical IDs and loaded account aliases.
+The allocation is an illustrative template, not an investment recommendation.
+Weights total one within `0.000001`; dollar gain budgets and weights are Decimal
+strings. Save three separately researched candidates, for example conservative,
+balanced and growth, as complete files with their own names, rationale, actual
+security choices and valid weights:
+
+```sh
+docker compose run --rm -T app invest target save - < local-data/conservative.json
+docker compose run --rm -T app invest target save - < local-data/balanced.json
+docker compose run --rm -T app invest target save - < local-data/growth.json
+docker compose run --rm -T app invest target list
+docker compose run --rm -T app invest target diff BALANCED_TARGET_ID
+```
+
+Editing supplies an existing `id` in a complete new payload and creates an
+immutable version. Inspect older versions with `target show TARGET_ID --version 1`.
+`target activate TARGET_ID` explicitly chooses one active target; archive retains
+history. These operations do not execute trades or change actual account state.
+
+## Generate, compare and export manual trade plans
+
+```sh
+docker compose run --rm -T app invest plan generate --target CONSERVATIVE_TARGET_ID \
+  --as-of 2026-10-08 --name "Conservative review"
+docker compose run --rm -T app invest plan generate --target BALANCED_TARGET_ID \
+  --as-of 2026-10-08 --name "Balanced review"
+docker compose run --rm -T app invest plan generate --target GROWTH_TARGET_ID \
+  --as-of 2026-10-08 --name "Growth review"
+docker compose run --rm -T app invest plan list
+docker compose run --rm -T app invest plan show PLAN_A
+docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C
+docker compose run --rm -T app invest report export PLAN_A \
+  --format markdown --output /app/local-data/conservative-report.md
+docker compose run --rm -T app invest report export PLAN_A \
+  --format json --output /app/local-data/conservative-report.json
+```
+
+Replace returned target and plan IDs. Keep actual source state and price/date/tax
+assumptions the same across alternatives for a common baseline; comparison flags
+differences and supplies no single ranking score. Optional `--version N` fixes a
+target version. Optional `--prices /app/local-data/prices.json` supplies observations
+keyed by canonical security ID, each containing `price`, `as_of`, `currency` and
+`source`. Hypothetical prices never overwrite portfolio marks; stale/unknown
+prices can block trades. Individual bonds do not receive automatic trade proposals.
+
+The deterministic heuristic considers eligible retirement accounts first,
+known taxable lots next, then purchases funded by same-account cash/proceeds.
+It respects permitted investments, excluded positions, cash floors, explicit
+increments and positive ST/LT gain caps separately. Losses do not increase caps.
+Review exact lots, estimated tax, wash-sale limits, fees assumed zero and remaining
+drift. Missing eligibility/basis/prices can leave `REVIEW_REQUIRED`; the heuristic
+is not globally optimal. Every plan requires human review even when status is
+`READY_FOR_HUMAN_REVIEW`.
+
+Report export returns a JSON path/content-hash confirmation. Exports reproduce
+saved inputs and calculations without recomputation; status in an old report is
+historical. Recheck `plan show` for `STALE` before acting. Generate a new plan when
+actual state changes instead of silently editing the old plan.
+
+## Simulate without accepting activity
+
+Supply a JSON array of hypothetical actions in `local-data/actions.json`:
+
 ```json
 [
   {"type":"SELL","account_id":"taxable","security":"AAA","quantity":"5","price":"100","date":"2026-10-08","method":"HIFO"},
@@ -32,6 +198,52 @@ Create an activity JSON after you manually execute a trade:
 ]
 ```
 
-These symbols are synthetic fixtures, not recommendations. `portfolio simulate /app/local-data/actions.json` returns before/after cash, allocation, look-through exposure changes, selected lots, ST/LT gains and wash-sale warnings without writing the database (including caches). Compare alternatives and your long-term-gain budget yourself; use Chrome for current research. `portfolio risk` describes historical current-weight behavior. Only after human execution use confirmed activity recording or explicitly apply the next normalized account snapshot.
+AAA/BBB and amounts here are synthetic examples. Substitute loaded/registered
+identities and explicit assumptions; never fabricate basis or trading eligibility.
 
-Confirmed activities now require a stable `activity_id`. Repeating identical content is a no-op; reuse with different content conflicts. A taxable sale can supply `lot_allocations: [{"lot_id":"broker-lot-alias","quantity":"2"}]`. Allocations must match the executed quantity exactly. Without allocations, shares and cash update but lots remain unresolved and basis becomes unknown. Execution prices do not replace accepted market marks. Security transfers and cross-account movement require manual classification/review and are not recorded by the MVP. Activity IDs are independent of hypothetical scenario IDs.
+```sh
+docker compose run --rm -T app invest portfolio simulate - < local-data/actions.json
+```
+
+Simulation returns before/after cash, allocations, exposure, selected lots,
+ST/LT gains and wash-sale warnings, changing neither actual state nor cache.
+Current-weight historical risk is hypothetical performance, with zero cash
+returns and other assumptions disclosed. Household tools reject mixed currencies
+because no FX conversion model is implemented.
+
+## Confirm activity after manual execution
+
+After the human executes a trade, write its actual facts and stable confirmation
+alias. A taxable sale must use the broker's executed lots, not a guessed selection:
+
+```json
+{
+  "activity_id": "unique-manual-confirmation-alias",
+  "account_id": "taxable",
+  "type": "SELL",
+  "security": "REGISTERED_SECURITY_ID",
+  "quantity": "2",
+  "price": "100",
+  "date": "2026-10-08",
+  "fee": "1",
+  "lot_allocations": [{"lot_id":"EXECUTED_LOT_ID","quantity":"2"}]
+}
+```
+
+Replace placeholders and example values with confirmed facts. Preview first:
+
+```sh
+docker compose run --rm -T app invest portfolio record-activity - < local-data/activity.json
+# Only after confirmation that the human executed these exact facts:
+docker compose run --rm -T app invest portfolio record-activity - --yes < local-data/activity.json
+```
+
+Identical `activity_id` retries are no-ops; different facts with the same ID fail
+atomically. Exact allocations reduce only those lots and known aggregate basis.
+If lot selection is unknown, omit allocations: quantity/cash update but lot/basis
+state becomes unresolved and tax tools cannot treat it as authoritative. Never
+substitute FIFO for unknown executed selection. Execution price is an activity
+fact, not the remaining portfolio's valuation mark. Cross-account/security
+transfers require classification/review and remain unsupported for recording.
+Reconcile a later broker snapshot to confirm post-trade holdings without inventing
+additional activities from its differences.

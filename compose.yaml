@@ -8,6 +8,8 @@ services:
       - ledger:/data
     environment:
       INVEST_DB: /data/portfolio.db
+      INVEST_PROMPTS: /data/prompts
+      INVEST_BIND: 0.0.0.0
       FMP_API_KEY: ${FMP_API_KEY:-}
     command: ["sh", "-c", "uv sync --locked --reinstall-package investobot && python -m invest.web"]
 volumes:

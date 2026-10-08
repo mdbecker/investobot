@@ -9,7 +9,9 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from invest.models import DomainError, SecurityInput, Snapshot, decimal
+from pydantic import ValidationError
+
+from invest.models import Activity, DomainError, SecurityInput, Snapshot, decimal
 
 TABLES = [
     "accounts",
@@ -184,6 +186,12 @@ class Ledger:
             if pos is None and not snap["positions_complete"]:
                 pos = next((p for p in self.rows("positions") if p["account_id"] == account_id and p["security"] == symbol), None)
             remaining = sum((decimal(l["remaining_quantity"]) for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
+            if (pos is not None and snap["lots_complete"] and remaining == decimal(pos["quantity"])
+                    and pos.get("cost_basis") is not None):
+                basis = sum((decimal(l["cost_basis"]) * decimal(l["remaining_quantity"]) / decimal(l["quantity"])
+                             for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
+                if abs(basis - decimal(pos["cost_basis"])) > Decimal("0.01"):
+                    raise DomainError("Position basis contradicts complete lot inventory", 3)
             if pos is None or remaining > decimal(pos["quantity"]):
                 raise DomainError("Lot quantities exceed imported position", 3)
         with self.connection:
@@ -192,6 +200,11 @@ class Ledger:
             for p in snap["positions"]:
                 supplied = {key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)}
                 existing = [s for s in self.rows("securities") if any(s.get(k) == v for k, v in supplied.items())]
+                held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
+                if any(sec["id"] in held and sec["ticker"] == p["security"]
+                       and any(sec.get(k) and sec[k] != v for k, v in supplied.items())
+                       for sec in self.rows("securities")):
+                    raise DomainError("Held ticker has conflicting strong identity", 3)
                 if not existing:
                     existing = [s for s in self.rows("securities") if s["ticker"] == p["security"]
                                 and not any(s.get(k) and s[k] != v for k, v in supplied.items())]
@@ -205,6 +218,11 @@ class Ledger:
                 self.put("securities", sid, security)
                 p = dict(p, id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
                          source_timestamp=snap["source_timestamp"])
+                prior_position = next((row for row in self.rows("positions") if row["id"] == p["id"]), None)
+                if (p.get("cost_basis") is None and prior_position and not snap["lots_complete"]
+                        and decimal(p["quantity"]) == decimal(prior_position["quantity"])
+                        and prior_position.get("lot_state") == "RESOLVED"):
+                    p["cost_basis"] = prior_position.get("cost_basis")
                 self.put("positions", p["id"], p)
             if snap["positions_complete"]:
                 for p in self.rows("positions"):
@@ -241,7 +259,10 @@ class Ledger:
         return summarize(self.state())
 
     def record_activity(self, activity, yes=False):
-        activity = copy.deepcopy(activity)
+        try:
+            activity = Activity.model_validate(activity).model_dump(mode="json", exclude_unset=True)
+        except ValidationError as exc:
+            raise DomainError(str(exc)) from exc
         aid = activity.get("activity_id")
         if not isinstance(aid, str) or not aid.strip():
             raise DomainError("Every confirmed activity requires a unique activity_id")
@@ -377,6 +398,8 @@ def activity_change(state, activity):
             )
             state["positions"].append(p)
         selling = kind in {"SELL", "TRANSFER_OUT"}
+        if kind == "SELL" and fee > qty * price:
+            raise DomainError("Sale fee exceeds gross proceeds")
         if selling and qty > decimal(p["quantity"]):
             raise DomainError("Sale/transfer exceeds known position", 3)
         old_qty = decimal(p["quantity"])

@@ -1,63 +1,130 @@
 # Investobot
-Local deterministic portfolio tooling for a browser-equipped agent. No trades, credentials, telemetry, cloud ledger or LLM calls. The original requirements are preserved in [docs/PRD.md](docs/PRD.md).
 
-## Docker only
-Install Docker Desktop yourself if needed. No project dependencies are installed on the host.
+Local financial tools for a browser-equipped coding agent: accepted portfolio
+facts, tax/exposure analysis, hypothetical targets, proposed manual trades and
+reproducible reports. The agent researches and explains; the human decides and
+executes. Investobot never accepts brokerage credentials or places trades.
+
+## Agent-first workflow
+
+Run from this checkout with Docker. Discover contracts before supplying private
+financial inputs:
 
 ```sh
 docker compose build
-docker compose run --rm app uv run pytest
-docker compose run --rm app uv run invest --help
+docker compose run --rm -T app invest tools list
+docker compose run --rm -T app invest tools describe portfolio.simulate
+docker compose run --rm -T app invest portfolio summary
 ```
 
-## Establish account state
-Save account HTML locally, then run these inside the mounted project (use synthetic account aliases, never account numbers):
+1. Import supplied HTML, inspect normalized facts and reconcile changes.
+2. Explicitly apply an accepted snapshot; unknown basis/dates stay unknown.
+3. Use the CLI for financial calculations and Chrome for current public research.
+4. Save multiple security-based targets with explicit account restrictions.
+5. Generate and compare hypothetical plans; export reports for human review.
+6. After manual execution, explicitly record confirmed activity or accept a later
+   snapshot. Target/plan creation never changes actual holdings.
+
+[Complete working examples](docs/workflows.md) cover synchronization, tax-loss
+harvesting, fund comparisons, three alternative targets, plan comparison,
+reports and exact executed lots. [Agent instructions](docs/agent-usage.md) explain
+freshness, unknown data and mutation boundaries.
 
 ```sh
-docker compose run --rm app invest portfolio import /app/account.html --account taxable --institution vanguard
-# Save JSON stdout as snapshot.json; inspect warnings before proceeding.
-docker compose run --rm app invest portfolio reconcile /app/snapshot.json
-docker compose run --rm app invest portfolio apply /app/snapshot.json
-docker compose run --rm app invest portfolio summary
+# HTML stays outside Git; create the ignored local-data directory first.
+docker compose run --rm -T app invest portfolio import - \
+  --account taxable --institution vanguard --tax-status TAXABLE \
+  --as-of 2026-10-08 < local-data/account.html > local-data/snapshot.json
+docker compose run --rm -T app invest portfolio reconcile - < local-data/snapshot.json
+# Explicit acceptance only after reviewing reconciliation and warnings:
+docker compose run --rm -T app invest portfolio apply - < local-data/snapshot.json
+
+docker compose run --rm -T app invest tax harvest-candidates --as-of 2026-10-08
+docker compose run --rm -T app invest fund compare VTI ITOT
+docker compose run --rm -T app invest target save - < local-data/target.json
+docker compose run --rm -T app invest target diff TARGET_ID
+docker compose run --rm -T app invest plan generate --target TARGET_ID --as-of 2026-10-08
+docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C
+docker compose run --rm -T app invest report export PLAN_A \
+  --format markdown --output /app/local-data/report.md
 ```
 
-Import does not write; apply explicitly accepts normalized state. Raw pages are never stored by the ledger. Keep your own HTML files outside Git. Profiles for Vanguard, Fidelity/NetBenefits and PNC are provisional common table aliases, pending anonymized samples. Dynamic/non-table pages may require manual normalization.
+Replace dates with known source/planning dates and IDs with values returned by the
+CLI. Source dates cannot be inferred from import time. Completeness defaults
+false; use `--positions-complete` / `--lots-complete` only after confirming full
+coverage. Fund tickers above illustrate tool usage, not investment choices.
+Unknown eligibility, stale prices or unresolved tax lots can leave a plan
+`REVIEW_REQUIRED`. Every plan still requires human review and manual execution.
 
-Use Chrome for news, theses, SEC filings and qualitative research. Use the CLI for exact local balances, tax lots, holdings, exposure, time-series math, screens and simulations. Human execution is mandatory. See [agent usage](docs/agent-usage.md), [data model](docs/data-model.md), and [tax limitations](docs/tax-limitations.md).
+Success output is JSON. Financial decimals are strings. Errors are JSON on
+stderr: 1 invalid input, 2 external data unavailable, 3 inconsistent state,
+4 internal error. `invest schema` documents command inputs, output contracts
+and persistent mutation scopes.
 
-All successful commands print JSON. Errors print JSON to stderr: 1 invalid input, 2 external data unavailable, 3 inconsistent state, 4 internal error. SQLite data is in the Docker `ledger` volume. Native default paths use platformdirs; `INVEST_DB` overrides the database and `INVEST_CONFIG` overrides the local TOML config path.
+## Runtime and local dashboard
 
-## Local inspection
+No host project installation is needed. Dependencies and testing run in Docker;
+Python dependencies live at `/opt/venv` in the `runtime_dependencies` volume.
+Compose stores accepted state at `/data/portfolio.db` in the `ledger` volume.
+The application/distribution name is Investobot / `investobot`; the CLI is `invest`.
+
 ```sh
-docker compose up -d
+docker compose up --build -d
 ```
-Open http://localhost:8765. The page previews imported tables and reconciles changes before explicit acceptance; it never authenticates with institutions. See [inspection guide](docs/inspection.md).
 
-## Structured data setup
-Create your own Financial Modeling Prep account and obtain an API key with ETF holdings, fund metadata and adjusted historical-data entitlements. Set `FMP_API_KEY` in a local ignored `.env`, then recreate the container. Keys are never sent to brokerage sites. Tests use synthetic fixtures and need no account or internet. For a clearly labelled offline demonstration set `INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json` on a one-off container. See [sources](docs/data-sources.md) for freshness and entitlement limits.
+Open [the local dashboard](http://localhost:8765): Overview, Targets, Plans,
+Prompt Library and Import & Reconcile, plus secondary activity and analysis tools.
+It displays the same domain calculations as the CLI, copies plain Markdown
+prompts and never launches agents or submits orders. Compose publishes only to
+host loopback; never expose this unauthenticated single-user tool publicly.
+See [inspection](docs/inspection.md). `docker compose down` stops it;
+adding `--volumes` deletes persisted data.
 
-The complete command workflows are in [docs/workflows.md](docs/workflows.md). Bond inputs and conventions are in [docs/bonds.md](docs/bonds.md). Run style checks with `docker compose run --rm app uv run ruff check --config pyproject.toml src tests`.
+Native CLI execution is supported for users who separately choose a local Python
+3.12+/uv environment. No host installation was performed for this implementation.
+`INVEST_DB`, `INVEST_CONFIG` and `INVEST_PROMPTS` explicitly select database,
+configuration and prompt storage. Native defaults use platformdirs `investobot`
+directories. A native default and Compose's data volume are different ledgers;
+configure both paths to the same mounted file deliberately when sharing state.
 
-## Analysis commands
+## External data and remaining manual validation
+
+Create your own [FMP account](https://site.financialmodelingprep.com), verify plan
+entitlements and set only its public market-data `FMP_API_KEY` in an ignored
+`.env` or shell environment. Brokerage credentials, sessions and cookies never
+belong in Investobot. Optional tax rates are user assumptions; missing rates
+produce gains/losses without invented tax estimates. See
+[data sources and setup](docs/data-sources.md) and [tax limitations](docs/tax-limitations.md).
+
+Offline demonstrations explicitly select synthetic fixtures:
+
 ```sh
-docker compose run --rm app invest tax lots
-docker compose run --rm app invest portfolio exposure
-docker compose run --rm app invest fund compare VTI ITOT
-docker compose run --rm app invest market history VTI
-docker compose run --rm app invest portfolio risk
-docker compose run --rm app invest portfolio simulate /app/local-data/actions.json
-docker compose run --rm app invest security screen /app/local-data/filters.json
-docker compose run --rm app invest fund search /app/local-data/fund-filters.json
-docker compose run --rm app invest fund replacements VTI ITOT SCHB
-docker compose run --rm app invest bond analyze /app/local-data/bond.json
-docker compose run --rm app invest schema
+docker compose run --rm -T \
+  -e INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json \
+  app invest fund compare AAA BBB
 ```
 
-[Discovery](docs/discovery.md) documents supported provider filters and ranking. Replacement scores measure similarity only and never determine substantially-identical tax treatment. All account state and actions remain local.
+Fixtures are invented, labelled `SYNTHETIC_FMP_FIXTURE` and never automatically
+populate a live ledger. Vanguard, Fidelity NetBenefits and PNC HTML profiles
+remain provisional: representative anonymized HTML has not been provided.
+Live FMP responses have not been validated with user test credentials. Those
+manual integration checks remain open; offline test success does not establish
+verified institution support or vendor entitlement/coverage.
 
-`market quote TICKER --refresh` retrieves a public FMP quote with source timestamps and a15-minute cache. It does not overwrite canonical portfolio valuations. Household calculations reject mixed currencies without configured FX support. Saved HTML without an explicit snapshot date warns that position timestamps use import date.
+## Development and requirements
 
-## Synthetic acceptance fixtures
-Tests include taxable, Traditional IRA, Roth IRA, bank/cash, equity, ETF, mutual fund, bond, multiple lots, recent IRA purchases and loss positions in `tests/fixtures/household.json`. They are invented and never loaded into your running ledger automatically. The inspection page starts empty. Provider fixture mode is explicit and marked SYNTHETIC_FMP_FIXTURE. Live FMP endpoints are implemented but were not exercised with your credentials.
+Work on `main`, with conventional red/green BDD commits and no pushes. Preserve
+[original PRD](docs/PRD.md) and [PRD v2](docs/PRD-v2.md). Packages 1–3 gate planning.
+See [data model](docs/data-model.md), [targets](docs/targets.md),
+[plans and reports](docs/plans.md), [prompts](docs/prompts.md),
+[bonds](docs/bonds.md) and [development rules](AGENTS.md).
 
-The application and Python distribution are named **Investobot** (`investobot`). The CLI remains `invest`, as specified in the PRD. Default data/config directories use `investobot` through platformdirs; `INVEST_DB` and `INVEST_CONFIG` still override them. Docker keeps the ledger at `/data/portfolio.db` in its existing data volume.
+```sh
+docker compose run --rm -T app uv run --locked pytest
+docker compose run --rm -T app uv run ruff check --config pyproject.toml src tests
+```
+
+CI builds the same Python 3.12 Docker image and runs locked, offline checks.
+No telemetry, cloud ledger, ORM, broker API, LLM integration or background worker
+is included. SQLite, Decimal and small deterministic domain modules remain the
+foundation.

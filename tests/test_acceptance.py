@@ -104,6 +104,7 @@ def reconcile(ctx):
     ctx["next"]["positions"][0]["quantity"] = "5"
     ctx["next"]["positions"][0]["market_value"] = "500"
     ctx["next"]["lots"] = ctx["next"]["lots"][1:]
+    ctx["next"]["positions"][0]["cost_basis"] = ctx["next"]["lots"][0]["cost_basis"]
     ctx["reconciliation"] = ctx["ledger"].reconcile(ctx["next"])
 
 

@@ -1,11 +1,11 @@
 """Validated interchange models. Decimal strings preserve ledger precision."""
 
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 
 class DomainError(Exception):
@@ -26,10 +26,10 @@ class Account(BaseModel):
     name: str
     institution: str = "manual"
     account_type: str = "brokerage"
-    tax_status: TaxStatus = TaxStatus.TAXABLE
+    tax_status: TaxStatus = TaxStatus.OTHER
     currency: str = "USD"
     active: bool = True
-    history_complete: bool = False
+    history_complete: StrictBool = False
 
 
 class Position(BaseModel):
@@ -59,18 +59,28 @@ class Snapshot(BaseModel):
     positions: list[Position]
     lots: list[Lot] = []
     cash: Decimal = Field(default=Decimal("0"), ge=0)
-    cash_known: bool = True
-    positions_complete: bool = False
-    lots_complete: bool = False
+    cash_known: StrictBool = False
+    positions_complete: StrictBool = False
+    lots_complete: StrictBool = False
     source_timestamp: str | None = None
     imported_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     source_hash: str
     warnings: list[str] = []
     status: str = "PARSED"
 
+    @model_validator(mode="before")
+    @classmethod
+    def explicit_cash(cls, value):
+        if isinstance(value, dict) and "cash" in value and "cash_known" not in value:
+            return dict(value, cash_known=True)
+        return value
+
 
 def decimal(value):
-    result = Decimal(str(value))
+    try:
+        result = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise DomainError("Invalid numeric value") from exc
     if not result.is_finite():
         raise DomainError("Numeric values must be finite")
     return result
@@ -122,3 +132,36 @@ class SecurityInput(BaseModel):
     isin: str | None = None
     figi: str | None = None
     source: str = Field(min_length=1, max_length=1000)
+
+
+class ActivityAllocation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    lot_id: str = Field(min_length=1)
+    quantity: Positive
+
+
+class Activity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    activity_id: str = Field(min_length=1)
+    account_id: str = Field(min_length=1)
+    type: Literal["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "INTEREST", "FEE", "CASH_DEPOSIT", "CASH_WITHDRAWAL"]
+    date: date
+    security: str | None = None
+    quantity: Positive | None = None
+    price: Nonnegative | None = None
+    fee: Nonnegative = Decimal("0")
+    amount: Positive | None = None
+    lot_allocations: list[ActivityAllocation] | None = None
+    source: str | None = None
+    to_account: str | None = None
+    from_account: str | None = None
+    classification: str | None = None
+
+    @model_validator(mode="after")
+    def required_values(self):
+        if self.type in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
+            if not self.security or self.quantity is None or self.price is None:
+                raise ValueError("Trade activities require security, quantity and price")
+        elif self.amount is None:
+            raise ValueError("Cash activities require amount")
+        return self

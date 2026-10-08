@@ -61,7 +61,7 @@ def import_page(
     file: str,
     account: str = typer.Option(...),
     institution: str = "generic",
-    tax_status: str = "TAXABLE",
+    tax_status: str = "OTHER",
     as_of: str = typer.Option(None),
     positions_complete: bool = False,
     lots_complete: bool = False,
