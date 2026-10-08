@@ -1,0 +1,11 @@
+# Project rules
+- Preserve docs/PRD.md. Single local Python app, sqlite3, Decimal, no ORM.
+- Work on main. No remotes or pushes. Conventional commits.
+- All execution, dependency resolution, lint and tests happen in Docker; install nothing on host.
+- Strict BDD: write scenarios, observe expected failures, commit red, implement, run full suite, document and commit green.
+- Never place trades, accept brokerage credentials, persist raw account HTML, or invent missing basis/classifications.
+- Import/reconcile/simulate are read-only; apply and confirmed activity are explicit mutations.
+- JSON stdout; errors stderr with exit codes 1 input, 2 external data, 3 inconsistent state, 4 internal.
+- Independent agents own separate modules; coordinator owns shared models, ledger, CLI and integration. Agents do not commit: coordinator commits verified red/green states.
+- User requests Docker runtime and a local inspection site; this is an explicit exception to PRD runtime/UI exclusions. Keep UI thin and local.
+- Provisional institution aliases require real anonymized HTML validation before claiming institution support.

@@ -1,0 +1,2 @@
+# Analytical limitations
+This is analytical tooling, not tax preparation. Broker-provided basis remains authoritative. Wash-sale detection only sees loaded household accounts and recorded acquisitions; outside accounts and spouse activity can affect treatment. Securities are never declared legally substantially identical. No inferred wash-sale basis adjustments are applied. Tax-rate estimates are optional and omit circumstances not represented in the ledger.
