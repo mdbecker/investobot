@@ -3,7 +3,8 @@ const $ = id => document.getElementById(id);
 let snapshot = null;
 let activityPreview = null;
 const pretty = value => JSON.stringify(value, null, 2);
-const money = value => new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'}).format(Number(value || 0));
+let displayCurrency = 'USD';
+const money = value => new Intl.NumberFormat('en-US', {style:'currency', currency:displayCurrency}).format(Number(value || 0));
 function notice(message, error=false) { $('notice').textContent = message; $('notice').className = error ? 'error' : ''; $('notice').hidden = false; }
 async function api(path, body) {
   const response = await fetch('/api/' + path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
@@ -14,6 +15,7 @@ async function api(path, body) {
 function el(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
 async function refresh() {
   const [summary, state] = await Promise.all([api('summary'), api('state')]);
+  displayCurrency = summary.currency || 'USD';
   $('total').textContent = money(summary.total_value); $('cash').textContent = money(summary.cash);
   $('gain').textContent = money(summary.unrealized_gain_loss_known_basis); $('summary-json').textContent = pretty(summary);
   $('empty').hidden = state.accounts.length > 0; $('accounts').replaceChildren();

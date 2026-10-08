@@ -54,3 +54,8 @@ docker compose run --rm app invest schema
 ```
 
 [Discovery](docs/discovery.md) documents supported provider filters and ranking. Replacement scores measure similarity only and never determine substantially-identical tax treatment. All account state and actions remain local.
+
+`market quote TICKER --refresh` retrieves a public FMP quote with source timestamps and a15-minute cache. It does not overwrite canonical portfolio valuations. Household calculations reject mixed currencies without configured FX support. Saved HTML without an explicit snapshot date warns that position timestamps use import date.
+
+## Synthetic acceptance fixtures
+Tests include taxable, Traditional IRA, Roth IRA, bank/cash, equity, ETF, mutual fund, bond, multiple lots, recent IRA purchases and loss positions in `tests/fixtures/household.json`. They are invented and never loaded into your running ledger automatically. The inspection page starts empty. Provider fixture mode is explicit and marked SYNTHETIC_FMP_FIXTURE. Live FMP endpoints are implemented but were not exercised with your credentials.

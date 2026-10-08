@@ -2,12 +2,15 @@
 
 from decimal import Decimal
 
+from invest.ledger import household_currency
+from invest.market import normalized_identities
 from invest.models import DomainError, decimal
 
 ZERO = Decimal("0")
 
 
 def exposure(state, client, refresh=False):
+    currency = household_currency(state)
     total = sum((decimal(p["market_value"]) for p in state["positions"]), ZERO) + sum(
         (decimal(c["amount"]) for c in state["cash_balances"]), ZERO
     )
@@ -80,27 +83,8 @@ def exposure(state, client, refresh=False):
                 ),
             )
         )
-    # Map ticker-only constituent records to a unique strong alias when supplied.
-    aliases = {}
-    for row in entries:
-        strong = next(
-            (f"{key.upper()}:{row[key]}" for key in ("isin", "cusip", "figi") if row.get(key)), None
-        )
-        if row.get("ticker") and strong:
-            aliases.setdefault(row["ticker"], set()).add(strong)
     merged, sectors, asset_types = {}, {}, {}
-    for row in entries:
-        strong = next(
-            (f"{key.upper()}:{row[key]}" for key in ("isin", "cusip", "figi") if row.get(key)), None
-        )
-        candidates = aliases.get(row.get("ticker"), set())
-        identity = strong or (
-            next(iter(candidates))
-            if len(candidates) == 1
-            else f"TICKER:{row.get('ticker')}"
-            if row.get("ticker")
-            else row["identifier"]
-        )
+    for row, identity in zip(entries, normalized_identities(entries)):
         target = merged.setdefault(
             identity,
             dict(
@@ -128,6 +112,7 @@ def exposure(state, client, refresh=False):
         results.append({k: str(v) if isinstance(v, Decimal) else v for k, v in row.items()})
     results.sort(key=lambda r: decimal(r["total_value"]), reverse=True)
     return {
+        "currency": currency,
         "total_value": str(total),
         "exposures": results,
         "unknown_exposure_value": str(unknown),
@@ -176,6 +161,7 @@ def series_metrics(prices, rolling_window=21):
 
 
 def risk(state, client, refresh=False):
+    household_currency(state)
     import numpy as np
     import pandas as pd
 

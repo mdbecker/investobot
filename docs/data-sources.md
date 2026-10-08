@@ -28,6 +28,9 @@ Official endpoint references checked during implementation:
   maps to `/stable/historical-price-eod/dividend-adjusted?symbol=...`.
 - [Security profiles](https://site.financialmodelingprep.com/developer/docs/stable/profile-symbol)
   maps to `/stable/profile?symbol=...`, for supplied identifiers and classifications.
+- [Public quotes](https://site.financialmodelingprep.com/education/index-articles/instant-stock-intelligence-a-comprehensive-guide-to-fmps-quote-api)
+  maps to `/stable/quote?symbol=...`. Quotes are public observations, never updates
+  to ledger prices, balances or lots.
 
 History only accepts explicitly adjusted close fields. It excludes unadjusted
 prices rather than reporting their changes as total returns. Possible missing
@@ -46,6 +49,8 @@ states `source: SYNTHETIC_FMP_FIXTURE`. No key or network access is needed.
 Python API: `MarketClient(ledger, api_key=None, fixture_path=None)` supplies
 `holdings(ticker, refresh=False)`, `history(...)` and `metadata(...)`.
 `security_metadata(...)` returns profile classifications without inventing missing fields.
+`quote(ticker, refresh=False)` returns a public price observation, with
+`DATA_UNAVAILABLE` for missing prices and external-data errors for malformed values.
 `compare(client, fund_a, fund_b, refresh=False)` supplies quantitative similarity.
 
 Explicit ISIN/CUSIP/FIGI aliases occurring together bridge identity across rows.
@@ -69,7 +74,10 @@ SQLite stores normalized public holdings and market responses, with `source`,
 `retrieved_at` and `data_as_of` when supplied. Holdings, daily history and fund
 metadata expire after 24 hours. `refresh=True` bypasses cache. Expired cache is
 never silently returned after a provider error. Security profiles expire after
-seven days and return only classifications, not current quote fields. Synthetic and live data use
+seven days and return only classifications, not current quote fields. Quotes
+expire after 15 minutes; their as-of time is the provider's Unix timestamp
+converted to UTC, when supplied. Quotes can be delayed or from a closed market,
+even when newly retrieved. Synthetic and live data use
 separate keys. Oldest constituent update bounds holdings as-of metadata;
 historical as-of uses the latest observation. Retrieval freshness does not imply
 the underlying fund disclosures are recent. No background refresh occurs.

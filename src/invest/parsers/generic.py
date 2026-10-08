@@ -110,6 +110,8 @@ def parse_html(html, account_id, institution="generic", tax_status="TAXABLE", as
         raise DomainError("No supported position/cash table found; no state can be applied")
     if not cash_known:
         warnings.append("Cash balance unavailable")
+    if not as_of:
+        warnings.append("Source snapshot date unavailable; position as_of uses import date")
     if not lots:
         warnings.append("Lot detail unavailable; tax analysis may be insufficient")
     snapshot = Snapshot(

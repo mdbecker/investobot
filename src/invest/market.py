@@ -18,6 +18,7 @@ ENDPOINTS = {
     "history": "historical-price-eod/dividend-adjusted",
     "metadata": "etf/info",
     "profile": "profile",
+    "quote": "quote",
 }
 
 
@@ -85,7 +86,7 @@ class MarketClient:
         table = "fund_holdings_cache" if kind == "holdings" else "market_data_cache"
         cached = next((row for row in self.ledger.rows(table) if row.get("id") == key), None)
         now = datetime.now(UTC)
-        ttl = 604800 if kind == "profile" else 86400
+        ttl = 604800 if kind == "profile" else 900 if kind == "quote" else 86400
         if cached and not refresh:
             try:
                 age = (now - datetime.fromisoformat(cached["retrieved_at"])).total_seconds()
@@ -103,6 +104,11 @@ class MarketClient:
         ]
         # Oldest constituent update bounds a dataset's freshness conservatively.
         as_of = (max(dates) if kind == "history" else min(dates)) if dates else None
+        if kind == "quote" and rows and rows[0].get("timestamp") is not None:
+            try:
+                as_of = datetime.fromtimestamp(float(rows[0]["timestamp"]), UTC).isoformat()
+            except (ValueError, TypeError, OverflowError, OSError) as exc:
+                raise DomainError("Provider quote has an invalid timestamp", 2) from exc
         result.update(
             id=key,
             ticker=ticker,
@@ -115,6 +121,22 @@ class MarketClient:
         with self.ledger.connection:
             self.ledger.put(table, key, result)
         return result
+
+    def quote(self, ticker, refresh=False):
+        def normalize(rows):
+            data = rows[0] if rows else {}
+            raw_price = data.get("price")
+            price = _number(raw_price) if raw_price is not None else None
+            if price is not None and price < 0:
+                raise DomainError("Provider quote has a negative price", 2)
+            return {
+                "status": "AVAILABLE" if price is not None else "DATA_UNAVAILABLE",
+                "price": str(price) if price is not None else None,
+                "currency": data.get("currency"),
+                "warnings": [] if price is not None else ["Public quote unavailable"],
+            }
+
+        return self._cached("quote", ticker, refresh, normalize)
 
     def holdings(self, ticker, refresh=False):
         def normalize(rows):

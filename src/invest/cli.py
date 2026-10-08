@@ -266,3 +266,8 @@ def schema():
             },
         }
     )
+
+
+@market.command("quote")
+def quote(ticker: str, refresh: bool = False):
+    emit(lambda: client().quote(ticker, refresh=refresh))

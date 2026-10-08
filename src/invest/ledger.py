@@ -239,7 +239,15 @@ class Ledger:
         return dict(result, status="RECORDED" if yes else "PREVIEW", committed=yes)
 
 
+def household_currency(state):
+    currencies = {a.get("currency", "USD") for a in state.get("accounts", [])}
+    if len(currencies) > 1:
+        raise DomainError("Household currencies differ; no FX conversion is configured", 3)
+    return next(iter(currencies), "USD")
+
+
 def summarize(state):
+    currency = household_currency(state)
     cash = sum((decimal(c["amount"]) for c in state["cash_balances"]), Decimal("0"))
     value = sum((decimal(p["market_value"]) for p in state["positions"]), cash)
     accounts, taxes, allocation = {}, {}, {"CASH": str(cash)}
@@ -266,6 +274,7 @@ def summarize(state):
         else:
             unrealized += decimal(p["market_value"]) - decimal(p["cost_basis"])
     return {
+        "currency": currency,
         "total_value": str(value),
         "cash": str(cash),
         "by_account": accounts,

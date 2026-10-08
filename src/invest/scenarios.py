@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from decimal import Decimal
 
 from invest.analytics import exposure
-from invest.ledger import activity_change, summarize
+from invest.ledger import activity_change, household_currency, summarize
 from invest.models import DomainError, decimal
 from invest.tax import analyze
 
@@ -31,6 +31,7 @@ def readonly_client(client):
 
 
 def simulate(state, client, actions, rates=None):
+    household_currency(state)
     if not isinstance(actions, list) or not actions:
         raise DomainError("Supply a nonempty array of hypothetical actions")
     before_state, working = copy.deepcopy(state), copy.deepcopy(state)

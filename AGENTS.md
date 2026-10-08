@@ -12,3 +12,7 @@
 - Coordinate test-file writes at commit boundaries; announce readiness and wait for parent authorization. A green run must match the exact committed file set.
 - Use explicit Ruff configuration: `uv run ruff check --config pyproject.toml src tests`; host/global style settings may otherwise leak into containers.
 - Simulations suppress cache writes too. Current-weight historical risk is hypothetical performance, with cash return assumptions disclosed.
+- Reuse normalized_identities for comparison and exposure; explicit ISIN/CUSIP bridges matter even when ticker strings differ.
+- Never sum different currencies without an FX model. Guard household summary, exposure, risk and simulation.
+- Quote refresh writes cache only, never canonical portfolio prices. Keep900-second quote TTL distinct from day/week data TTLs.
+- Docker builds copy uv.lock before dependency sync; use --locked. Exclude .venv and private local data from image contexts.
