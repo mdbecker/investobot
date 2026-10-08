@@ -1,0 +1,11 @@
+# Copy outside the repository; INVEST_CONFIG overrides platformdirs config location.
+[fmp]
+# Prefer FMP_API_KEY environment variable; do not commit a real key.
+# api_key = ""
+
+[tax]
+# Decimal rates are fractions, not percentage points. Optional; omit unknown rates.
+# ordinary_income_rate = "0.24"
+# long_term_capital_gains_rate = "0.15"
+# niit_rate = "0.038"
+# state_capital_gains_rate = "0.05"

@@ -7,3 +7,5 @@ __pycache__/
 .env
 config.toml
 local-data/
+*.html
+!src/invest/static/*.html
