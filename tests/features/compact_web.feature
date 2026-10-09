@@ -13,3 +13,9 @@ Feature: Compact inspection planning responses
     Given a synthetic inspection planning portfolio
     When a plan is generated through the inspection boundary
     Then explicit inspection retrieval preserves full details and reports
+
+  Scenario: CLI and inspection expose equivalent read-only summaries
+    Given a synthetic inspection planning portfolio
+    When two alternatives are generated and inspected
+    And the same alternatives are read through the CLI
+    Then CLI and inspection summaries are identical without persistent changes

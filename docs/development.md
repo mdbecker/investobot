@@ -141,3 +141,51 @@ corrections still use the existing audited operation. Full Docker suite: 294
 tests passed; explicit Ruff and browser syntax checks passed. Atomic multi-security
 rejection, CUSIP/ISIN/FIGI conflicts, account metadata, source freshness, financial
 amounts, history, correction idempotence and plan staleness remain covered.
+
+### Compact response benchmark
+
+Final disposable synthetic measurement on October 8, 2026, using the same full
+workload and Python 3.12.12 / Linux aarch64 runtime as the baseline:
+
+| Metric | Observed result |
+| --- | ---: |
+| List 20 plans | 12,090 bytes; 1.216 seconds |
+| Compare 20 plans | 12,283 bytes; 1.229 seconds |
+| Retrieve one complete plan | 0.112 seconds |
+| Generate all 20 plans | 47.018 seconds |
+| Markdown export, excluding retrieval | 0.0025 seconds |
+| Database before / after plans | 12,009,472 / 244,019,200 bytes |
+| Saved-plan database growth | 232,009,728 bytes |
+| Average complete serialized plan | 11,588,638.9 bytes |
+
+Each compact response is below 128 KiB. Listing improved from the historical
+17.866-second baseline; comparison has no historical timing baseline. Timings
+are observations, not CI thresholds. No other full-workload benchmark ran
+concurrently. Database growth and complete plan size match the earlier workload;
+storage compression remains outside scope. Reproduce with the Docker command in
+the storage assessment above. The script cleans up its synthetic ledger and report.
+
+Package 3 adds a CLI/inspection parity regression that compares identical saved
+alternatives and verifies the entire SQLite dump remains unchanged by reads.
+It passes on existing behavior, so it is preservation evidence rather than an
+expected-red feature. A small projection refactor omits comparison-only price/tax
+assumptions from list reads. No financial algorithms or persisted formats change.
+
+The optional in-app browser smoke attempt was blocked with
+`net::ERR_BLOCKED_BY_CLIENT` for the disposable loopback site. No browser-rendered
+smoke result is claimed for this audit. HTTP inspection BDD, frontend guidance
+checks and Docker JavaScript syntax validation provide the automated UI coverage;
+the disposable server was removed without touching the persistent ledger.
+
+Final verification reproduced `.github/workflows/ci.yml` locally: a fresh locked
+Docker build, `uv sync --locked`, `uv run --locked pytest` (295 passed), and
+`uv run --locked ruff check --config pyproject.toml src tests` (clean). Verification
+containers ran with `--network none` and `INVEST_PROMPTS=/data/prompts`, without
+host dependency installation or private ledger mounts. GitHub Actions itself was
+not dispatched because this work stays on local main and is never pushed.
+
+PRD v2.2's code scope is complete. Release still requires anonymized real HTML
+validation for Vanguard, Fidelity NetBenefits and PNC, live provider/entitlement
+validation using a user-supplied market-data key, and human review of tax/fee
+assumptions. Brokerage credentials and automated trade execution remain excluded;
+no new setup secrets or services are required by this stabilization release.

@@ -3,8 +3,10 @@ from pathlib import Path
 
 import pytest
 from pytest_bdd import given, scenarios, then, when
+from typer.testing import CliRunner
 
 from invest import plans, targets
+from invest.cli import app
 from invest.ledger import Ledger
 from invest.web import _get_api, _planning_post
 
@@ -77,3 +79,26 @@ def full(ctx):
     report, _, _ = _get_api(ctx['ledger'], '/api/plans/' + saved['id'] + '/report',
                                 {'format': ['json']})
     assert json.loads(report) == saved
+
+
+@when('the same alternatives are read through the CLI')
+def cli(ctx, monkeypatch):
+    monkeypatch.setenv('INVEST_DB', str(ctx['ledger'].path))
+    ctx['database_before'] = list(ctx['ledger'].connection.iterdump())
+    identifiers = [p['id'] for p in ctx['list']['plans']]
+    ctx['cli'] = {}
+    for key, arguments in [('list', ['plan', 'list']),
+                           ('compare', ['plan', 'compare', *identifiers])]:
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == 0, result.output
+        ctx['cli'][key] = json.loads(result.stdout)
+    # Comparison preserves requested order, so inspect the same order as the CLI.
+    ctx['compare'] = _planning_post(ctx['ledger'], '/api/plans/compare',
+                                   {'plan_ids': identifiers})
+
+
+@then('CLI and inspection summaries are identical without persistent changes')
+def parity(ctx):
+    assert ctx['cli']['list'] == ctx['list']
+    assert ctx['cli']['compare'] == ctx['compare']
+    assert list(ctx['ledger'].connection.iterdump()) == ctx['database_before']

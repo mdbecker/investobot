@@ -347,9 +347,12 @@ def _projected(ledger, plan_ids=None):
     fields = ('id', 'name', 'target_version_id', 'created_at', 'as_of', 'status',
               'source_state_hash', 'trade_count', 'turnover')
     scalars = ', '.join(f"'{key}', json_extract(data, '$.{key}')" for key in fields)
+    assumptions = """, 'assumptions', json_object(
+        'prices', json_extract(data, '$.assumptions.prices'),
+        'tax_rates', json_extract(data, '$.assumptions.tax_rates'))""" if plan_ids else ''
     selection = """
         json_object(
-            TAX_FIELDS,
+            SCALAR_FIELDS,
             'target', json_object('planning_constraints', json_object(
                 'target_tolerance', json_extract(data, '$.target.planning_constraints.target_tolerance'))),
             'tax_analysis', json_object(
@@ -361,11 +364,8 @@ def _projected(ledger, plan_ids=None):
                 FROM json_each(data, '$.remaining_target_drift'))),
             '_warning_count', coalesce(json_array_length(data, '$.warnings'), 0),
             'warnings', json((SELECT json_group_array(value) FROM json_each(data, '$.warnings')
-                              WHERE CAST(key AS INTEGER) < 5)),
-            'assumptions', json_object(
-                'prices', json_extract(data, '$.assumptions.prices'),
-                'tax_rates', json_extract(data, '$.assumptions.tax_rates')))
-    """.replace('TAX_FIELDS', scalars)
+                              WHERE CAST(key AS INTEGER) < 5)) ASSUMPTIONS)
+    """.replace('SCALAR_FIELDS', scalars).replace('ASSUMPTIONS', assumptions)
     # Requested IDs are bound parameters, never interpolated into SQL.
     where = ' WHERE id IN (' + ','.join('?' for _ in plan_ids) + ')' if plan_ids else ''
     query = f"SELECT {selection} FROM plans{where} ORDER BY json_extract(data, '$.created_at') DESC, id ASC"
