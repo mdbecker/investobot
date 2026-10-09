@@ -21,6 +21,7 @@ Feature: Local inspection and explicit portfolio acceptance
     Given a local inspection server with an empty ledger
     When an oversized body is submitted
     Then the request is rejected before parsing
+    And no oversized request body was transmitted
 
   Scenario: Inspect tax lots through the local analysis workbench
     Given a local inspection server with an empty ledger

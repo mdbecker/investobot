@@ -113,12 +113,18 @@ def forbidden(context):
 
 @when("an oversized body is submitted")
 def oversized(context):
+    context["body_bytes_sent"] = 2_100_000
     context["response"] = request(context, "/api/import", {"html": "x" * 2_100_000})
 
 
 @then("the request is rejected before parsing")
 def too_large(context):
     assert context["response"][0] == 413
+
+
+@then("no oversized request body was transmitted")
+def no_oversized_body(context):
+    assert context["body_bytes_sent"] == 0
 
 
 @when("I request tax lots analysis")
