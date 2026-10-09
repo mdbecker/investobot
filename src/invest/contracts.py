@@ -57,10 +57,10 @@ PURPOSES = {
     "target.activate": "Explicitly select one active target without placing trades.",
     "target.archive": "Archive a target while preserving historical plans.",
     "target.diff": "Compare accepted household allocation with target allocation.",
-    "plan.generate": "Persist an explainable hypothetical plan for human review.",
-    "plan.list": "List saved plans and their review or stale status.",
-    "plan.show": "Inspect immutable proposed trades, assumptions and limitations.",
-    "plan.compare": "Compare proposed plans and disclose differing source assumptions.",
+    "plan.generate": "Persist a hypothetical plan and return its compact summary for human review.",
+    "plan.list": "List compact saved plan summaries with current review or stale status.",
+    "plan.show": "Retrieve a complete saved plan; potentially large JSON. Prefer report.export for review.",
+    "plan.compare": "Compare compact saved financial summaries and disclose incompatible assumptions.",
     "report.export": "Write a persisted plan report and return its path and content hash.",
     "prompt.list": "List bundled and user Markdown prompts.",
     "prompt.show": "Read full prompt text without executing it.",
@@ -165,6 +165,17 @@ def _describe(name, command):
         "mutation_scope": scope,
         "examples": [example],
     }
+    if name in {"plan.generate", "plan.list", "plan.compare"}:
+        from invest.plans import SUMMARY_FIELDS
+
+        result["output_contract"] = dict(OUTPUT_CONTRACT, response_detail="compact_summary",
+            summary_fields=list(SUMMARY_FIELDS), full_details_tool="plan.show",
+            response_key="plan" if name == "plan.generate" else "plans",
+            unknown_financial_values=None,
+            summary_metrics="Persisted tax and remaining drift; original generated_status; current status; first five saved warnings")
+    elif name == "plan.show":
+        result["output_contract"] = dict(OUTPUT_CONTRACT, response_detail="full_plan",
+                                         potentially_large_response=True)
     model = getattr(models, JSON_MODELS.get(name, ""), None)
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()

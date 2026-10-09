@@ -41,6 +41,11 @@ warnings and remaining drift. The heuristic can leave a plan incomplete. Select
 multiple saved alternatives to compare turnover, tax, trades and allocation;
 source/price/tax differences remain explicit. `STALE` is visibly flagged when
 actual source state changes. Regenerate before considering stale trades.
+Generation, listing and comparison use the CLI's shared compact summary contract,
+including tax totals, maximum remaining drift and an ordered preview of at most
+five warnings. Choose **Review plan** to fetch full trades and assumptions for
+one alternative. Full retrieval can produce a large response; use a Markdown
+report download when reviewing without loading full JSON into an agent's context.
 Markdown and JSON downloads reproduce persisted inputs/calculations and include
 manual-execution guidance. Verify current status before acting on an old report.
 
@@ -121,6 +126,12 @@ input in `target`; activation/archive require `target_id` and `confirm: true`.
 Plan generation accepts `target_id` plus optional `as_of`, `version`, `prices`
 and `name`. Comparison accepts `plan_ids`. Prompt writes accept `id` and, for
 save, `content`.
+
+`GET /api/plans` returns `{"plans": [summary, ...]}`; generation returns
+`{"plan": summary}`; comparison returns compact summaries plus compatibility
+flags, warnings and `ranking: null`. These summaries use saved financial values
+and current stale status. `GET /api/plans/ID` retains complete detail, and report
+downloads retain the original persisted report without truncation.
 
 Requests require local Host headers; POSTs require matching Origin and JSON.
 Bodies larger than 2 MB are rejected. Invalid inputs return HTTP 400, inconsistent

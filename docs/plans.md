@@ -16,4 +16,38 @@ No report executes trades. Every plan requires a human decision and manual broke
 
 The deterministic heuristic sells overweight eligible retirement positions first, then known taxable lots (MIN_TAX with configured rates, HIFO otherwise), then buys underweight securities with each account's own cash. Positive short-term and long-term gains are capped separately; losses do not increase a budget. Cash floors, household cash targets, excluded positions and permitted investments constrain trades. Stocks, ETFs and mutual funds default to whole units; explicitly verified per-account increments permit fractional units. Individual bonds receive no automatic instructions. Generated trades assume zero fees; check broker fees before manual execution.
 
-`invest plan list`, `invest plan show PLAN_ID` and `invest plan compare PLAN_A PLAN_B` show saved alternatives, turnover, trade count, taxes, cash, exposure and remaining drift. Different source hashes, prices, tax rates or analysis dates are disclosed without a ranking score. Incomplete eligibility, prices, basis or infeasible targets produce REVIEW_REQUIRED. READY_FOR_HUMAN_REVIEW still requires a human decision. Changes to actual state make existing plans STALE at read time; immutable inputs are retained, and recalculation creates a new plan. Target activation never executes the actions.
+`invest plan generate` returns `{"plan": SUMMARY}`; `invest plan list` returns
+`{"plans": [SUMMARY, ...]}`. `invest plan compare PLAN_A PLAN_B` returns those
+same compact summaries plus compatibility flags for source snapshot, price
+assumptions, tax assumptions and analysis date, comparison warnings and
+`ranking: null`. There is no invented ranking score. Lists are newest first,
+with plan ID as a stable tie-breaker.
+
+Each summary contains `id`, `name`, `target_version_id`, `created_at`, `as_of`,
+current `status`, original `generated_status`, `trade_count`, `turnover`,
+`tax_summary`, `drift_summary`, `warning_count` and `warnings_preview`.
+Tax metrics retain saved short/long-term gain/loss and estimated tax effect.
+Drift metrics show maximum absolute remaining weight difference and the number
+outside the saved target tolerance. Decimal values are strings; unknown metrics
+remain null. The warning preview contains at most the first five saved warnings
+in original order. Legacy records missing optional fields remain readable.
+
+These summaries reuse saved calculations; they omit actions, lots, exposure
+datasets and portfolio histories. List and compare extract only required fields
+from SQLite JSON and hash the current household once per request. Persisted plan
+format and financial calculations remain unchanged. The dashboard uses the same
+summary representation at `/api/plans`, `/api/plans/generate` and
+`/api/plans/compare`.
+
+`invest plan show PLAN_ID` intentionally returns the full saved plan, including
+source state, assumptions, proposed actions and detailed analyses. Its JSON can
+be large. Request it only when those details are needed; prefer Markdown report
+export for human review without loading the complete structure into an agent's
+conversation. The dashboard's `/api/plans/PLAN_ID` and report endpoint retain
+full detail. Compact summaries do not truncate saved records or report exports.
+
+Incomplete eligibility, prices, basis or infeasible targets produce REVIEW_REQUIRED.
+READY_FOR_HUMAN_REVIEW still requires a human decision. Changes to actual state
+make existing plans STALE at read time; `generated_status` preserves the saved
+status. Immutable inputs are retained, and recalculation creates a new plan.
+Target activation never executes the actions.

@@ -127,6 +127,15 @@ or authenticates to brokers. See [complete workflows](workflows.md) for Docker
 stdin examples, canonical security registration, three alternative plans and
 confirmed executed lots.
 
+Plan generation, listing and comparison return one shared compact summary:
+identity/version/date, effective and generated status, trade count, turnover,
+saved tax/drift metrics, warning count and up to five saved warnings. Unknown
+metrics remain null and financial decimals remain strings. Comparison explicitly
+flags incompatible source, price, tax or date assumptions and supplies no ranking.
+Use these commands for routine alternatives; `plan show PLAN_ID` deliberately
+returns complete details and may produce a large JSON response. Prefer Markdown
+report export for human review, and request full details only when needed.
+
 `portfolio overview` supplies the same overview domain data as the dashboard.
 Use `prompt list` / `prompt show SLUG` to inspect full reusable Markdown, or
 `prompt save SLUG FILE` / `prompt delete SLUG` to manage user prompts. Prompt

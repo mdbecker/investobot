@@ -363,11 +363,11 @@ def plan_generate(
     version: int = typer.Option(None),
 ):
     from invest.config import load_config
-    from invest.plans import generate
+    from invest.plans import generate, plan_summary
 
-    emit(lambda: generate(ledger(), client(), target, as_of=as_of,
+    emit(lambda: {'plan': plan_summary(generate(ledger(), client(), target, as_of=as_of,
                           prices=read_json(prices) if prices else None, name=name,
-                          rates=load_config().get("tax"), version=version))
+                          rates=load_config().get("tax"), version=version))})
 
 
 @plan.command("list")

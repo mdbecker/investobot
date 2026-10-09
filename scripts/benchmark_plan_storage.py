@@ -18,7 +18,7 @@ from time import perf_counter
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import SecurityInput, Snapshot
-from invest.plans import generate, list_plans, show
+from invest.plans import compare, generate, list_plans, show
 from invest.reports import export
 from invest.targets import save
 
@@ -95,7 +95,7 @@ def measure(ledger, fixture, directory):
     ledger.connection.commit()
     before = ledger.path.stat().st_size
     client = MarketClient(ledger, fixture_path=Path("tests/fixtures/fmp-synthetic.json"))
-    first_id = None
+    plan_ids = []
     generation_started = perf_counter()
     for alternative in range(20):
         plan = generate(ledger, client, target["id"], as_of="2026-10-08",
@@ -103,8 +103,7 @@ def measure(ledger, fixture, directory):
                             "price": str(Decimal("100") + Decimal(alternative) / 10),
                             "as_of": "2026-10-08", "currency": "USD",
                             "source": "explicit synthetic alternative assumption"}})
-        if first_id is None:
-            first_id = plan["id"]
+        plan_ids.append(plan["id"])
         del plan
     generation_seconds = perf_counter() - generation_started
     ledger.connection.commit()
@@ -116,7 +115,15 @@ def measure(ledger, fixture, directory):
     listed = list_plans(ledger)
     list_seconds = perf_counter() - started
     listed_count = len(listed["plans"])
+    listed_bytes = len(json.dumps(listed).encode())
     del listed
+    started = perf_counter()
+    compared = compare(ledger, *plan_ids)
+    compare_seconds = perf_counter() - started
+    compared_count = len(compared["plans"])
+    compared_bytes = len(json.dumps(compared).encode())
+    del compared
+    first_id = plan_ids[0]
     started = perf_counter()
     retrieved = show(ledger, first_id)
     retrieve_seconds = perf_counter() - started
@@ -129,6 +136,8 @@ def measure(ledger, fixture, directory):
         "database_bytes_before": before, "database_bytes_after": after,
         "database_growth_bytes": after - before, "average_serialized_plan_bytes": average,
         "plan_count": count, "listed_plan_count": listed_count, "retrieved_plan_id": first_id,
+        "listed_response_bytes": listed_bytes, "compared_response_bytes": compared_bytes,
+        "compared_plan_count": compared_count, "compare_seconds": compare_seconds,
         "generation_seconds": generation_seconds, "list_seconds": list_seconds,
         "retrieve_seconds": retrieve_seconds, "markdown_export_seconds": export_seconds,
         "python_version": platform.python_version(), "platform": platform.platform(),

@@ -193,8 +193,11 @@ def plans_view(ctx):
 def download(ctx):
     code, report = request(ctx, f'/api/plans/{ctx["plans"][0]["id"]}/report?format=json')
     assert code == 200 and report["id"] == ctx["plans"][0]["id"]
-    with Ledger(ctx["path"]) as ledger:
+    ledger = Ledger(ctx["path"])
+    try:
         assert report == next(p for p in ledger.rows('plans') if p['id'] == report['id'])
+    finally:
+        ledger.connection.close()
 
 
 @when("confirmed interest changes the source portfolio")

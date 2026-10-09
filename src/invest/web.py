@@ -160,8 +160,9 @@ def _planning_post(ledger, path, payload):
         config = load_config()
         client = MarketClient(ledger, api_key=os.environ.get("FMP_API_KEY") or config.get("fmp", {}).get("api_key"),
                               fixture_path=os.environ.get("INVEST_FIXTURES"))
-        return plans.generate(ledger, client, payload["target_id"], as_of=payload.get("as_of"),
+        plan = plans.generate(ledger, client, payload["target_id"], as_of=payload.get("as_of"),
             prices=payload.get("prices"), name=payload.get("name"), version=payload.get("version"), rates=config.get("tax"))
+        return {"plan": plans.plan_summary(plan)}
     if path == "/api/plans/compare":
         if not isinstance(payload.get("plan_ids"), list) or not all(isinstance(p, str) for p in payload["plan_ids"]):
             raise DomainError("Plan IDs must be a JSON array of strings")

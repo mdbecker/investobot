@@ -124,6 +124,14 @@ inputs/results without recalculation. Its saved status is historical, so check
 current `plan show` before considering an old report. Export confirms path and
 SHA-256 content hash.
 
+Compact generation/list/comparison responses share one domain summary derived
+from saved metrics, with current stale status overlaid and original generated
+status retained. Warnings are previewed in saved order (at most five), with their
+total count. Unknown optional legacy metrics remain null or safely empty. SQLite
+JSON extraction avoids loading complete saved source histories for list/compare;
+the live household is hashed once per operation. This changes neither the schema
+nor persisted plan JSON. Explicit `plan show` and report exports retain full data.
+
 ## Contracts, arithmetic and prompts
 
 `invest schema` retains snapshot JSON Schema and adds registered tool contracts.

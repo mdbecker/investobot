@@ -108,3 +108,26 @@ rows and hashes live state. Retrieval and export succeeded, with no operational
 failure; the requested design is retained. Storage/listing optimization remains
 separately scoped work, with these measurements as evidence rather than a reason
 to introduce compression, new services or an unrequested schema redesign.
+
+## PRD v2.2 agent usability audit
+
+The original attachment is preserved verbatim in [PRD-v2.2.md](PRD-v2.2.md).
+Package 1 red commit `f42d6f8` records 16 expected compact-response/discovery
+failures and two preservation passes. Additional red commit `8a785f2` records
+the full-workload benchmark's missing response-size measurements before extending
+the measurement script. Green verification: all 281 tests passed in Docker,
+explicit-config Ruff passed, and browser JavaScript syntax passed in a disposable
+Node container. Reports retain byte-identical historical JSON and Markdown.
+
+The initial baseline run used an incorrect test-only prompt directory, causing
+one runtime configuration failure (262 other tests passed). The final runs use
+`INVEST_PROMPTS=/data/prompts` as required by offline CI, in disposable containers
+without the private ledger volume. No host packages were installed.
+
+List and compare use SQLite JSON projection and one current-household hash;
+generation still returns its full internal plan but exposes a shared summary at
+the CLI/WebUI boundary. No schema, stored plan format or financial algorithm was
+changed. The benchmark now reports list/compare sizes and wall times; the full
+synthetic BDD workload enforces both responses below 128 KiB without timing limits.
+The older storage assessment above remains historical baseline evidence; v2.2
+addresses retrieval/transmission, not saved-plan storage growth.

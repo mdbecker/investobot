@@ -295,10 +295,10 @@ def constraints_decimal(constraints, key):
 
 
 def persisted(ledger, plan_id):
-    plan = next((p for p in ledger.rows('plans') if p['id'] == plan_id), None)
-    if plan is None:
+    row = ledger.connection.execute('SELECT data FROM plans WHERE id=?', (plan_id,)).fetchone()
+    if row is None:
         raise DomainError('Plan does not exist')
-    return plan
+    return json.loads(row[0])
 
 
 def show(ledger, plan_id):
@@ -308,14 +308,84 @@ def show(ledger, plan_id):
     return plan
 
 
+SUMMARY_FIELDS = ('id', 'name', 'target_version_id', 'created_at', 'as_of', 'status',
+                  'generated_status', 'trade_count', 'turnover', 'tax_summary', 'drift_summary',
+                  'warning_count', 'warnings_preview')
+
+
+def plan_summary(plan, current_state_hash=None):
+    """Summarize saved metrics without recalculating financial analysis or writing state."""
+    original_status = plan.get('generated_status', plan.get('status'))
+    status = plan.get('status')
+    if current_state_hash is not None and plan.get('source_state_hash') != current_state_hash:
+        status = 'STALE'
+    tax = plan.get('tax_analysis') or {}
+    drift = plan.get('remaining_target_drift') or []
+    differences = [abs(decimal(row['difference_weight'])) for row in drift
+                   if row.get('difference_weight') is not None]
+    tolerance = ((plan.get('target') or {}).get('planning_constraints') or {}).get('target_tolerance')
+    warnings = plan.get('warnings') or []
+    return dict(
+        **{key: plan.get(key) for key in ('id', 'name', 'target_version_id', 'created_at',
+                                         'as_of', 'trade_count')},
+        status=status, generated_status=original_status,
+        turnover=str(plan['turnover']) if plan.get('turnover') is not None else None,
+        tax_summary={key: str(tax[key]) if tax.get(key) is not None else None for key in
+                     ('short_term_gain_loss', 'long_term_gain_loss', 'estimated_tax_effect')},
+        drift_summary=dict(maximum_absolute_weight_drift=_number(max(differences)) if differences else None,
+                           positions_outside_tolerance=sum(value > decimal(tolerance) for value in differences)
+                           if tolerance is not None else None),
+        warning_count=plan.get('_warning_count', len(warnings)), warnings_preview=warnings[:5])
+
+
+def _projected(ledger, plan_ids=None):
+    """SQLite parses immutable JSON; Python receives only summary/comparison inputs.
+
+    Projection intentionally excludes source state, actions, exposure, tax analyses
+    and full target constraints. It works with existing rows, requiring no migration.
+    """
+    fields = ('id', 'name', 'target_version_id', 'created_at', 'as_of', 'status',
+              'source_state_hash', 'trade_count', 'turnover')
+    scalars = ', '.join(f"'{key}', json_extract(data, '$.{key}')" for key in fields)
+    selection = """
+        json_object(
+            TAX_FIELDS,
+            'target', json_object('planning_constraints', json_object(
+                'target_tolerance', json_extract(data, '$.target.planning_constraints.target_tolerance'))),
+            'tax_analysis', json_object(
+                'short_term_gain_loss', json_extract(data, '$.tax_analysis.short_term_gain_loss'),
+                'long_term_gain_loss', json_extract(data, '$.tax_analysis.long_term_gain_loss'),
+                'estimated_tax_effect', json_extract(data, '$.tax_analysis.estimated_tax_effect')),
+            'remaining_target_drift', json((SELECT json_group_array(json_object(
+                'difference_weight', json_extract(value, '$.difference_weight')))
+                FROM json_each(data, '$.remaining_target_drift'))),
+            '_warning_count', coalesce(json_array_length(data, '$.warnings'), 0),
+            'warnings', json((SELECT json_group_array(value) FROM json_each(data, '$.warnings')
+                              WHERE CAST(key AS INTEGER) < 5)),
+            'assumptions', json_object(
+                'prices', json_extract(data, '$.assumptions.prices'),
+                'tax_rates', json_extract(data, '$.assumptions.tax_rates')))
+    """.replace('TAX_FIELDS', scalars)
+    # Requested IDs are bound parameters, never interpolated into SQL.
+    where = ' WHERE id IN (' + ','.join('?' for _ in plan_ids) + ')' if plan_ids else ''
+    query = f"SELECT {selection} FROM plans{where} ORDER BY json_extract(data, '$.created_at') DESC, id ASC"
+    return [json.loads(row[0]) for row in ledger.connection.execute(query, plan_ids or ())]
+
+
 def list_plans(ledger):
-    return {'plans': [show(ledger, p['id']) for p in ledger.rows('plans')]}
+    plans = _projected(ledger)
+    current = state_hash(ledger.state()) if plans else None
+    return {'plans': [plan_summary(plan, current) for plan in plans]}
 
 
 def compare(ledger, *plan_ids):
     if len(plan_ids) < 2:
         raise DomainError('Compare at least two plans')
-    plans = [show(ledger, pid) for pid in plan_ids]
+    selected = {p['id']: p for p in _projected(ledger, plan_ids)}
+    if any(pid not in selected for pid in plan_ids):
+        raise DomainError('Plan does not exist')
+    plans = [selected[pid] for pid in plan_ids]
+    current = state_hash(ledger.state())
     source_same = len({p['source_state_hash'] for p in plans}) == 1
     prices_same = len({json.dumps(p['assumptions']['prices'], sort_keys=True) for p in plans}) == 1
     tax_same = len({json.dumps(p['assumptions']['tax_rates'], sort_keys=True) for p in plans}) == 1
@@ -326,8 +396,10 @@ def compare(ledger, *plan_ids):
         warnings.append('Plans use different price assumptions')
     if not tax_same:
         warnings.append('Plans use different configured tax rates')
-    if len({p['as_of'] for p in plans}) > 1:
+    date_same = len({p['as_of'] for p in plans}) == 1
+    if not date_same:
         warnings.append('Plans use different analysis dates')
-    return dict(plans=plans, same_source_snapshot=source_same, same_price_assumptions=prices_same,
-                same_tax_assumptions=tax_same, warnings=warnings,
+    return dict(plans=[plan_summary(p, current) for p in plans],
+                same_source_snapshot=source_same, same_price_assumptions=prices_same,
+                same_tax_assumptions=tax_same, same_analysis_date=date_same, warnings=warnings,
                 ranking=None)

@@ -303,16 +303,22 @@ $('plan-form').addEventListener('submit', event => { event.preventDefault(); run
   if ($('plan-version').value) body.version = parseInt($('plan-version').value,10);
   if ($('plan-prices').value.trim()) body.prices = JSON.parse($('plan-prices').value);
   const trigger = $('plan-generate'); trigger.disabled = true;
-  try { const plan = await api('plans/generate',body); await refreshPlans(); await loadPlan(plan.id); notice('Hypothetical plan saved for human review. Accepted holdings are unchanged.'); }
+  try { const result = await api('plans/generate',body); await refreshPlans(); notice(`Hypothetical plan ${result.plan.name} saved for human review. Choose Review plan to inspect its trades. Accepted holdings are unchanged.`); }
   finally { trigger.disabled = false; }
 }); });
 $('plan-compare').addEventListener('click', () => run(async () => {
   if (selectedPlanIds.size < 2) throw new Error('Select at least two saved plans.');
   const comparison = await api('plans/compare', {plan_ids:[...selectedPlanIds]}); const container = $('plan-comparison'); container.replaceChildren(el('h3','Alternative comparison'));
-  container.append(el('p', `Same source snapshot: ${comparison.same_source_snapshot ? 'Yes' : 'No'} · Same price assumptions: ${comparison.same_price_assumptions ? 'Yes' : 'No'} · Same tax assumptions: ${comparison.same_tax_assumptions ? 'Yes' : 'No'}`, 'muted'));
+  container.append(el('p', `Same source snapshot: ${comparison.same_source_snapshot ? 'Yes' : 'No'} · Same price assumptions: ${comparison.same_price_assumptions ? 'Yes' : 'No'} · Same tax assumptions: ${comparison.same_tax_assumptions ? 'Yes' : 'No'} · Same analysis date: ${comparison.same_analysis_date ? 'Yes' : 'No'}`, 'muted'));
   if (comparison.warnings?.length) container.append(el('p',comparison.warnings.join(' · '),'warnings'));
-  tableInto(container, ['Plan','Status','Trades','Turnover','ST gain/loss','LT gain/loss','Estimated tax effect'], comparison.plans.map(plan => [plan.name,plan.status,plan.trade_count,money(plan.turnover),money(plan.tax_analysis.short_term_gain_loss),money(plan.tax_analysis.long_term_gain_loss),money(plan.tax_analysis.estimated_tax_effect)]));
-  comparison.plans.forEach(plan => renderPlan(container,plan)); container.hidden = false;
+  tableInto(container, ['Plan','Status','Trades','Turnover','ST gain/loss','LT gain/loss','Estimated tax effect','Maximum drift','Outside tolerance'], comparison.plans.map(plan => [plan.name,plan.status,plan.trade_count,money(plan.turnover),money(plan.tax_summary.short_term_gain_loss),money(plan.tax_summary.long_term_gain_loss),money(plan.tax_summary.estimated_tax_effect),plan.drift_summary.maximum_absolute_weight_drift ?? 'Unknown',plan.drift_summary.positions_outside_tolerance ?? 'Unknown']));
+  for (const plan of comparison.plans) {
+    const row = el('article', undefined, 'saved-row');
+    row.append(el('strong', plan.name), button('Review plan', () => loadPlan(plan.id)));
+    if (plan.warnings_preview?.length) row.append(el('p', `${plan.warning_count} warnings: ${plan.warnings_preview.join(' · ')}`, 'warnings'));
+    container.append(row);
+  }
+  container.hidden = false;
 }));
 async function refreshPrompts() {
   const result = await api('prompts'); const prompts = Array.isArray(result) ? result : result.prompts || [];

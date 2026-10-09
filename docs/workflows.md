@@ -232,6 +232,14 @@ keyed by canonical security ID, each containing `price`, `as_of`, `currency` and
 `source`. Hypothetical prices never overwrite portfolio marks; stale/unknown
 prices can block trades. Individual bonds do not receive automatic trade proposals.
 
+Generate, list and compare return compact summaries: plan identifiers, current
+and generated statuses, saved financial metrics and a preview of up to five
+warnings. Comparison flags incompatible assumptions without ranking alternatives.
+`plan show` intentionally retrieves the full saved plan and can return large JSON;
+use it when detailed actions or assumptions are needed. Prefer the Markdown export
+above for human review without loading complete portfolio histories into the
+agent's conversation. Full warnings and analyses remain in show/report outputs.
+
 The deterministic heuristic considers eligible retirement accounts first,
 known taxable lots next, then purchases funded by same-account cash/proceeds.
 It respects permitted investments, excluded positions, cash floors, explicit

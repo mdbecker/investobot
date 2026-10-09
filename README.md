@@ -25,6 +25,11 @@ docker compose run --rm -T app invest portfolio summary
 6. After manual execution, explicitly record confirmed activity or accept a later
    snapshot. Target/plan creation never changes actual holdings.
 
+Plan generation, listing and comparison return compact summaries with saved
+metrics, current stale status and a short warning preview. `plan show PLAN_ID`
+retrieves full details and may return large JSON; prefer Markdown report export
+for human review. Saved financial inputs and report contents remain unchanged.
+
 [Complete working examples](docs/workflows.md) cover synchronization, tax-loss
 harvesting, fund comparisons, three alternative targets, plan comparison,
 reports and exact executed lots. [Agent instructions](docs/agent-usage.md) explain
@@ -125,6 +130,9 @@ verified institution support or vendor entitlement/coverage.
 Work on `main`, with conventional red/green BDD commits and no pushes. Preserve
 [original PRD](docs/PRD.md) and [PRD v2](docs/PRD-v2.md). Packages 1–3 gate planning.
 The [stabilization PRD v2.1](docs/PRD-v2.1.md) preserves the final MVP requirements.
+The [final usability and classification audit PRD v2.2](docs/PRD-v2.2.md)
+preserves the attached stabilization scope. Real institution HTML and live
+market-data validation remain separate release gates.
 See [data model](docs/data-model.md), [targets](docs/targets.md),
 [plans and reports](docs/plans.md), [prompts](docs/prompts.md),
 [bonds](docs/bonds.md) and [development rules](AGENTS.md).
