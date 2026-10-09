@@ -147,3 +147,7 @@ def measurements(ctx):
     assert result["average_serialized_plan_bytes"] > 0
     for key in ("list_seconds", "retrieve_seconds", "markdown_export_seconds"):
         assert result[key] >= 0
+    assert result["listed_response_bytes"] < 128 * 1024
+    assert result["compared_response_bytes"] < 128 * 1024
+    assert result["compared_plan_count"] == 20
+    assert result["compare_seconds"] >= 0

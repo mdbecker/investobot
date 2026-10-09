@@ -245,7 +245,7 @@ def compared(ctx):
     assert result['same_source_snapshot'] is True
     assert result['same_price_assumptions'] is True
     assert len(result['plans']) == 2
-    assert all('turnover' in p and 'tax_analysis' in p and 'remaining_target_drift' in p
+    assert all('turnover' in p and 'tax_summary' in p and 'drift_summary' in p
                and 'trade_count' in p for p in result['plans'])
 
 
