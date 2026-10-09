@@ -71,6 +71,14 @@ baselines. Showing a plan or exporting its report loads only that plan and its
 referenced baseline. Schema 3 requires a deliberate
 [database reset](development.md#deliberate-schema-reset) for older installations.
 
+Planning maintains Decimal allocation/cash balances incrementally and applies
+hypothetical actions to one working copy. The authoritative final simulation
+checks those balances before saving. Retirement-first strategy, exact lot
+selection, gain budgets, account cash and safety restrictions retain their
+existing semantics. The unchanged synthetic benchmark meets documented storage
+and response-size targets; [measured timings and remaining costs](development.md#shared-baseline-benchmark-results)
+describe this runtime rather than guaranteeing every household's performance.
+
 Planning computes initial allocation once, maintains Decimal security/cash maps
 while proposing actions, then checks them against the authoritative scenario
 engine's final allocation and cash. A mismatch rejects the plan before saving.

@@ -41,9 +41,16 @@ def load_plan(ledger, plan_id):
 
 def summaries(ledger, plan_ids=None):
     where = ' WHERE id IN (' + ','.join('?' for _ in plan_ids) + ')' if plan_ids else ''
-    rows = ledger.connection.execute('''SELECT summary_json, baseline_id, as_of,
-        price_assumptions_hash, tax_assumptions_hash FROM plans''' + where +
+    fields = 'summary_json, baseline_id'
+    if plan_ids:
+        fields += ', as_of, price_assumptions_hash, tax_assumptions_hash'
+    rows = ledger.connection.execute('SELECT ' + fields + ' FROM plans' + where +
         ' ORDER BY created_at DESC, id DESC', plan_ids or ())
-    return [dict(id=(summary := json.loads(r[0]))['id'], summary=summary,
-                 source_state_hash=r[1], as_of=r[2], price_assumptions_hash=r[3],
-                 tax_assumptions_hash=r[4]) for r in rows]
+    result = []
+    for row in rows:
+        summary = json.loads(row[0])
+        value = dict(id=summary['id'], summary=summary, source_state_hash=row[1])
+        if plan_ids:
+            value.update(as_of=row[2], price_assumptions_hash=row[3], tax_assumptions_hash=row[4])
+        result.append(value)
+    return result

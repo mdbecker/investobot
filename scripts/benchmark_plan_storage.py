@@ -18,6 +18,7 @@ from time import perf_counter
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import SecurityInput, Snapshot
+from invest import plan_storage
 from invest.plans import compare, generate, list_plans, show
 from invest.reports import export
 from invest.targets import save
@@ -96,20 +97,39 @@ def measure(ledger, fixture, directory):
     before = ledger.path.stat().st_size
     client = MarketClient(ledger, fixture_path=Path("tests/fixtures/fmp-synthetic.json"))
     plan_ids = []
+    persistence_seconds = 0
+    original_save = plan_storage.save_plan
+
+    def timed_save(*args, **kwargs):
+        nonlocal persistence_seconds
+        started = perf_counter()
+        try:
+            return original_save(*args, **kwargs)
+        finally:
+            persistence_seconds += perf_counter() - started
+
     generation_started = perf_counter()
-    for alternative in range(20):
-        plan = generate(ledger, client, target["id"], as_of="2026-10-08",
-                        name=f"Synthetic alternative {alternative:02d}", prices={securities[0]: {
-                            "price": str(Decimal("100") + Decimal(alternative) / 10),
-                            "as_of": "2026-10-08", "currency": "USD",
-                            "source": "explicit synthetic alternative assumption"}})
-        plan_ids.append(plan["id"])
-        del plan
+    plan_storage.save_plan = timed_save
+    try:
+        for alternative in range(20):
+            plan = generate(ledger, client, target["id"], as_of="2026-10-08",
+                            name=f"Synthetic alternative {alternative:02d}", prices={securities[0]: {
+                                "price": str(Decimal("100") + Decimal(alternative) / 10),
+                                "as_of": "2026-10-08", "currency": "USD",
+                                "source": "explicit synthetic alternative assumption"}})
+            plan_ids.append(plan["id"])
+            del plan
+    finally:
+        plan_storage.save_plan = original_save
     generation_seconds = perf_counter() - generation_started
     ledger.connection.commit()
     after = ledger.path.stat().st_size
-    count, average = ledger.connection.execute(
-        "SELECT COUNT(*), AVG(LENGTH(CAST(details_json AS BLOB))) FROM plans"
+    count, average, average_summary = ledger.connection.execute(
+        "SELECT COUNT(*), AVG(LENGTH(CAST(details_json AS BLOB))), "
+        "AVG(LENGTH(CAST(summary_json AS BLOB))) FROM plans"
+    ).fetchone()
+    baseline_count, average_baseline = ledger.connection.execute(
+        "SELECT COUNT(*), AVG(LENGTH(CAST(state_json AS BLOB))) FROM plan_baselines"
     ).fetchone()
     started = perf_counter()
     listed = list_plans(ledger)
@@ -130,18 +150,44 @@ def measure(ledger, fixture, directory):
     started = perf_counter()
     export(retrieved, directory / "benchmark-report.md")
     export_seconds = perf_counter() - started
+    baseline_id = ledger.connection.execute(
+        "SELECT baseline_id FROM plans WHERE id=?", (first_id,)).fetchone()[0]
+
+    def query_plan(sql, parameters=()):
+        return [row[3] for row in ledger.connection.execute(
+            "EXPLAIN QUERY PLAN " + sql, parameters)]
+
+    query_plans = {
+        "list": query_plan("SELECT summary_json, baseline_id FROM plans "
+                           "ORDER BY created_at DESC, id DESC"),
+        "compare": query_plan("SELECT summary_json, baseline_id, as_of, "
+                              "price_assumptions_hash, tax_assumptions_hash FROM plans "
+                              "WHERE id IN (" + ",".join("?" for _ in plan_ids) + ") "
+                              "ORDER BY created_at DESC, id DESC", plan_ids),
+        "plan_lookup": query_plan("SELECT details_json, baseline_id FROM plans WHERE id=?",
+                                  (first_id,)),
+        "baseline_lookup": query_plan("SELECT state_json FROM plan_baselines WHERE id=?",
+                                      (baseline_id,)),
+    }
     return {
         "fixture": {"accounts": 10, "positions": 1000, "lots": 2000,
                     "snapshots_per_account": 20, "alternative_plans": 20},
         "database_bytes_before": before, "database_bytes_after": after,
         "database_growth_bytes": after - before, "average_serialized_plan_bytes": average,
+        "baseline_count": baseline_count, "average_baseline_json_bytes": average_baseline,
+        "average_summary_json_bytes": average_summary, "average_details_json_bytes": average,
         "plan_count": count, "listed_plan_count": listed_count, "retrieved_plan_id": first_id,
         "listed_response_bytes": listed_bytes, "compared_response_bytes": compared_bytes,
         "compared_plan_count": compared_count, "compare_seconds": compare_seconds,
         "generation_seconds": generation_seconds, "list_seconds": list_seconds,
+        "planning_seconds": generation_seconds - persistence_seconds,
+        "persistence_seconds": persistence_seconds, "query_plans": query_plans,
         "retrieve_seconds": retrieve_seconds, "markdown_export_seconds": export_seconds,
         "python_version": platform.python_version(), "platform": platform.platform(),
-        "timing_method": "single cold application call per operation; no external APIs",
+        "timing_method": "one application call per read operation; no external APIs or OS cold-cache claim",
+        "generation_split": "persistence includes baseline hashing, serialization and atomic inserts; "
+                            "planning is remaining generation time including validation",
+        "legacy_average_serialized_plan_bytes": "alias of average_details_json_bytes in schema 3",
         "baseline": "after fixture and target creation, immediately before saving alternatives",
     }
 

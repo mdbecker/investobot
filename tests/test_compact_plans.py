@@ -238,9 +238,9 @@ def reproducible(ctx):
         assert render(plans.persisted(ctx['ledger'], ctx['original']['id']), format) == original
 
 
-@given('a saved legacy plan without optional financial fields')
+@given('a saved synthetic plan without optional financial fields')
 def legacy(ctx):
-    value = {'id': 'legacy', 'name': 'Legacy', 'status': 'REVIEW_REQUIRED',
+    value = {'id': 'minimal', 'name': 'Synthetic minimal plan', 'status': 'REVIEW_REQUIRED',
              'source_state_hash': plans.state_hash(ctx['ledger'].planning_state()),
              'source_state': ctx['ledger'].planning_state(), 'created_at': '2026-10-08', 'as_of': '2026-10-08'}
     with ctx['ledger'].connection:

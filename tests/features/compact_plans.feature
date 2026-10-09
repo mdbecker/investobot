@@ -38,8 +38,8 @@ Feature: Compact plan results for coding agents
     And full retrieval retains original assumptions and proposed trades
     And historical report bytes remain identical
 
-  Scenario: Legacy optional fields remain readable and unknown
-    Given a saved legacy plan without optional financial fields
+  Scenario: Unknown optional summary metrics remain explicit
+    Given a saved synthetic plan without optional financial fields
     When the agent lists alternatives
     Then unknown summary values are null and warnings are empty
 

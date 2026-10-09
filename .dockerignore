@@ -6,3 +6,5 @@ local-data
 __pycache__
 .pytest_cache
 .ruff_cache
+*.db-wal
+*.db-shm

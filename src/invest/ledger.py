@@ -112,6 +112,9 @@ class Ledger:
         """Current financial inputs plus compact latest accepted provenance; no audit payloads."""
         state = {table: self.rows(table) for table in (
             "accounts", "securities", "positions", "lots", "cash_balances", "activities")}
+        for table, field in (("accounts", "metadata_history"), ("securities", "classification_history")):
+            for row in state[table]:
+                row.pop(field, None)
         query = """SELECT id, account_id, imported_at, source_timestamp, source_hash,
                           positions_complete, lots_complete FROM (
             SELECT id, json_extract(data, '$.account.id') AS account_id,

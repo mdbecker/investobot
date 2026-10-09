@@ -23,6 +23,10 @@ def state_hash(state):
     """Canonical financial fingerprint, independent of incidental collection order."""
     numeric_fields = {'quantity', 'remaining_quantity', 'price', 'market_value', 'cost_basis',
                       'amount', 'fee', 'execution_price', 'gross_amount', 'net_amount'}
+    def exact_decimal(value):
+        text = format(value, 'f')
+        return (text.rstrip('0').rstrip('.') if '.' in text else text) if value else '0'
+
     def canonical(value, field=None):
         if isinstance(value, dict):
             return {k: canonical(v, k) for k, v in sorted(value.items())}
@@ -30,10 +34,10 @@ def state_hash(state):
             items = [canonical(v) for v in value]
             return sorted(items, key=lambda v: json.dumps(v, sort_keys=True, default=str))
         if isinstance(value, Decimal):
-            return _number(value)
+            return exact_decimal(value)
         if isinstance(value, str) and field in numeric_fields:
             try:
-                return _number(decimal(value))
+                return exact_decimal(decimal(value))
             except (ValueError, DomainError):
                 return value
         return value

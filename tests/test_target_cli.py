@@ -93,7 +93,7 @@ def migrated(ctx):
         Ledger(ctx['legacy_path'])
 
 
-@then('the historical data remains readable and planning tables are available')
+@then('incompatible schema is rejected and historical data remains untouched')
 def preserved(ctx):
     import sqlite3
     with sqlite3.connect(ctx['legacy_path']) as connection:

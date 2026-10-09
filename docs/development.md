@@ -56,6 +56,69 @@ limits. Response sizes and shared-baseline reuse are deterministic requirements.
 No new accounts, credentials, providers or institution HTML are required for this
 optimization. Existing manual institution/provider validation remains separate.
 
+### Shared-baseline benchmark results
+
+Isolated Docker measurement on October 8, 2026, with the unchanged workload and
+Python 3.12.12 / Linux 6.12.5-linuxkit aarch64 / glibc 2.36 runtime. The ledger and
+report were disposable; no private volume, live API or competing full-workload
+job was used. [Raw measurements](benchmark-v2.3.json) retain all byte counts,
+timings, environment and SQLite query plans.
+
+| Metric | Schema 3 result | Target |
+| --- | ---: | ---: |
+| SQLite before / after 20 plans | 12,021,760 / 22,515,712 bytes | — |
+| Plan database growth | 10,493,952 bytes (10.01 MiB) | <44 MiB |
+| Unique baselines | 1 | 1 |
+| Average baseline JSON | 880,417 bytes | — |
+| Average summary JSON | 601.95 bytes | — |
+| Average plan-specific details JSON | 479,184.9 bytes | — |
+| Generate 20 plans | 1.758 seconds | <15 seconds |
+| Planning/validation portion | 1.331 seconds | — |
+| Persistence portion | 0.427 seconds | — |
+| List 20 plans | 0.0424 seconds; 12,090 bytes | <1 second; <128 KiB |
+| Compare 20 plans | 0.0448 seconds; 12,283 bytes | <1 second; <128 KiB |
+| Retrieve one full plan | 0.0484 seconds | — |
+| Markdown export, excluding retrieval | 0.00181 seconds | — |
+
+Incremental storage is about 95.5% below the historical 232,009,728-byte baseline,
+meeting the 90% stretch goal. All documented targets were met in this run.
+The same financial inputs and explicit alternative price assumptions were used;
+the small initial database-size difference reflects schema/table overhead.
+Persistence timing wraps the real save operation and includes baseline hashing,
+serialization and the atomic database transaction. Planning is the remaining
+generation time, including validation. Timings are single-run observations, not
+universal guarantees or OS cold-cache measurements. The legacy measurement key
+`average_serialized_plan_bytes` now aliases plan-specific details size; the three
+explicit JSON-size fields describe the shared storage layout.
+
+SQLite EXPLAIN confirms list ordering uses `plans_created_idx`, selected
+comparison IDs use the plan primary key, and single-plan/baseline lookups use
+their primary keys. Comparison uses a temporary B-tree to order the small selected
+summary set; no additional index is warranted. These queries select summary or
+requested detail columns explicitly and do not load unrelated financial blobs.
+
+Reproduce without mounting the private ledger volume, after building the image:
+
+```sh
+docker build --tag investobot-ci .
+docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked python scripts/benchmark_plan_storage.py
+```
+
+The script uses `time.perf_counter()` and cleans its temporary database/report.
+Optional `--output` preserves its JSON inside a deliberately selected mounted
+output directory. The full-workload BDD verifies one baseline, storage/response
+size bounds, unchanged accepted holdings, explicit selected details, two
+byte-identical historical reports after a confirmed cash change, stale originals
+and a new baseline for subsequent planning. Wall-clock limits are not CI tests.
+
+The planner maintains Decimal value/cash maps and reuses one hypothetical working
+copy. Its final authoritative simulation validates incremental balances before
+persistence. Exact trade, lot, gain, cash and drift regression fixtures preserve
+the existing strategy. Tax activity/lot analysis, shared accounting searches and
+final exposure still traverse relevant financial data; larger or more active
+households can cost more. No approximation, global cache, new service or financial
+algorithm was introduced to meet the measured targets.
+
 Foundation: observed3 missing-ledger failures before implementation; green3. Import consistency:1 expected failure and5 existing-behavior regression passes; green9. Tax/market/inspection: modules absent before implementation; full suite42 green. Exposure/normalization/bonds: expected4+2+4 failures; full suite52 green.
 
 A parallel tax audit wrote new scenarios between the52-test run and the following commit, so that commit also contains red tests. The coordinator then observed3 expected audit failures (retained-share quantity, missing estimate assumptions, unknown tax status); production was unchanged until this red evidence commit. The passing mixed-loss/net-gain audit scenario verifies behavior already implemented. Coordinate test writes at commit boundaries to avoid this race.
@@ -244,3 +307,27 @@ validation for Vanguard, Fidelity NetBenefits and PNC, live provider/entitlement
 validation using a user-supplied market-data key, and human review of tax/fee
 assumptions. Brokerage credentials and automated trade execution remain excluded;
 no new setup secrets or services are required by this stabilization release.
+
+### Final v2.3 verification
+
+Red commits `98007c0`, `405ebb3` and `ea8662f` record the observed missing
+baseline/schema behavior, missing authoritative consistency rejection, and
+missing measurement/projection/fingerprint guarantees. Query preservation tests
+in `1f7616c` pass with detail/baseline reads forbidden by SQLite authorization.
+The foundational schema change includes query integration so the fresh schema
+remains usable by every existing CLI and inspection endpoint.
+
+Final verification reproduced the offline CI workflow in a fresh locked Docker
+image: `uv sync --locked`, `uv run --locked pytest` (**309 passed**, 18.82 seconds),
+and `uv run --locked ruff check --config pyproject.toml src tests` (clean).
+Containers used `--network none` and `INVEST_PROMPTS=/data/prompts`, with no
+private ledger volume or host dependency installation. The complete suite covers
+CLI/HTTP inspection list, compare, full details and report parity, database
+reopen, immutable reports after confirmed activity, concurrent baseline reuse,
+unknown financial inputs, exact planner results and cache-write suppression.
+
+One earlier mounted-source run encountered a transient broken pipe in the
+existing oversized HTTP-input test (304 passed); its isolated checks and the
+full rerun passed. Final CI passed without retries. No new browser-rendered smoke
+claim is made; this release's UI verification uses the existing HTTP BDD suite.
+All work stays on local `main`; no remote or push operation was performed.

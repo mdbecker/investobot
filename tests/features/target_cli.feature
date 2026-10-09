@@ -6,7 +6,7 @@ Feature: Persistent targets are available to the external agent
   Scenario: Research candidates can be registered without inventing holdings
     When the agent registers a verified synthetic investment
     Then its canonical ID is available with no positions or activities
-  Scenario: Version one ledgers survive the target schema migration
+  Scenario: Version one ledgers require deliberate reset
     Given a version one database with historical portfolio data
     When the updated ledger opens the database
-    Then the historical data remains readable and planning tables are available
+    Then incompatible schema is rejected and historical data remains untouched

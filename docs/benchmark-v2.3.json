@@ -1,0 +1,51 @@
+{
+  "average_baseline_json_bytes": 880417.0,
+  "average_details_json_bytes": 479184.9,
+  "average_serialized_plan_bytes": 479184.9,
+  "average_summary_json_bytes": 601.95,
+  "baseline": "after fixture and target creation, immediately before saving alternatives",
+  "baseline_count": 1,
+  "compare_seconds": 0.04476433300078497,
+  "compared_plan_count": 20,
+  "compared_response_bytes": 12283,
+  "database_bytes_after": 22515712,
+  "database_bytes_before": 12021760,
+  "database_growth_bytes": 10493952,
+  "fixture": {
+    "accounts": 10,
+    "alternative_plans": 20,
+    "lots": 2000,
+    "positions": 1000,
+    "snapshots_per_account": 20
+  },
+  "generation_seconds": 1.7576524169999175,
+  "generation_split": "persistence includes baseline hashing, serialization and atomic inserts; planning is remaining generation time including validation",
+  "legacy_average_serialized_plan_bytes": "alias of average_details_json_bytes in schema 3",
+  "list_seconds": 0.042387207999126986,
+  "listed_plan_count": 20,
+  "listed_response_bytes": 12090,
+  "markdown_export_seconds": 0.0018104999981005676,
+  "persistence_seconds": 0.42708974899869645,
+  "plan_count": 20,
+  "planning_seconds": 1.330562668001221,
+  "platform": "Linux-6.12.5-linuxkit-aarch64-with-glibc2.36",
+  "python_version": "3.12.12",
+  "query_plans": {
+    "baseline_lookup": [
+      "SEARCH plan_baselines USING INDEX sqlite_autoindex_plan_baselines_1 (id=?)"
+    ],
+    "compare": [
+      "SEARCH plans USING INDEX sqlite_autoindex_plans_1 (id=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "list": [
+      "SCAN plans USING INDEX plans_created_idx"
+    ],
+    "plan_lookup": [
+      "SEARCH plans USING INDEX sqlite_autoindex_plans_1 (id=?)"
+    ]
+  },
+  "retrieve_seconds": 0.048425958997540874,
+  "retrieved_plan_id": "8e91df26-72d1-4f84-8bec-bb3036d27aad",
+  "timing_method": "one application call per read operation; no external APIs or OS cold-cache claim"
+}

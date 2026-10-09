@@ -148,6 +148,10 @@ preserves the attached stabilization scope. Real institution HTML and live
 market-data validation remain separate release gates.
 The [SQLite performance PRD v2.3](docs/PRD-v2.3.md) preserves the current baseline,
 query and planning optimization requirements.
+The unchanged synthetic 20-plan Docker workload now uses one shared baseline:
+plan storage grew 10.01 MiB, generation took 1.758 seconds, and list/compare took
+about 0.04 seconds with roughly 12 KiB responses. These are measured observations;
+see [benchmark evidence and limitations](docs/development.md#shared-baseline-benchmark-results).
 See [data model](docs/data-model.md), [targets](docs/targets.md),
 [plans and reports](docs/plans.md), [prompts](docs/prompts.md),
 [bonds](docs/bonds.md) and [development rules](AGENTS.md).
