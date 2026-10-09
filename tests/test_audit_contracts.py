@@ -26,3 +26,15 @@ def detail(ctx, detail):
         assert output["full_details_tool"] == "plan.show"
     else:
         assert output["potentially_large_response"] is True
+
+
+@then('its contract identifies explicit classification reviews')
+def classification_reviews(ctx):
+    result = ctx["result"]
+    output = result["output_contract"]
+    assert output["classification_reviews"] == {
+        "fields": ["security_id", "ticker", "canonical_type", "observed_type", "action_required"],
+        "action_required": "EXPLICIT_CLASSIFICATION",
+        "correction_tool": "security.classify",
+    }
+    assert result["mutation_scope"] == "none"
