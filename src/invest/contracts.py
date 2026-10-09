@@ -29,7 +29,7 @@ PURPOSES = {
     "tools.list": "List available commands and persistent mutation scopes.",
     "tools.describe": "Describe a registered command's inputs and output contract.",
     "portfolio.import": "Preview normalized supplied HTML without persisting raw HTML.",
-    "portfolio.reconcile": "Compare a normalized snapshot with accepted portfolio state.",
+    "portfolio.reconcile": "Compare a snapshot with accepted state, including suggested classifications requiring security.classify.",
     "portfolio.apply": "Explicitly accept a normalized account snapshot atomically.",
     "portfolio.summary": "Read accepted household accounts, holdings and cash.",
     "portfolio.overview": "Read dashboard state, active target drift, exposure and tax warnings without cache writes.",
@@ -176,6 +176,10 @@ def _describe(name, command):
     elif name == "plan.show":
         result["output_contract"] = dict(OUTPUT_CONTRACT, response_detail="full_plan",
                                          potentially_large_response=True)
+    elif name == "portfolio.reconcile":
+        result["output_contract"] = dict(OUTPUT_CONTRACT, classification_reviews={
+            "fields": ["security_id", "ticker", "canonical_type", "observed_type", "action_required"],
+            "action_required": "EXPLICIT_CLASSIFICATION", "correction_tool": "security.classify"})
     model = getattr(models, JSON_MODELS.get(name, ""), None)
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()

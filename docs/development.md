@@ -131,3 +131,13 @@ changed. The benchmark now reports list/compare sizes and wall times; the full
 synthetic BDD workload enforces both responses below 128 KiB without timing limits.
 The older storage assessment above remains historical baseline evidence; v2.2
 addresses retrieval/transmission, not saved-plan storage growth.
+
+Package 2 red commit `945f836` captures six expected missing-review/bypass/contract
+failures and eleven preserved-behavior passes. Existing securities now retain
+their canonical classification during snapshot acceptance; reconciliation shares
+the identity resolver with acceptance and identifies explicit classification
+reviews. New securities retain their initially observed type. Confirmed
+corrections still use the existing audited operation. Full Docker suite: 294
+tests passed; explicit Ruff and browser syntax checks passed. Atomic multi-security
+rejection, CUSIP/ISIN/FIGI conflicts, account metadata, source freshness, financial
+amounts, history, correction idempotence and plan staleness remain covered.

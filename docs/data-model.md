@@ -63,6 +63,15 @@ All corresponding current positions inherit the type, preserving financial
 amounts and lots. Unknown later imports cannot revert the accepted type;
 contradictory known types are rejected atomically. Historical snapshots are fixed.
 
+Snapshot acceptance can create a genuinely new security with its observed initial
+classification, but cannot upgrade an existing `OTHER` security. Reconciliation's
+`classification_reviews` records `security_id`, `ticker`, `canonical_type`,
+`observed_type` and `action_required: EXPLICIT_CLASSIFICATION` for those suggestions.
+Otherwise valid holdings updates preserve the existing canonical/current position
+type and create no classification-history entry. A known-versus-known conflict
+rejects the entire snapshot atomically. Only a separately sourced, previewed and
+confirmed `security classify` correction changes established classification.
+
 Existing account configuration (`account_type`, `tax_status`, `history_complete`,
 `currency`, `institution`, `name`, `active`) survives routine snapshot application.
 New accounts start with their initially accepted metadata. Observed holdings,

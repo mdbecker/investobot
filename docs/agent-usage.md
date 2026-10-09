@@ -85,6 +85,17 @@ require review. Registration cannot bypass this rule. Confirmation updates curre
 positions without changing quantity, basis, lots or historical snapshots. Later
 unknown classifications preserve the accepted type.
 
+An accepted snapshot may establish the initial type of a genuinely new security.
+It cannot correct an existing `OTHER` type: reconciliation returns
+`classification_reviews` entries containing `security_id`, `ticker`,
+`canonical_type`, `observed_type` and `action_required: EXPLICIT_CLASSIFICATION`.
+These are unverified source suggestions, not authorization or invented provenance.
+Otherwise valid holdings updates can proceed while the canonical type stays
+`OTHER`; verify the source and use `security classify` to preview and confirm a
+correction separately. A known-versus-known contradiction rejects the snapshot
+atomically, including other securities and cash in that snapshot. The dashboard
+displays the same classification review information.
+
 Snapshots update holdings, observed lots/balances and observation dates, while
 existing account configuration remains authoritative. Review
 `account_metadata_discrepancies`; they do not block valid holdings updates or

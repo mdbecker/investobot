@@ -73,6 +73,12 @@ symlinks, oversized files and invalid slugs are rejected.
    metadata discrepancies show incoming and accepted values and explain that
    holdings acceptance preserves account configuration. Use the CLI's separate
    previewed `account update --file` and confirmed `--yes` for corrections.
+   Classification suggestions identify the canonical security ID, accepted type
+   and observed type. An existing `OTHER` security stays `OTHER` when the page
+   suggests a supported type; otherwise valid quantity and value updates can
+   still be accepted. The warning provides the explicit classification command
+   for review with a verified source. A contradiction between two known types
+   rejects acceptance of the whole snapshot.
 5. Review source-date status and latest known source date. Ordinary acceptance
    is blocked when an older dated or changed undated snapshot would supersede
    dated state. A separate deliberate override requires a nonempty explanation.
@@ -86,6 +92,9 @@ values, basis and lots; historical snapshots remain fixed. Later incomplete impo
 preserve the corrected type. Classification/account corrections and accepted
 snapshot changes can make saved plans stale, so inspect current plan status
 before considering a previously exported report.
+Newly imported securities may retain their source-supplied initial classification;
+this does not authorize later changes to an existing canonical security. Snapshot
+suggestions do not create classification history or establish verification.
 
 Vanguard, Fidelity NetBenefits and PNC aliases remain provisional until real
 anonymized HTML samples validate their table shapes. No real samples have been

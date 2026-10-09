@@ -44,6 +44,12 @@ Existing account configuration survives holdings imports. Correct an imported
 Undated snapshots replacing dated state require `--allow-older` and a nonempty
 `--justification`; that override never establishes source freshness.
 
+An import can establish a new security's initial classification. For an existing
+`OTHER` security, a known observed type appears in reconciliation's
+`classification_reviews`; accepting holdings preserves `OTHER`. Verify the
+suggestion and use the preview/confirmed classification workflow above. Known
+type contradictions reject snapshot acceptance atomically.
+
 ```sh
 # HTML stays outside Git; create the ignored local-data directory first.
 docker compose run --rm -T app invest portfolio import - \

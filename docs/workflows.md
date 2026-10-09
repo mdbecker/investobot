@@ -74,6 +74,17 @@ Current positions inherit the correction without changing quantity, valuation,
 basis or lots. Historical snapshots stay unchanged. Subsequent unknown source
 classifications preserve the correction; contradictory known types require review.
 
+During reconciliation, inspect `classification_reviews`. Each suggestion contains
+the canonical `security_id`, `ticker`, `canonical_type`, `observed_type` and
+`action_required: EXPLICIT_CLASSIFICATION`; the dashboard shows the same review.
+Accepting an otherwise valid holdings snapshot leaves an existing `OTHER` type
+unchanged. Verify the suggested type against issuer documentation, then run the
+preview and confirmed commands above with the actual ID and sourced provenance.
+Confirmed corrections are audited and identical repeats are no-ops. New securities
+can retain their initially accepted observed type. An established known type
+conflicting with another known type rejects the entire snapshot, including its
+holdings, cash and metadata changes.
+
 Routine snapshots preserve existing `account_type`, `tax_status`,
 `history_complete`, `currency`, `institution`, `name` and `active`. Initial accepted
 metadata establishes a new account's configuration. Reconciliation reports

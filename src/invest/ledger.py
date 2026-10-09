@@ -179,6 +179,25 @@ class Ledger:
             result.update(status="APPLIED", committed=True)
         return result
 
+    def _snapshot_security(self, position, account_id):
+        """Resolve source identities consistently for review and atomic acceptance."""
+        supplied = {key: position[key].strip().upper() for key in ("cusip", "isin", "figi")
+                    if position.get(key)}
+        securities = self.rows("securities")
+        existing = [s for s in securities if any(s.get(k) == v for k, v in supplied.items())]
+        held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
+        if any(sec["id"] in held and sec["ticker"] == position["security"]
+               and any(sec.get(k) and sec[k] != v for k, v in supplied.items())
+               for sec in securities):
+            raise DomainError("Held ticker has conflicting strong identity", 3)
+        if not existing:
+            existing = [s for s in securities if s["ticker"] == position["security"]
+                        and not any(s.get(k) and s[k] != v for k, v in supplied.items())]
+        if len(existing) > 1 or (existing and any(existing[0].get(k) and existing[0][k] != v
+                                                for k, v in supplied.items())):
+            raise DomainError("Security aliases conflict; resolve identity explicitly", 3)
+        return (existing[0] if existing else None), supplied
+
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
@@ -247,8 +266,21 @@ class Ledger:
                 warnings.append("Undated changes may replace more trustworthy dated observations; override required")
         if discrepancies:
             warnings.append("Account configuration is preserved by snapshot application; use invest account update for reviewed corrections")
+        classification_reviews = []
+        for position in snap["positions"]:
+            security, _ = self._snapshot_security(position, account_id)
+            if (security and security.get("asset_type", "OTHER") == "OTHER"
+                    and position["asset_type"] != "OTHER"):
+                classification_reviews.append(dict(security_id=security["id"],
+                    ticker=security["ticker"], canonical_type="OTHER", observed_type=position["asset_type"],
+                    action_required="EXPLICIT_CLASSIFICATION"))
+                warnings.append(f"{security['id']} ({security['ticker']}): source suggests {position['asset_type']}; "
+                    "canonical OTHER is preserved. Verify provenance, then use "
+                    f"invest security classify {security['id']} --asset-type {position['asset_type']} "
+                    '--source "VERIFIED_SOURCE" --confirm for an explicit audited correction')
         known = {s["ticker"] for s in self.rows("securities")}
         return dict(account_id=account_id, changes=changes, observations=observations,
+                    classification_reviews=classification_reviews,
                     account_metadata_discrepancies=discrepancies,
                     source_date_status=source_status, latest_known_source_date=latest_known,
                     override_required=override_required,
@@ -294,31 +326,17 @@ class Ledger:
             self.put("accounts", account_id, account or snap["account"])
             observed_ids = set()
             for p in snap["positions"]:
-                supplied = {key: p[key].strip().upper() for key in ("cusip", "isin", "figi") if p.get(key)}
-                existing = [s for s in self.rows("securities") if any(s.get(k) == v for k, v in supplied.items())]
-                held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
-                if any(sec["id"] in held and sec["ticker"] == p["security"]
-                       and any(sec.get(k) and sec[k] != v for k, v in supplied.items())
-                       for sec in self.rows("securities")):
-                    raise DomainError("Held ticker has conflicting strong identity", 3)
-                if not existing:
-                    existing = [s for s in self.rows("securities") if s["ticker"] == p["security"]
-                                and not any(s.get(k) and s[k] != v for k, v in supplied.items())]
-                if len(existing) > 1 or (existing and any(existing[0].get(k) and existing[0][k] != v for k, v in supplied.items())):
-                    raise DomainError("Security aliases conflict; resolve identity explicitly", 3)
-                sid = existing[0]["id"] if existing else str(uuid.uuid4())
+                existing, supplied = self._snapshot_security(p, account_id)
+                sid = existing["id"] if existing else str(uuid.uuid4())
                 observed_ids.add(sid)
-                security = dict(existing[0]) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
+                security = dict(existing) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
                     asset_type=p["asset_type"], currency=(account or snap["account"])["currency"], cusip=None, isin=None, figi=None)
                 security.update(ticker=p["security"], **supplied)
                 accepted_type = security.get("asset_type", "OTHER")
                 if accepted_type != "OTHER" and p["asset_type"] not in {"OTHER", accepted_type}:
                     raise DomainError("Source security classification conflicts; manual review required", 3)
-                if accepted_type == "OTHER" and p["asset_type"] != "OTHER":
-                    security["asset_type"] = p["asset_type"]
-                    for current in self.rows("positions"):
-                        if current["security_id"] == sid:
-                            self.put("positions", current["id"], dict(current, asset_type=p["asset_type"]))
+                # An observed type is initial metadata only for a new security.
+                # Established OTHER corrections require classify_security().
                 self.put("securities", sid, security)
                 p = dict(p, asset_type=security["asset_type"], id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
                          source_timestamp=snap["source_timestamp"])

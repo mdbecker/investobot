@@ -85,6 +85,9 @@ $('reconcile').addEventListener('click',()=>run(async()=>{
   let warnings = $('snapshot-review-warnings');
   if (!warnings) { warnings = el('div', undefined, 'warnings'); warnings.id = 'snapshot-review-warnings'; $('reconcile-json').before(warnings); }
   const messages = [...(result.warnings || [])];
+  for (const review of result.classification_reviews || []) {
+    messages.push(`${review.ticker || review.security_id} (${review.security_id}): accepted classification ${review.canonical_type}; imported page suggests ${review.observed_type}. Holdings acceptance preserves the accepted type. Review a verified source, then preview invest security classify ${review.security_id} --asset-type ${review.observed_type} --source "Verified source" and use --confirm only after review.`);
+  }
   if (result.account_metadata_discrepancies?.length) messages.push('Incoming account metadata differs. Snapshot acceptance preserves account configuration. Use invest account update for a reviewed correction.');
   if (result.source_date_status === 'UNKNOWN_SOURCE_DATE') messages.push('Source date is unknown. Import time does not establish freshness.');
   if (result.source_date_status === 'OLDER_THAN_ACCEPTED') messages.push('Source date is older than previously accepted observations.');
