@@ -1,5 +1,6 @@
 import json
 import threading
+from http.client import HTTPConnection
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -112,9 +113,28 @@ def forbidden(context):
 
 
 @when("an oversized body is submitted")
-def oversized(context):
-    context["body_bytes_sent"] = 2_100_000
-    context["response"] = request(context, "/api/import", {"html": "x" * 2_100_000})
+def oversized(context, monkeypatch):
+    connection = HTTPConnection("127.0.0.1", context["server"].server_port, timeout=5)
+    sent = bytearray()
+    original_send = connection.send
+
+    def record_send(data):
+        sent.extend(data)
+        original_send(data)
+
+    monkeypatch.setattr(connection, "send", record_send)
+    try:
+        connection.putrequest("POST", "/api/import")
+        connection.putheader("Origin", context["base"])
+        connection.putheader("Content-Type", "application/json")
+        connection.putheader("Content-Length", "2100000")
+        connection.endheaders()
+        context["body_bytes_sent"] = len(sent.partition(b"\r\n\r\n")[2])
+        # Keep the connection open: a body read would time out instead of returning 413.
+        response = connection.getresponse()
+        context["response"] = response.status, json.loads(response.read())
+    finally:
+        connection.close()
 
 
 @then("the request is rejected before parsing")

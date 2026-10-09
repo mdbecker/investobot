@@ -148,6 +148,14 @@ preserves the attached stabilization scope. Real institution HTML and live
 market-data validation remain separate release gates.
 The [SQLite performance PRD v2.3](docs/PRD-v2.3.md) preserves the current baseline,
 query and planning optimization requirements.
+The [final CI stabilization PRD v2.4](docs/PRD-v2.4.md) scopes the oversized HTTP
+request regression to the test harness. Its headers-only request must receive
+HTTP 413 before any body is sent; the existing 2 MB limit remains unchanged.
+Local offline Docker verification does not establish a GitHub Actions result.
+The remote CI acceptance gate remains pending while this work stays unpushed.
+Local v2.4 verification: 309 tests passed, Ruff passed, and the oversized-request
+scenario passed 20 consecutive runs in disposable, offline Docker containers.
+No new credentials, API setup, or institution fixtures are needed for this fix.
 The unchanged synthetic 20-plan Docker workload now uses one shared baseline:
 plan storage grew 10.01 MiB, generation took 1.758 seconds, and list/compare took
 about 0.04 seconds with roughly 12 KiB responses. These are measured observations;
