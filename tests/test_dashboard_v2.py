@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from pytest_bdd import given, scenarios, then, when
 
 from invest.ledger import Ledger
+from invest.plan_storage import load_plan, summaries
 
 scenarios("features/dashboard_v2.feature")
 
@@ -195,7 +196,7 @@ def download(ctx):
     assert code == 200 and report["id"] == ctx["plans"][0]["id"]
     ledger = Ledger(ctx["path"])
     try:
-        assert report == next(p for p in ledger.rows('plans') if p['id'] == report['id'])
+        assert report == next(p for p in [load_plan(ledger, row['id']) for row in summaries(ledger)] if p['id'] == report['id'])
     finally:
         ledger.connection.close()
 

@@ -1,3 +1,4 @@
+
 import json
 
 import pytest
@@ -85,14 +86,16 @@ def legacy(ctx):
 
 @when('the updated ledger opens the database')
 def migrated(ctx):
-    ctx['migrated'] = Ledger(ctx['legacy_path'])
+    import pytest
+
+    from invest.models import DomainError
+    with pytest.raises(DomainError, match='reset'):
+        Ledger(ctx['legacy_path'])
 
 
 @then('the historical data remains readable and planning tables are available')
 def preserved(ctx):
-    assert ctx['migrated'].rows('snapshots')[0]['source_hash'] == 'old'
-    assert ctx['migrated'].rows('activities')[0]['quantity'] == '1'
-    assert ctx['migrated'].connection.execute('PRAGMA user_version').fetchone()[0] == 2
-    assert ctx['migrated'].rows('targets') == []
-    assert ctx['migrated'].rows('target_versions') == []
-    assert ctx['migrated'].rows('plans') == []
+    import sqlite3
+    with sqlite3.connect(ctx['legacy_path']) as connection:
+        assert connection.execute('PRAGMA user_version').fetchone()[0] == 1
+        assert connection.execute('SELECT count(*) FROM snapshots').fetchone()[0] == 1

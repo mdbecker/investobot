@@ -14,6 +14,7 @@ from invest.cli import app
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
+from invest.plan_storage import load_plan, summaries
 from invest.plans import compare, generate, persisted
 from invest.reports import export
 from invest.targets import save
@@ -139,7 +140,7 @@ def price_shape(ctx):
 @then('invalid price input is rejected without persisting a plan')
 def invalid_prices(ctx):
     assert ctx['error'].code == 1
-    assert ctx['ledger'].rows('plans') == []
+    assert [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])] == []
 
 
 @when('a plan uses fresh prices against old source quantities')

@@ -11,6 +11,7 @@ from invest.cli import app
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
+from invest.plan_storage import load_plan, summaries
 from invest.targets import save
 
 scenarios('features/plans_v2.feature')
@@ -215,7 +216,7 @@ def fractions(ctx):
 
 @when('confirmed account activity changes the source state')
 def source_change(ctx):
-    ctx['persisted'] = copy.deepcopy(ctx['ledger'].rows('plans')[0])
+    ctx['persisted'] = copy.deepcopy([load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])][0])
     ctx['ledger'].record_activity({'activity_id': 'interest-1', 'account_id': 'ira',
         'type': 'INTEREST', 'amount': '1', 'date': '2026-10-08'}, yes=True)
 
@@ -225,7 +226,7 @@ def stale(ctx):
     from invest.plans import show
 
     assert show(ctx['ledger'], ctx['plan']['id'])['status'] == 'STALE'
-    assert ctx['ledger'].rows('plans')[0] == ctx['persisted']
+    assert [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])][0] == ctx['persisted']
 
 
 @when('two alternatives are planned against the same portfolio')
@@ -277,7 +278,7 @@ def invalid_plan(ctx):
 @then('planning rejects mixed currencies without saving a plan')
 def rejected(ctx):
     assert ctx['error'].code == 3
-    assert ctx['ledger'].rows('plans') == []
+    assert [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])] == []
 
 
 @when('the agent generates compares and exports plans through the CLI')
@@ -305,5 +306,5 @@ def exported(ctx):
         assert r.exit_code == 0, r.output
         assert json.loads(r.stdout)
     assert json.loads(ctx['report_path'].read_text()) == next(
-        p for p in ctx['ledger'].rows('plans') if p['id']==ctx['first_id'])
+        p for p in [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])] if p['id']==ctx['first_id'])
     assert ctx['ledger'].state() == ctx['before']

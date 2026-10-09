@@ -1,7 +1,8 @@
 # Canonical local data model
 
-SQLite schema **version 2** uses standard `sqlite3` and small explicit migrations;
-no ORM is involved. Tables store an `id` primary key and normalized JSON `data`.
+SQLite schema **version 3** uses standard `sqlite3`; no ORM is involved.
+Portfolio and target tables store an `id` primary key and normalized JSON `data`.
+Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
 are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 
@@ -17,12 +18,13 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `market_data_cache`, `fund_holdings_cache` | Normalized public provider observations and provenance |
 | `trade_proposals` | Retained legacy proposal storage |
 | `targets`, `target_versions` | Current target metadata/pointer and immutable full target versions |
-| `plans` | Immutable hypothetical plans with their reproducible inputs/results |
+| `plan_baselines` | Content-addressed immutable planning inputs, shared by alternatives |
+| `plans` | Baseline reference, dates/status, compact summary, immutable details and assumption hashes |
 
-Migration from version 1 adds `targets`, `target_versions` and `plans` without
-replacing existing tables or historical financial rows. Databases with a newer
-unsupported schema are rejected. Back up the local database before changing
-runtimes or versions. Compose uses `/data/portfolio.db`; native defaults are
+Version 3 initializes a fresh database. Incompatible older databases are rejected
+with reset instructions; startup never deletes data. There are no migrations,
+backfills or legacy saved-plan readers. See the deliberate
+[reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are
 platformdirs Investobot directories. `INVEST_DB` selects an explicit path; two
 paths are the same ledger only when they refer to the same mounted file.
 
@@ -117,7 +119,12 @@ allows one active target, changes metadata only and never trades. Status changes
 are overlaid for latest-version display; historical rows remain immutable.
 Archive preserves versions and historical plan references.
 
-A persisted plan stores target version, actual source state/hash and snapshot IDs,
+A persisted plan references an immutable baseline by its SHA-256 planning-state
+fingerprint. The baseline contains current accounts, identities, positions, lots,
+cash, confirmed activity history and compact latest observation provenance.
+Historical snapshot payloads remain in the ledger and are not copied into plans.
+Identical planning inputs reuse one baseline; baseline and plan insertion are one
+transaction. Plan-specific details store target version and snapshot IDs,
 source dates, hypothetical prices with provenance, tax assumptions, constraints,
 proposed actions, exact proposed taxable lots, exposure/tax calculations,
 remaining drift, account cash, turnover, warnings and generated status. It never
@@ -125,7 +132,10 @@ modifies accepted holdings or provider caches. The heuristic is deterministic,
 conservative and not globally optimal.
 
 Displayed plan status becomes `STALE` when its source-state hash differs from the
-current canonical state; the persisted row is not rewritten. Recalculation creates
+current planning state; the persisted row is not rewritten. Unrelated older
+audit snapshots do not invalidate it. Relevant quantities, basis, prices,
+classification, account configuration, activity and observation provenance do.
+Recalculation creates
 a new plan. Classification corrections, account configuration changes and accepted
 snapshots participate in this detection. `READY_FOR_HUMAN_REVIEW` is not approval to trade and is unavailable
 when critical planning data remains unresolved. Report rendering uses persisted
@@ -136,10 +146,14 @@ SHA-256 content hash.
 Compact generation/list/comparison responses share one domain summary derived
 from saved metrics, with current stale status overlaid and original generated
 status retained. Warnings are previewed in saved order (at most five), with their
-total count. Unknown optional legacy metrics remain null or safely empty. SQLite
-JSON extraction avoids loading complete saved source histories for list/compare;
-the live household is hashed once per operation. This changes neither the schema
-nor persisted plan JSON. Explicit `plan show` and report exports retain full data.
+total count. Unknown metrics remain null or safely empty. List and compare read
+only `summary_json`, baseline IDs and required metadata/assumption hashes;
+neither reads `details_json` or baseline `state_json`. The current planning state
+is hashed once per operation. Explicit `plan show` joins one selected plan with
+its baseline to reconstruct full details. Reports use those saved inputs/results.
+The creation-order index is `plans_created_idx (created_at DESC, id DESC)`;
+baseline and plan lookup use their primary keys. Foreign keys remain enforced
+and SQLite uses a 5,000 ms busy timeout.
 
 ## Contracts, arithmetic and prompts
 

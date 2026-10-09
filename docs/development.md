@@ -1,6 +1,61 @@
 # Development evidence
 All tests and dependency tools run in Docker. Conventional red/green commits track feature work. Synthetic BDD fixtures need no credentials or internet.
 
+## Deliberate schema reset
+
+SQLite schema 3 initializes only a fresh database and rejects incompatible older
+schemas with a structured inconsistent-state error. It never deletes a database
+on startup. Version 2 records, including saved plans, are not migrated or converted.
+A reset discards all accepted holdings, lots, activity, targets and plans in the
+selected ledger. Reimport reviewed source observations and recreate targets after
+resetting. Keep a private backup first if any information may be needed later.
+
+For Compose, stop the application and remove only the ledger database and its
+SQLite sidecars from the mounted data volume after making that decision:
+
+```sh
+docker compose stop app
+docker compose run --rm --no-deps app sh -c 'rm -f /data/portfolio.db /data/portfolio.db-wal /data/portfolio.db-shm'
+docker compose up --build -d
+```
+
+This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
+If `INVEST_DB` selects another file, identify its actual mounted path first and
+delete only that chosen database and matching sidecars. Do not use
+`docker compose down --volumes` for a database-only reset: it also removes prompts
+and dependency volumes. The application initializes schema 3 on the next access.
+
+For native installations, stop every process using the ledger. Locate the exact
+`INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
+needed, then deliberately delete that database and its matching `-wal`/`-shm`
+files. Retain the sibling `prompts` directory. Restart using the same selected
+path. No native dependency installation is needed for this development workflow;
+all verification below uses fresh disposable Docker ledgers.
+
+## PRD v2.3 implementation
+
+The attachment is preserved verbatim in [PRD-v2.3.md](PRD-v2.3.md). Packages proceed
+in order: shared baselines/schema, efficient plan queries, planner hot path, then
+performance verification. Financial semantics, Decimal precision, explicit
+mutations and manual execution remain the governing constraints.
+
+Schema 3 separates `plan_baselines.state_json` from `plans.summary_json` and
+`plans.details_json`. Identical source financial inputs share a canonical baseline
+hash. Baseline/plan insertion is atomic. Current planning-state reads project
+latest observation provenance instead of loading historical snapshot payloads,
+and retain confirmed activity needed by existing tax/wash-sale analysis.
+Listing/comparison read summaries and assumption hashes, with one current-state
+hash per operation. Full retrieval joins one plan to its baseline; report export
+uses saved results without live prices or tax recomputation.
+
+The older benchmark results below are historical measurements of previous
+schemas, not current performance claims. Package 4 records a fresh isolated run
+with the unchanged 10-account/1,000-position/2,000-lot/200-snapshot/20-plan
+synthetic workload. Timing targets are observations to evaluate, never brittle CI
+limits. Response sizes and shared-baseline reuse are deterministic requirements.
+No new accounts, credentials, providers or institution HTML are required for this
+optimization. Existing manual institution/provider validation remains separate.
+
 Foundation: observed3 missing-ledger failures before implementation; green3. Import consistency:1 expected failure and5 existing-behavior regression passes; green9. Tax/market/inspection: modules absent before implementation; full suite42 green. Exposure/normalization/bonds: expected4+2+4 failures; full suite52 green.
 
 A parallel tax audit wrote new scenarios between the52-test run and the following commit, so that commit also contains red tests. The coordinator then observed3 expected audit failures (retained-share quantity, missing estimate assumptions, unknown tax status); production was unchanged until this red evidence commit. The passing mixed-loss/net-gain audit scenario verifies behavior already implemented. Coordinate test writes at commit boundaries to avoid this race.

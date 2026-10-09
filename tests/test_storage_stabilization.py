@@ -7,6 +7,7 @@ from pytest_bdd import given, scenarios, then, when
 
 from invest.ledger import Ledger
 from invest.market import MarketClient
+from invest.plan_storage import load_plan, summaries
 from invest.plans import generate, list_plans, persisted, show
 from invest.reports import export
 from invest.targets import save
@@ -136,7 +137,7 @@ def accessible(ctx):
     result = ctx["measurements"]
     assert result["plan_count"] == 20
     assert result["listed_plan_count"] == 20
-    assert result["retrieved_plan_id"] in {p["id"] for p in ctx["ledger"].rows("plans")}
+    assert result["retrieved_plan_id"] in {p["id"] for p in [load_plan(ctx["ledger"], row['id']) for row in summaries(ctx["ledger"])]}
     assert (ctx["directory"] / "benchmark-report.md").read_text().startswith("# ")
 
 

@@ -8,6 +8,7 @@ import pytest
 from pytest_bdd import given, scenarios, then, when
 
 from invest.ledger import Ledger
+from invest.plan_storage import load_plan, summaries
 from invest.web import create_server
 
 scenarios('features/planning_web.feature')
@@ -106,7 +107,7 @@ def plan(ctx):
 def report(ctx):
     status, value = request(ctx, '/api/plans/'+ctx['plan']['id']+'/report?format=json')
     assert status == 200
-    assert value == ctx['ledger'].rows('plans')[0]
+    assert value == [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])][0]
     assert ctx['ledger'].state() == ctx['before']
 
 

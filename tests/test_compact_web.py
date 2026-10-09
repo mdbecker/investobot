@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 from invest import plans, targets
 from invest.cli import app
 from invest.ledger import Ledger
+from invest.plan_storage import load_plan, summaries
 from invest.web import _get_api, _planning_post
 
 scenarios('features/compact_web.feature')
@@ -56,7 +57,7 @@ def generated_summary(ctx):
 def alternatives(ctx):
     generate(ctx)
     generate(ctx)
-    ids = [p['id'] for p in ctx['ledger'].rows('plans')]
+    ids = [p['id'] for p in [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])]]
     ctx['list'] = _get_api(ctx['ledger'], '/api/plans', {})
     ctx['compare'] = _planning_post(ctx['ledger'], '/api/plans/compare', {'plan_ids': ids})
 
@@ -74,7 +75,7 @@ def compact(ctx):
 
 @then('explicit inspection retrieval preserves full details and reports')
 def full(ctx):
-    saved = ctx['ledger'].rows('plans')[0]
+    saved = [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])][0]
     assert _get_api(ctx['ledger'], '/api/plans/' + saved['id'], {}) == saved
     report, _, _ = _get_api(ctx['ledger'], '/api/plans/' + saved['id'] + '/report',
                                 {'format': ['json']})

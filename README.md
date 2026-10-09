@@ -29,6 +29,9 @@ Plan generation, listing and comparison return compact summaries with saved
 metrics, current stale status and a short warning preview. `plan show PLAN_ID`
 retrieves full details and may return large JSON; prefer Markdown report export
 for human review. Saved financial inputs and report contents remain unchanged.
+Alternatives reuse one immutable planning baseline containing current financial
+facts and observation provenance. Historical snapshots stay in the ledger;
+listing/comparison read summaries, while full retrieval loads one selected plan.
 
 [Complete working examples](docs/workflows.md) cover synchronization, tax-loss
 harvesting, fund comparisons, three alternative targets, plan comparison,
@@ -106,6 +109,10 @@ Native CLI execution is supported for users who separately choose a local Python
 configuration and prompt storage. Native defaults use platformdirs `investobot`
 directories. A native default and Compose's data volume are different ledgers;
 configure both paths to the same mounted file deliberately when sharing state.
+Schema 3 requires a fresh ledger; older databases produce a reset error and are
+never deleted automatically. Follow the deliberate
+[database-reset procedure](docs/development.md#deliberate-schema-reset) before
+recreating disposable state. Reset discards holdings, targets and saved plans.
 
 ## External data and remaining manual validation
 
@@ -139,6 +146,8 @@ The [stabilization PRD v2.1](docs/PRD-v2.1.md) preserves the final MVP requireme
 The [final usability and classification audit PRD v2.2](docs/PRD-v2.2.md)
 preserves the attached stabilization scope. Real institution HTML and live
 market-data validation remain separate release gates.
+The [SQLite performance PRD v2.3](docs/PRD-v2.3.md) preserves the current baseline,
+query and planning optimization requirements.
 See [data model](docs/data-model.md), [targets](docs/targets.md),
 [plans and reports](docs/plans.md), [prompts](docs/prompts.md),
 [bonds](docs/bonds.md) and [development rules](AGENTS.md).

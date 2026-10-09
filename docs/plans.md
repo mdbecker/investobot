@@ -30,12 +30,13 @@ Tax metrics retain saved short/long-term gain/loss and estimated tax effect.
 Drift metrics show maximum absolute remaining weight difference and the number
 outside the saved target tolerance. Decimal values are strings; unknown metrics
 remain null. The warning preview contains at most the first five saved warnings
-in original order. Legacy records missing optional fields remain readable.
+in original order. Unknown metrics remain explicit.
 
 These summaries reuse saved calculations; they omit actions, lots, exposure
 datasets and portfolio histories. List and compare extract only required fields
-from SQLite JSON and hash the current household once per request. Persisted plan
-format and financial calculations remain unchanged. The dashboard uses the same
+from dedicated summary columns and hash the current planning state once per
+request. Comparison reads only the selected summaries and assumption hashes.
+Financial calculations retain their existing semantics. The dashboard uses the same
 summary representation at `/api/plans`, `/api/plans/generate` and
 `/api/plans/compare`.
 
@@ -51,3 +52,21 @@ READY_FOR_HUMAN_REVIEW still requires a human decision. Changes to actual state
 make existing plans STALE at read time; `generated_status` preserves the saved
 status. Immutable inputs are retained, and recalculation creates a new plan.
 Target activation never executes the actions.
+
+## Shared planning baselines
+
+Alternatives with identical source financial inputs reference one immutable
+baseline. It stores current accounts, security identities, holdings, known lots,
+cash, confirmed activity history and latest accepted observation provenance.
+Historical account snapshots stay in the ledger rather than being embedded in
+each plan. Plan details retain pinned targets, assumptions, actions and calculated
+results. A changed source portfolio creates a new baseline; historical plans and
+reports retain their original inputs.
+
+Staleness compares the baseline ID with a canonical SHA-256 fingerprint of current
+planning inputs. Quantities, basis, accepted prices, account/security metadata,
+confirmed activity and relevant source provenance participate. Unrelated older
+audit history does not. Listing and comparison never deserialize full details or
+baselines. Showing a plan or exporting its report loads only that plan and its
+referenced baseline. Schema 3 requires a deliberate
+[database reset](development.md#deliberate-schema-reset) for older installations.

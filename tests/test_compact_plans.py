@@ -12,6 +12,7 @@ from invest.cli import app
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
+from invest.plan_storage import save_plan
 from invest.reports import render
 from invest.targets import save
 
@@ -39,14 +40,14 @@ def empty(ctx):
 
 @given('twenty saved alternatives with large synthetic histories')
 def alternatives(ctx):
-    baseline = plans.state_hash(ctx['ledger'].state())
+    baseline = plans.state_hash(ctx['ledger'].planning_state())
     for i in range(20):
         pid = f'plan-{i:02}'
         value = {'id': pid, 'name': f'Alternative {i}', 'target_version_id': 'version-1',
                  'created_at': f'2026-10-{8 + i // 2:02}T12:00:00Z', 'as_of': '2026-10-08',
                  'status': 'READY_FOR_HUMAN_REVIEW', 'source_state_hash': baseline,
                  'source_snapshot_ids': ['snapshot-1'],
-                 'source_state': {'snapshots': [{'synthetic_history': 'x' * 10000}] * 20},
+                 'source_state': ctx['ledger'].planning_state(),
                  'assumptions': {'prices': {'security': {'price': '100'}}, 'tax_rates': None},
                  'target': {'planning_constraints': {'target_tolerance': '0.01'}},
                  'proposed_actions': [{'type': 'SELL', 'quantity': '1', 'price': '100'}],
@@ -57,7 +58,7 @@ def alternatives(ctx):
                                             {'difference_weight': '0.01'}],
                  'warnings': [f'Saved warning {j}' for j in range(8)]}
         with ctx['ledger'].connection:
-            ctx['ledger'].put('plans', pid, value)
+            save_plan(ctx['ledger'], value)
         ctx['ids'].append(pid)
 
 
@@ -129,7 +130,7 @@ def ordered(ctx):
         [p['created_at'] for p in values], reverse=True)
     for first, second in zip(values, values[1:]):
         if first['created_at'] == second['created_at']:
-            assert first['id'] < second['id']
+            assert first['id'] > second['id']
 
 
 @then('compatible alternatives disclose matching assumptions without ranking')
@@ -151,10 +152,11 @@ def incompatible(ctx, assumption):
     elif assumption == 'analysis date':
         value['as_of'] = '2026-10-09'
     else:
-        value['source_state_hash'] = 'different-baseline'
+        value['source_state']['activities'] = [{'id': 'different-baseline'}]
         value['source_snapshot_ids'] = ['snapshot-2']
     with ctx['ledger'].connection:
-        ctx['ledger'].put('plans', value['id'], value)
+        ctx['ledger'].connection.execute('DELETE FROM plans WHERE id=?', (value['id'],))
+        save_plan(ctx['ledger'], value)
 
 
 @then(parsers.parse('comparison identifies incompatible {assumption}'))
@@ -239,9 +241,11 @@ def reproducible(ctx):
 @given('a saved legacy plan without optional financial fields')
 def legacy(ctx):
     value = {'id': 'legacy', 'name': 'Legacy', 'status': 'REVIEW_REQUIRED',
-             'source_state_hash': plans.state_hash(ctx['ledger'].state())}
+             'source_state_hash': plans.state_hash(ctx['ledger'].planning_state()),
+             'source_state': ctx['ledger'].planning_state(), 'created_at': '2026-10-08', 'as_of': '2026-10-08'}
     with ctx['ledger'].connection:
-        ctx['ledger'].put('plans', value['id'], value)
+        ctx['ledger'].connection.execute('DELETE FROM plans WHERE id=?', (value['id'],))
+        save_plan(ctx['ledger'], value)
 
 
 @then('unknown summary values are null and warnings are empty')

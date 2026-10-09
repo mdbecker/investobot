@@ -25,7 +25,7 @@ from invest.targets import save
 
 def build_fixture(ledger):
     """Seed 10 accounts, 1000 positions, 2000 lots and 200 dated snapshots."""
-    if any(ledger.state().values()) or ledger.rows("plans"):
+    if any(ledger.state().values()) or ledger.connection.execute("SELECT id FROM plans LIMIT 1").fetchone():
         raise ValueError("Benchmark requires an empty disposable ledger")
     security_ids = [f"synthetic-security-{i:03d}" for i in range(100)]
     account_ids = [f"synthetic-account-{i:02d}" for i in range(10)]
@@ -109,7 +109,7 @@ def measure(ledger, fixture, directory):
     ledger.connection.commit()
     after = ledger.path.stat().st_size
     count, average = ledger.connection.execute(
-        "SELECT COUNT(*), AVG(LENGTH(CAST(data AS BLOB))) FROM plans"
+        "SELECT COUNT(*), AVG(LENGTH(CAST(details_json AS BLOB))) FROM plans"
     ).fetchone()
     started = perf_counter()
     listed = list_plans(ledger)

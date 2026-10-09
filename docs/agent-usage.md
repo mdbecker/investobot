@@ -29,6 +29,10 @@ A market cache write never changes accepted holdings, marks or tax lots.
 The Compose ledger is `/data/portfolio.db` in a named volume. `INVEST_DB` selects
 another explicit path; confirm its mount before using it. Back up the ledger
 before changing runtimes. Dependency resolution, execution and tests use Docker.
+Schema 3 rejects incompatible older databases. Reset only after a deliberate
+decision to discard the selected ledger; follow the
+[reset procedure](development.md#deliberate-schema-reset). No migration or old-plan
+conversion is available. Prompt files can be retained independently.
 
 ## Research and data provenance
 
@@ -146,6 +150,12 @@ flags incompatible source, price, tax or date assumptions and supplies no rankin
 Use these commands for routine alternatives; `plan show PLAN_ID` deliberately
 returns complete details and may produce a large JSON response. Prefer Markdown
 report export for human review, and request full details only when needed.
+Alternatives reuse a content-addressed immutable baseline of current financial
+inputs and latest observation provenance. Full historical snapshots remain in
+the authoritative ledger. List/compare read summary columns and hash current
+planning inputs once; full retrieval and report export load only the selected
+plan and baseline. Relevant financial/provenance changes make plans stale;
+unrelated older audit history does not. Reports continue to use saved facts.
 
 `portfolio overview` supplies the same overview domain data as the dashboard.
 Use `prompt list` / `prompt show SLUG` to inspect full reusable Markdown, or

@@ -10,6 +10,7 @@ from invest.contracts import tools_describe
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
+from invest.plan_storage import load_plan, summaries
 from invest.plans import generate, show
 from invest.targets import save
 
@@ -195,7 +196,7 @@ def account_audit(ctx):
 @then('saved plans are stale')
 def stale(ctx):
     assert show(ctx['ledger'], ctx['plan']['id'])['status'] == 'STALE'
-    assert ctx['ledger'].rows('plans')[0] == ctx['plan']
+    assert [load_plan(ctx['ledger'], row['id']) for row in summaries(ctx['ledger'])][0] == ctx['plan']
 
 
 @when(parsers.parse('an invalid account update "{case}" is confirmed'))

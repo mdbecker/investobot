@@ -3,9 +3,9 @@ import sqlite3
 import pytest
 from pytest_bdd import given, scenarios, then, when
 
+from invest import plans
 from invest.ledger import Ledger
 from invest.models import DomainError
-from invest import plans
 
 scenarios('features/planning_baselines.feature')
 

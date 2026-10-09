@@ -34,7 +34,6 @@ TABLES = [
     "trade_proposals",
     "targets",
     "target_versions",
-    "plans",
 ]
 ACCOUNT_SETTINGS = ("account_type", "tax_status", "history_complete", "currency",
                     "institution", "name", "active")
@@ -52,20 +51,26 @@ class Ledger:
         self.connection = sqlite3.connect(self.path)
         self.connection.execute("PRAGMA foreign_keys=ON")
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
-        if version > 2:
-            raise DomainError("Database schema is newer than this application", 3)
+        self.connection.execute("PRAGMA busy_timeout=5000")
+        if version not in {0, 3}:
+            self.connection.close()
+            raise DomainError("Incompatible database schema; stop Investobot and deliberately reset the database (see docs/development.md)", 3)
         if version == 0:
+            if self.connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchone():
+                self.connection.close()
+                raise DomainError("Unversioned database is not empty; deliberate reset required", 3)
             with self.connection:
                 for table in TABLES:
-                    self.connection.execute(
-                        f"CREATE TABLE {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)"
-                    )
-                self.connection.execute("PRAGMA user_version=1")
-        if version < 2:
-            with self.connection:
-                for table in ("targets", "target_versions", "plans"):
-                    self.connection.execute(f"CREATE TABLE IF NOT EXISTS {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
-                self.connection.execute("PRAGMA user_version=2")
+                    self.connection.execute(f"CREATE TABLE {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
+                self.connection.execute("CREATE TABLE plan_baselines (id TEXT PRIMARY KEY, state_json TEXT NOT NULL)")
+                self.connection.execute("""CREATE TABLE plans (
+                    id TEXT PRIMARY KEY, baseline_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL, as_of TEXT NOT NULL, generated_status TEXT NOT NULL,
+                    summary_json TEXT NOT NULL, details_json TEXT NOT NULL,
+                    price_assumptions_hash TEXT NOT NULL, tax_assumptions_hash TEXT NOT NULL,
+                    FOREIGN KEY (baseline_id) REFERENCES plan_baselines(id))""")
+                self.connection.execute("CREATE INDEX plans_created_idx ON plans (created_at DESC, id DESC)")
+                self.connection.execute("PRAGMA user_version=3")
 
     def rows(self, table):
         if table not in TABLES:
@@ -102,6 +107,26 @@ class Ledger:
                 "snapshots",
             ]
         }
+
+    def planning_state(self):
+        """Current financial inputs plus compact latest accepted provenance; no audit payloads."""
+        state = {table: self.rows(table) for table in (
+            "accounts", "securities", "positions", "lots", "cash_balances", "activities")}
+        query = """SELECT id, account_id, imported_at, source_timestamp, source_hash,
+                          positions_complete, lots_complete FROM (
+            SELECT id, json_extract(data, '$.account.id') AS account_id,
+                json_extract(data, '$.imported_at') AS imported_at,
+                json_extract(data, '$.source_timestamp') AS source_timestamp,
+                json_extract(data, '$.source_hash') AS source_hash,
+                json_extract(data, '$.positions_complete') AS positions_complete,
+                json_extract(data, '$.lots_complete') AS lots_complete,
+                ROW_NUMBER() OVER (PARTITION BY json_extract(data, '$.account.id')
+                    ORDER BY json_extract(data, '$.imported_at') DESC, id DESC) AS ordinal
+            FROM snapshots) WHERE ordinal=1 ORDER BY account_id"""
+        state['snapshots'] = [dict(id=r[0], account={'id': r[1]}, imported_at=r[2],
+            source_timestamp=r[3], source_hash=r[4], positions_complete=bool(r[5]),
+            lots_complete=bool(r[6])) for r in self.connection.execute(query)]
+        return state
 
     def resolve(self, alias):
         matches = [

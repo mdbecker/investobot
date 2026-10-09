@@ -20,7 +20,24 @@ SUPPORTED = {'STOCK', 'ETF', 'MUTUAL_FUND'}
 
 
 def state_hash(state):
-    return hashlib.sha256(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()
+    """Canonical financial fingerprint, independent of incidental collection order."""
+    numeric_fields = {'quantity', 'remaining_quantity', 'price', 'market_value', 'cost_basis',
+                      'amount', 'fee', 'execution_price', 'gross_amount', 'net_amount'}
+    def canonical(value, field=None):
+        if isinstance(value, dict):
+            return {k: canonical(v, k) for k, v in sorted(value.items())}
+        if isinstance(value, list):
+            items = [canonical(v) for v in value]
+            return sorted(items, key=lambda v: json.dumps(v, sort_keys=True, default=str))
+        if isinstance(value, Decimal):
+            return _number(value)
+        if isinstance(value, str) and field in numeric_fields:
+            try:
+                return _number(decimal(value))
+            except (ValueError, DomainError):
+                return value
+        return value
+    return hashlib.sha256(json.dumps(canonical(state), sort_keys=True, default=str).encode()).hexdigest()
 
 
 def _number(value):
@@ -87,7 +104,7 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
     increase budgets. This is deliberately conservative, not global optimization.
     """
     as_of = date.fromisoformat(as_of) if as_of else date.today()
-    state = ledger.state()
+    state = ledger.planning_state()
     household_currency(state)
     target = target_show(ledger, target_id, version=version)
     target = {k: v for k, v in target.items() if k != 'versions'}
@@ -285,8 +302,8 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         turnover=_number(sum((decimal(a['quantity']) * decimal(a['price']) for a in actions), ZERO)),
         trade_count=len(actions), warnings=list(dict.fromkeys(warnings)),
         status='REVIEW_REQUIRED' if critical else 'READY_FOR_HUMAN_REVIEW')
-    with ledger.connection:
-        ledger.put('plans', plan['id'], plan)
+    from invest.plan_storage import save_plan
+    save_plan(ledger, plan)
     return plan
 
 
@@ -295,15 +312,13 @@ def constraints_decimal(constraints, key):
 
 
 def persisted(ledger, plan_id):
-    row = ledger.connection.execute('SELECT data FROM plans WHERE id=?', (plan_id,)).fetchone()
-    if row is None:
-        raise DomainError('Plan does not exist')
-    return json.loads(row[0])
+    from invest.plan_storage import load_plan
+    return load_plan(ledger, plan_id)
 
 
 def show(ledger, plan_id):
     plan = persisted(ledger, plan_id)
-    if plan['source_state_hash'] != state_hash(ledger.state()):
+    if plan['source_state_hash'] != state_hash(ledger.planning_state()):
         return dict(plan, status='STALE', generated_status=plan['status'])
     return plan
 
@@ -339,43 +354,14 @@ def plan_summary(plan, current_state_hash=None):
 
 
 def _projected(ledger, plan_ids=None):
-    """SQLite parses immutable JSON; Python receives only summary/comparison inputs.
-
-    Projection intentionally excludes source state, actions, exposure, tax analyses
-    and full target constraints. It works with existing rows, requiring no migration.
-    """
-    fields = ('id', 'name', 'target_version_id', 'created_at', 'as_of', 'status',
-              'source_state_hash', 'trade_count', 'turnover')
-    scalars = ', '.join(f"'{key}', json_extract(data, '$.{key}')" for key in fields)
-    assumptions = """, 'assumptions', json_object(
-        'prices', json_extract(data, '$.assumptions.prices'),
-        'tax_rates', json_extract(data, '$.assumptions.tax_rates'))""" if plan_ids else ''
-    selection = """
-        json_object(
-            SCALAR_FIELDS,
-            'target', json_object('planning_constraints', json_object(
-                'target_tolerance', json_extract(data, '$.target.planning_constraints.target_tolerance'))),
-            'tax_analysis', json_object(
-                'short_term_gain_loss', json_extract(data, '$.tax_analysis.short_term_gain_loss'),
-                'long_term_gain_loss', json_extract(data, '$.tax_analysis.long_term_gain_loss'),
-                'estimated_tax_effect', json_extract(data, '$.tax_analysis.estimated_tax_effect')),
-            'remaining_target_drift', json((SELECT json_group_array(json_object(
-                'difference_weight', json_extract(value, '$.difference_weight')))
-                FROM json_each(data, '$.remaining_target_drift'))),
-            '_warning_count', coalesce(json_array_length(data, '$.warnings'), 0),
-            'warnings', json((SELECT json_group_array(value) FROM json_each(data, '$.warnings')
-                              WHERE CAST(key AS INTEGER) < 5)) ASSUMPTIONS)
-    """.replace('SCALAR_FIELDS', scalars).replace('ASSUMPTIONS', assumptions)
-    # Requested IDs are bound parameters, never interpolated into SQL.
-    where = ' WHERE id IN (' + ','.join('?' for _ in plan_ids) + ')' if plan_ids else ''
-    query = f"SELECT {selection} FROM plans{where} ORDER BY json_extract(data, '$.created_at') DESC, id ASC"
-    return [json.loads(row[0]) for row in ledger.connection.execute(query, plan_ids or ())]
+    from invest.plan_storage import summaries
+    return summaries(ledger, plan_ids)
 
 
 def list_plans(ledger):
     plans = _projected(ledger)
-    current = state_hash(ledger.state()) if plans else None
-    return {'plans': [plan_summary(plan, current) for plan in plans]}
+    current = state_hash(ledger.planning_state()) if plans else None
+    return {'plans': [dict(plan['summary'], status='STALE' if plan['source_state_hash'] != current else plan['summary']['generated_status']) for plan in plans]}
 
 
 def compare(ledger, *plan_ids):
@@ -385,10 +371,10 @@ def compare(ledger, *plan_ids):
     if any(pid not in selected for pid in plan_ids):
         raise DomainError('Plan does not exist')
     plans = [selected[pid] for pid in plan_ids]
-    current = state_hash(ledger.state())
+    current = state_hash(ledger.planning_state())
     source_same = len({p['source_state_hash'] for p in plans}) == 1
-    prices_same = len({json.dumps(p['assumptions']['prices'], sort_keys=True) for p in plans}) == 1
-    tax_same = len({json.dumps(p['assumptions']['tax_rates'], sort_keys=True) for p in plans}) == 1
+    prices_same = len({p['price_assumptions_hash'] for p in plans}) == 1
+    tax_same = len({p['tax_assumptions_hash'] for p in plans}) == 1
     warnings = []
     if not source_same:
         warnings.append('Plans use different source snapshots; comparisons are not a common baseline')
@@ -399,7 +385,7 @@ def compare(ledger, *plan_ids):
     date_same = len({p['as_of'] for p in plans}) == 1
     if not date_same:
         warnings.append('Plans use different analysis dates')
-    return dict(plans=[plan_summary(p, current) for p in plans],
+    return dict(plans=[dict(p['summary'], status='STALE' if p['source_state_hash'] != current else p['summary']['generated_status']) for p in plans],
                 same_source_snapshot=source_same, same_price_assumptions=prices_same,
                 same_tax_assumptions=tax_same, same_analysis_date=date_same, warnings=warnings,
                 ranking=None)
