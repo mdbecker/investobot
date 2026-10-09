@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from decimal import Decimal
 
 from invest.analytics import exposure
-from invest.ledger import activity_change, household_currency, summarize
+from invest.ledger import activity_change_inplace, household_currency, summarize
 from invest.models import DomainError, decimal
 from invest.tax import analyze
 
@@ -71,8 +71,7 @@ def simulate(state, client, actions, rates=None):
         analysis = None
         if kind == "SELL":
             # Future purchases supplied in the scenario are known hypothetical acquisitions.
-            tax_state = copy.deepcopy(working)
-            tax_state["activities"] += planned
+            tax_state = dict(working, activities=working["activities"] + planned)
             qty = decimal(action["quantity"])
             fee = decimal(action.get("fee", "0"))
             price = decimal(action["price"])
@@ -95,7 +94,7 @@ def simulate(state, client, actions, rates=None):
         simulated_action = dict(action)
         if analysis and analysis["selected_lots"]:
             simulated_action["lot_allocations"] = [{"lot_id": l["id"], "quantity": l["quantity"]} for l in analysis["selected_lots"]]
-        working, change = activity_change(working, simulated_action)
+        working, change = activity_change_inplace(working, simulated_action)
         # Hypothetical marks are explicit scenario assumptions, never ledger price updates.
         security = next(s for s in working["securities"] if action["security"] in {s["id"], s["ticker"]})
         position = next(p for p in working["positions"] if p["account_id"] == action["account_id"] and p["security_id"] == security["id"])

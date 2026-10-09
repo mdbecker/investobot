@@ -484,7 +484,12 @@ def summarize(state):
 
 
 def activity_change(state, activity):
-    state = copy.deepcopy(state)
+    """Public copy-on-write accounting transform; failed changes cannot alter input."""
+    return activity_change_inplace(copy.deepcopy(state), activity)
+
+
+def activity_change_inplace(state, activity):
+    """Shared accounting for disposable working states; discard state on failure."""
     account_id, kind = activity["account_id"], activity["type"].upper()
     account = next((a for a in state["accounts"] if a["id"] == account_id), None)
     if not account:

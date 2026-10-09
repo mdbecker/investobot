@@ -70,3 +70,11 @@ audit history does not. Listing and comparison never deserialize full details or
 baselines. Showing a plan or exporting its report loads only that plan and its
 referenced baseline. Schema 3 requires a deliberate
 [database reset](development.md#deliberate-schema-reset) for older installations.
+
+Planning computes initial allocation once, maintains Decimal security/cash maps
+while proposing actions, then checks them against the authoritative scenario
+engine's final allocation and cash. A mismatch rejects the plan before saving.
+The retirement-first strategy, exact taxable lot selection, positive gain budgets,
+account permissions and trade increments retain their existing rules. Shared
+accounting applies each hypothetical action to a disposable working state;
+accepted holdings and caches remain unchanged.

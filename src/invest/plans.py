@@ -8,7 +8,7 @@ from datetime import date, datetime, timezone
 from decimal import ROUND_FLOOR, Decimal
 
 from invest.analytics import exposure
-from invest.ledger import activity_change, household_currency
+from invest.ledger import activity_change_inplace, household_currency
 from invest.models import DomainError, decimal
 from invest.scenarios import readonly_client, simulate
 from invest.targets import allocation_diff
@@ -57,11 +57,14 @@ def _prices(state, target, supplied, as_of, warnings):
     if not isinstance(supplied, dict) or set(supplied) - securities.keys():
         raise DomainError('Price assumptions must map registered canonical security IDs to observations')
     result = {}
+    dated_prices = {}
+    for position in state['positions']:
+        if position.get('price') is not None and position.get('source_timestamp'):
+            dated_prices.setdefault(position['security_id'], []).append(position)
     for sid in sorted(needed):
         observation = supplied.get(sid)
         if observation is None:
-            candidates = [p for p in state['positions'] if p['security_id'] == sid and p.get('price') is not None]
-            known = [p for p in candidates if p.get('source_timestamp')]
+            known = dated_prices.get(sid, [])
             chosen = max(known, key=lambda p: p['source_timestamp'], default=None)
             observation = {'price': chosen['price'], 'as_of': chosen['source_timestamp'],
                            'currency': currency, 'source': 'ACCEPTED_SNAPSHOT'} if chosen else None
@@ -128,6 +131,14 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
     if total <= 0:
         raise DomainError('Planning requires a positive known household value', 3)
     initial_cash = _cash(working)
+    cash_by_account = {account: decimal(amount) for account, amount in initial_cash.items()}
+    household_cash_value = sum(cash_by_account.values(), ZERO)
+    current_values = {row['security_id']: decimal(row['current_value'])
+                      for row in initial['allocations']}
+    target_values = {row['security_id']: decimal(row['target_value'])
+                     for row in initial['allocations']}
+    positions = {(p['account_id'], p['security_id']): p for p in working['positions']}
+    tolerance_value = constraints_decimal(constraints, 'target_tolerance') * total
     eligible = constraints['eligible_accounts']
     permitted = constraints['permitted_securities']
     floors = constraints['cash_minimums']
@@ -173,11 +184,22 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         return sid in observations
 
     def apply_action(action):
-        nonlocal working
-        working, _ = activity_change(working, action)
-        p = next(p for p in working['positions'] if p['account_id'] == action['account_id'] and p['security_id'] == action['security'])
+        nonlocal household_cash_value
+        account_id, sid = action['account_id'], action['security']
+        key = (account_id, sid)
+        previous = positions.get(key)
+        previous_value = decimal(previous['market_value']) if previous else ZERO
+        _, change = activity_change_inplace(working, action)
+        # The shared accounting engine appends a position only for a new holding.
+        p = previous if previous is not None else working['positions'][-1]
+        positions[key] = p
         p.update(price=action['price'], market_value=_number(decimal(p['quantity']) * decimal(action['price'])),
                  as_of=as_of.isoformat())
+        current_values[sid] = current_values.get(sid, ZERO) + decimal(p['market_value']) - previous_value
+        cash_delta = decimal(change['cash_change'])
+        cash_by_account[account_id] = decimal(change['cash_after'])
+        household_cash_value += cash_delta
+        current_values['CASH'] = household_cash_value
         actions.append(action)
 
     # Deterministic account preference minimizes taxable realizations first.
@@ -185,10 +207,9 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         accounts[p['account_id']]['tax_status'] == 'TAXABLE', p['account_id'], p['security_id']))
     for original in candidates:
         account_id, sid = original['account_id'], original['security_id']
-        current = next(p for p in working['positions'] if p['id'] == original['id'])
-        drift = next(r for r in allocation_diff(working, target)['allocations'] if r['security_id'] == sid)
-        overweight = -decimal(drift['difference_value'])
-        if overweight <= constraints_decimal(constraints, 'target_tolerance') * total or decimal(current['quantity']) <= 0:
+        current = positions[(account_id, sid)]
+        overweight = current_values[sid] - target_values[sid]
+        if overweight <= tolerance_value or decimal(current['quantity']) <= 0:
             continue
         if not allowed(account_id, sid, current):
             continue
@@ -233,16 +254,14 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         if sid == 'CASH' or decimal(target['target_allocations'][sid]) <= 0:
             continue
         for account_id in sorted(eligible, key=lambda a: (accounts[a]['tax_status'] == 'TAXABLE', a)):
-            drift = next(r for r in allocation_diff(working, target)['allocations'] if r['security_id'] == sid)
-            underweight = decimal(drift['difference_value'])
-            if underweight <= constraints_decimal(constraints, 'target_tolerance') * total:
+            underweight = target_values[sid] - current_values.get(sid, ZERO)
+            if underweight <= tolerance_value:
                 break
-            position = next((p for p in working['positions'] if p['account_id'] == account_id and p['security_id'] == sid), None)
+            position = positions.get((account_id, sid))
             if not allowed(account_id, sid, position):
                 continue
-            cash = _cash(working)
-            account_cash = max(ZERO, decimal(cash[account_id]) - decimal(floors.get(account_id, '0')))
-            household_cash = max(ZERO, sum(map(decimal, cash.values()), ZERO) - desired_cash)
+            account_cash = max(ZERO, cash_by_account[account_id] - decimal(floors.get(account_id, '0')))
+            household_cash = max(ZERO, household_cash_value - desired_cash)
             price = decimal(observations[sid]['price'])
             qty = _floor(min(underweight, account_cash, household_cash) / price, increment(account_id, sid))
             if qty > 0:
@@ -268,6 +287,11 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         tax_analysis = dict(realized_gain_loss='0', short_term_gain_loss='0', long_term_gain_loss='0',
                             estimated_tax_effect='0' if rates else None, analyses=[])
     proposed = allocation_diff(final, target)
+    final_values = {row['security_id']: decimal(row['current_value'])
+                    for row in proposed['allocations']}
+    final_cash = {account: decimal(amount) for account, amount in _cash(final).items()}
+    if final_values != current_values or final_cash != cash_by_account or decimal(proposed['total_value']) != total:
+        raise DomainError('Inconsistent authoritative simulation and incremental planning balances', 3)
     tolerance = constraints_decimal(constraints, 'target_tolerance')
     remaining = any(abs(decimal(r['difference_weight'])) > tolerance for r in proposed['allocations'])
     if remaining:
