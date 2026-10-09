@@ -172,7 +172,7 @@ def plans(ctx):
             "target_id": target["id"], "as_of": "2026-10-08",
         })
         assert code == 200
-        ctx["plans"].append(plan)
+        ctx["plans"].append(plan["plan"])
 
 
 @then("the plan views expose manual trades tax values drift and common assumptions")
@@ -192,7 +192,9 @@ def plans_view(ctx):
 @then("the downloaded report matches the persisted plan")
 def download(ctx):
     code, report = request(ctx, f'/api/plans/{ctx["plans"][0]["id"]}/report?format=json')
-    assert code == 200 and report == ctx["plans"][0]
+    assert code == 200 and report["id"] == ctx["plans"][0]["id"]
+    with Ledger(ctx["path"]) as ledger:
+        assert report == next(p for p in ledger.rows('plans') if p['id'] == report['id'])
 
 
 @when("confirmed interest changes the source portfolio")

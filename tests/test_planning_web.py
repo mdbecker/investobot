@@ -85,9 +85,10 @@ def overview(ctx):
 @when('a plan is generated through the local API')
 def generate(ctx):
     target(ctx)
-    status, ctx['plan'] = request(ctx, '/api/plans/generate', {'target_id': ctx['target']['id'],
+    status, result = request(ctx, '/api/plans/generate', {'target_id': ctx['target']['id'],
                                                            'as_of': '2026-10-08'})
     assert status == 200
+    ctx['plan'] = result['plan']
 
 
 @then('saved trades and tax values match the CLI domain')

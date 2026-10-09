@@ -290,7 +290,7 @@ def cli(ctx):
         r = runner.invoke(app, ['plan', 'generate', '--target', t['id'], '--as-of', '2026-10-08'])
         assert r.exit_code == 0, r.output
         ctx['results'].append(r)
-        ids.append(json.loads(r.stdout)['id'])
+        ids.append(json.loads(r.stdout)['plan']['id'])
     for args in [['plan', 'list'], ['plan', 'show', ids[0]], ['plan', 'compare', *ids]]:
         ctx['results'].append(runner.invoke(app, args))
     ctx['report_path'] = ctx['tmp'] / 'report.json'
