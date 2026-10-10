@@ -19,10 +19,11 @@ TRANSACTION_COLUMNS = ('transaction_id', 'person_id', 'source_id', 'source_row_i
                        'acquired_disposed', 'quantity_text', 'price_text', 'price_currency',
                        'ownership_form', 'indirect_nature', 'purchase_venue',
                        'rule_10b5_1_status', 'review_status', 'purchase_venue_locator',
-                       'supersedes_id', 'duplicate_of_id', 'notes')
+                       'supersedes_id', 'duplicate_of_id', 'correction_source_locator', 'notes')
 OWNERSHIP_COLUMNS = ('holding_id', 'person_id', 'source_id', 'source_row_id', 'as_of_date',
                      'table_type', 'security_title', 'quantity_text', 'ownership_form',
-                     'indirect_nature', 'notes')
+                     'indirect_nature', 'supersedes_id', 'duplicate_of_id',
+                     'correction_source_locator', 'notes')
 COMPENSATION_COLUMNS = ('compensation_id', 'person_id', 'fiscal_year', 'compensation_type',
                         'value_text', 'currency', 'value_basis', 'terms', 'source_id',
                         'source_locator')
@@ -110,7 +111,8 @@ def _transactions(ledger, run_id):
     rows = _select(ledger, 'research_insider_transactions', TRANSACTION_COLUMNS, run_id,
                    'transaction_date, transaction_id')
     sources = _sources(ledger, run_id)
-    superseded = {row['supersedes_id'] for row in rows if row['supersedes_id'] is not None}
+    superseded = {row['supersedes_id'] for row in rows
+                  if row['supersedes_id'] is not None and row['review_status'] == 'VERIFIED'}
     for row in rows:
         row['id'] = row.pop('transaction_id')
         row['quantity'] = row.pop('quantity_text')
@@ -148,7 +150,8 @@ def ownership(ledger, run_id, person=None):
     sources = _sources(ledger, run_id)
     rows = _select(ledger, 'research_insider_ownership', OWNERSHIP_COLUMNS, run_id,
                    'as_of_date, holding_id')
-    observations, latest_dates = [], {}
+    superseded = {row['supersedes_id'] for row in rows if row['supersedes_id'] is not None}
+    observations, candidates = [], {}
     for row in rows:
         if person is not None and row['person_id'] != person:
             continue
@@ -156,13 +159,42 @@ def ownership(ledger, run_id, person=None):
         row['reported_quantity'] = row.pop('quantity_text')
         row['indirect_ownership_nature'] = row.pop('indirect_nature')
         row['source'] = sources[row['source_id']]
+        reason = ('DUPLICATE' if row['duplicate_of_id'] is not None else
+                  'UNRESOLVED' if row['source']['is_amendment'] and not row['supersedes_id'] else
+                  'SUPERSEDED' if row['id'] in superseded else None)
+        row['status'] = reason or 'EFFECTIVE'
+        row['is_effective'] = reason is None
+        row['exclusion_reason'] = reason
         observations.append(row)
         key = tuple(row[field] for field in HOLDING_FIELDS)
-        latest_dates[key] = max(row['as_of_date'], latest_dates.get(key, row['as_of_date']))
-    latest = [row for row in observations
-              if row['as_of_date'] == latest_dates[tuple(row[field] for field in HOLDING_FIELDS)]]
-    return {**_metadata(run), **_context(run), 'people': people, 'observations': observations,
-            'latest_observations': latest, 'sources': list(sources.values())}
+        if row['is_effective']:
+            candidates.setdefault(key, []).append(row)
+    latest, conflicts = [], []
+    context = _context(run)
+    for group in candidates.values():
+        latest_date = max(row['as_of_date'] for row in group)
+        newest = [row for row in group if row['as_of_date'] == latest_date]
+        if len(newest) == 1:
+            latest.extend(newest)
+        else:
+            conflicts.extend(newest)
+            for row in newest:
+                row.update(status='UNRESOLVED', is_effective=False, exclusion_reason='UNRESOLVED')
+            evidence = ', '.join(f"{row['id']} (source {row['source_id']})" for row in newest)
+            context['warnings'].append(
+                f'Ambiguous contemporaneous ownership observations on {latest_date}: '
+                f'{evidence}; explicit linkage and human review required.')
+    by_id = {row['id']: row for row in observations}
+    for row in observations:
+        row['linked_sources'] = [by_id[row[key]]['source']
+                                 for key in ('supersedes_id', 'duplicate_of_id') if row[key]]
+        if row['status'] == 'UNRESOLVED':
+            context['warnings'].append(
+                f"Ownership observation {row['id']} (source {row['source_id']}) excluded as "
+                'UNRESOLVED; original-row linkage or contemporaneous evidence needs review.')
+    return {**_metadata(run), **context, 'people': people, 'observations': observations,
+            'latest_observations': latest, 'conflicting_latest_observations': conflicts,
+            'sources': list(sources.values())}
 
 
 def _text(value):

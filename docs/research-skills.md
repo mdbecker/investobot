@@ -5,8 +5,8 @@ CLI validates, stores and calculates; installing a skill does not run research.
 Skills follow the [Agent Skills specification](https://agentskills.io/specification).
 Canonical portable instructions live in `skills/` and are also bundled in the
 distribution. News uses version `1.0.1`; competitive, earnings and political use `1.0.0`. Their JSON contracts use
-schema `1.0`. Management/insider research uses version `1.0.0`. These are
-different from SQLite schema 8.
+schema `1.0`. Management/insider research uses skill version `1.1.0` and input
+contract `1.1`. These are different from SQLite schema 9.
 
 ## Discovery and project-local installation
 
@@ -72,4 +72,8 @@ compensation, SEC Forms 3/4/5 and reported ownership. It distinguishes purchases
 sales, exercises, grants, tax/exercise payments, gifts and other codes; neither
 filing availability nor validation establishes comprehensive or factual coverage.
 See [management and insider research](insider-research.md) for a complete fictional
-example, original-source human review and the schema-8 boundary.
+example, original-source human review and the schema-9 boundary. Ownership
+corrections retain original observations and require explicit amendment evidence;
+ambiguous latest balances remain conflicts. Documented transaction date/code
+corrections use amended fields without double-counting originals. Earlier research
+skills keep their instructions, contracts and trusted versions unchanged.

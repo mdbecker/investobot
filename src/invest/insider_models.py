@@ -221,6 +221,7 @@ class InsiderTransaction(InsiderModel):
     review_status: Literal['VERIFIED', 'UNRESOLVED']
     supersedes_id: Identifier | None = None
     duplicate_of_id: Identifier | None = None
+    correction_source_locator: Text | None = None
     notes: str = Field(max_length=4000)
 
     @field_serializer('quantity', 'price_per_unit')
@@ -261,6 +262,9 @@ class InsiderOwnership(InsiderModel):
     reported_quantity: FinancialDecimal
     ownership_form: OwnershipForm
     indirect_ownership_nature: Text | None = None
+    supersedes_id: Identifier | None = None
+    duplicate_of_id: Identifier | None = None
+    correction_source_locator: Text | None = None
     notes: str = Field(max_length=4000)
 
     @field_serializer('reported_quantity')
@@ -271,13 +275,15 @@ class InsiderOwnership(InsiderModel):
     def reported(self):
         if self.reported_quantity < 0:
             raise ValueError('reported ownership cannot be negative')
+        if self.supersedes_id and self.duplicate_of_id:
+            raise ValueError('cannot combine ownership supersedes and duplicate links')
         if self.ownership_form == 'DIRECT' and self.indirect_ownership_nature is not None:
             raise ValueError('direct ownership cannot have indirect nature')
         return self
 
 
 class InsiderResearchInput(InsiderModel):
-    schema_version: Literal['1.0']
+    schema_version: Literal['1.1']
     research_type: Literal['MANAGEMENT_INSIDER_ACTIVITY']
     company: InsiderCompany
     scope: InsiderScope
@@ -377,8 +383,7 @@ class InsiderResearchInput(InsiderModel):
                 if target is None or target.id == row.id:
                     raise ValueError('unknown or self-linked same-run transaction')
                 identity_fields = ('person_id', 'table_type', 'security_title', 'ownership_form',
-                                   'indirect_ownership_nature', 'acquired_disposed', 'transaction_date',
-                                   'transaction_code')
+                                   'indirect_ownership_nature', 'acquired_disposed')
                 if any(getattr(row, f) != getattr(target, f) for f in identity_fields):
                     raise ValueError('linked transactions describe different event identities')
                 if row.supersedes_id:
@@ -391,8 +396,13 @@ class InsiderResearchInput(InsiderModel):
                         raise ValueError('amendment form must match original filing form')
                     if source.filed_at < target_source.filed_at or target.id in replaced:
                         raise ValueError('ambiguous branched or earlier correction')
+                    changed_fields = (row.transaction_date != target.transaction_date or
+                                      row.transaction_code != target.transaction_code)
+                    if changed_fields and row.review_status == 'VERIFIED' and not row.correction_source_locator:
+                        raise ValueError('verified date/code correction requires explicit amendment locator')
                     replaced.add(target.id)
-                elif any(getattr(row, f) != getattr(target, f) for f in ('quantity', 'price_per_unit', 'price_currency')):
+                elif any(getattr(row, f) != getattr(target, f) for f in
+                         ('quantity', 'price_per_unit', 'price_currency', 'transaction_date', 'transaction_code')):
                     raise ValueError('duplicate economic event values disagree')
                 seen = {row.id}
                 current = target
@@ -402,8 +412,46 @@ class InsiderResearchInput(InsiderModel):
                     seen.add(current.id)
                     next_id = current.supersedes_id or current.duplicate_of_id
                     current = transactions.get(next_id) if next_id else None
+        holdings = {row.id: row for row in self.ownership}
+        replaced_holdings = set()
         for row in self.ownership:
             source = owner_ref(row, SECTION16)
             if row.as_of_date > self.scope.researched_as_of or row.as_of_date > source.filed_at:
                 raise ValueError('ownership observation follows filing or cutoff')
+            link = row.supersedes_id or row.duplicate_of_id
+            if not link:
+                # Unlinked amendment observations are retained but not effective.
+                continue
+            target = holdings.get(link)
+            if target is None or target.id == row.id:
+                raise ValueError('unknown or self-linked same-run ownership observation')
+            identity_fields = ('person_id', 'table_type', 'security_title', 'ownership_form',
+                               'indirect_ownership_nature')
+            if any(getattr(row, f) != getattr(target, f) for f in identity_fields):
+                raise ValueError('linked holdings describe different owner/instrument identities')
+            target_source = sources[target.source_id]
+            if target_source.is_amendment and not target.supersedes_id:
+                raise ValueError('ownership link cannot target an unresolved amendment')
+            if row.supersedes_id:
+                if not source.is_amendment or source.original_accession_number != target_source.accession_number:
+                    raise ValueError('ownership correction requires amendment and exact original accession')
+                if source.source_type.removesuffix('/A') != target_source.source_type.removesuffix('/A'):
+                    raise ValueError('ownership amendment must match original base form')
+                if target.duplicate_of_id:
+                    raise ValueError('ownership correction cannot target a duplicate')
+                if source.filed_at < target_source.filed_at or target.id in replaced_holdings:
+                    raise ValueError('branched or earlier ownership amendment')
+                if not row.correction_source_locator:
+                    raise ValueError('ownership correction requires specific amendment locator')
+                replaced_holdings.add(target.id)
+            elif row.as_of_date != target.as_of_date or row.reported_quantity != target.reported_quantity:
+                raise ValueError('duplicate ownership date or reported quantity disagrees')
+            seen = {row.id}
+            current = target
+            while current:
+                if current.id in seen:
+                    raise ValueError('cycle in ownership links')
+                seen.add(current.id)
+                next_id = current.supersedes_id or current.duplicate_of_id
+                current = holdings.get(next_id) if next_id else None
         return self

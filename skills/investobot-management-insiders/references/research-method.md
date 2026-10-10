@@ -18,9 +18,17 @@
 5. Reconcile amendments and repeated events using source evidence. Link corrected
    or duplicate rows only within this package; preserve originals. Ambiguous rows
    remain UNRESOLVED with explanatory notes and cannot contribute to totals.
+   For ownership corrections verify original accession, matching base form,
+   owner/instrument identity and the specific quantity/date correction locator.
+   Transaction date/code corrections likewise require an explicit amended-field
+   locator, not notes alone. Read both original and amended disclosures manually;
+   matching figures or an amended form alone do not prove a linked correction.
 6. Capture Form 3 initial and Form 4/5 post-transaction holdings as dated
    observations. Never reconstruct balances, conversions or percentages from
-   incomplete disclosures.
+   incomplete disclosures. Link corrected holdings only within this package;
+   retain unsupported amended holdings as unresolved. Equal or conflicting
+   unlinked balances on the same latest date require review, never selection or
+   summation. Earlier runs do not automatically supply original-row links.
 7. Capture disclosed compensation and material vesting, performance, severance,
    change-in-control and clawback terms. Retain fiscal year and valuation basis;
    distinguish arrangements from payments.

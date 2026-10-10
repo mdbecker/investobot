@@ -5,7 +5,7 @@ Read `invest schema` for `InsiderResearchInput` and
 for arguments and mutation scopes. This guide explains the model; it is not a
 second schema.
 
-Use schema_version `1.0`, research_type `MANAGEMENT_INSIDER_ACTIVITY`, one company,
+Use schema_version `1.1`, research_type `MANAGEMENT_INSIDER_ACTIVITY`, one company,
 scope, sources, people, compensation, transactions, ownership and limitations.
 Period start/end and research cutoff are explicit. Verify any supplied security
 ID against the existing canonical security and ticker/accepted aliases; never
@@ -35,6 +35,28 @@ unique. VERIFIED effective unique rows count; UNRESOLVED rows require notes.
 supersedes_id and duplicate_of_id are mutually exclusive same-run links, without
 self-reference, cycles or incompatible person/instrument/event identity.
 Corrections require matching amendment/original evidence. Never infer links.
+Optional `correction_source_locator` defaults to null but is required for a
+verified transaction date/code change; identify its explanatory note, footnote
+or corrected field. Keep verified owner/issuer, instrument/table, direct/indirect
+form/nature and A/D identity unchanged. Unsupported proposals stay UNRESOLVED
+with evidence limitations and cannot supersede verified originals.
+
+Ownership also accepts optional `supersedes_id`, `duplicate_of_id` and
+`correction_source_locator` (default null). Corrections require exact original
+accession, matching Form 3/4/5 base form, nonpredating amendment, verified holding
+identity and specific evidence locator for quantity/date changes. Duplicate
+identity/date/quantity must match. Links stay same-run, linear, mutually exclusive
+and acyclic; duplicate/unresolved targets cannot be silently corrected.
+
+Ownership output preserves every observation with status, `is_effective` and
+`exclusion_reason`. Unsupported amended observations remain UNRESOLVED. Latest
+selection uses only effective dates; competing unlinked rows at the latest date
+remain `conflicting_latest_observations`, including equal quantities without a
+verified duplicate link. Never sum balances or infer cross-run corrections.
+
+Older `1.0` input must be explicitly reviewed and updated to `1.1` before a new
+import. Historical accepted packages are never rewritten. Trusted skill version
+is `1.1.0`; earlier research domains keep their existing contracts and versions.
 
 Save a complete package under ignored `local-data/`; validate and preview with
 `research insiders validate FILE` and `research insiders import FILE`.

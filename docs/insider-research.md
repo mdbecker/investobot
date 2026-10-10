@@ -29,6 +29,11 @@ security ID; research cannot register or reclassify a security. Save complete JS
 under ignored `local-data/insiders.json`, without raw filings or personal contact
 details. Validate and preview before a human authorizes acceptance:
 
+The current insider input contract is `1.1`, trusted skill version `1.1.0`, and
+fresh SQLite schema 9. Explicitly review and update older `1.0` JSON before a new
+import; optional new linkage/locator fields default to null. Accepted historical
+packages are never rewritten. Existing research domains retain their versions.
+
 ```sh
 docker compose run --rm -T app invest research insiders validate /app/local-data/insiders.json
 docker compose run --rm -T app invest research insiders import /app/local-data/insiders.json
@@ -82,6 +87,53 @@ salary is 100000 USD, stock-award grant-date value 200000 USD and summary total
 300000 USD; these are separate disclosures, never a fabricated 600000 total.
 Ownership shows 100 then 125 common shares as dated observations, never 225.
 
+## Reviewing corrections
+
+An amendment alone does not prove that a specific earlier row was corrected.
+For ownership, supply `supersedes_id` pointing to its same-run original row and
+`correction_source_locator` identifying the quantity/date correction disclosure.
+Verify the same issuer/owner CIK, instrument title, table, direct/indirect form and
+nature, matching Form 3/A, 4/A or 5/A base form, exact original accession and
+nonpredating amended filing. Retain both original and amended quantities/dates.
+Later amendments reference the immediately preceding amended row and accession;
+branches, cycles, cross-run links and duplicate/unresolved targets are rejected.
+
+For example, Form 4 reports 125 directly held common shares on May 2 and its
+linked 4/A specifically corrects that row to 120 on May 2. Ownership observations
+retain both: 125 is SUPERSEDED and 120 is EFFECTIVE. Only 120 appears in
+`latest_observations`; balances are never added. The new optional linkage fields
+on the corrected ownership observation are:
+
+```json
+{
+  "supersedes_id": "original-holding",
+  "duplicate_of_id": null,
+  "correction_source_locator": "Form 4/A footnote 1 correcting shares held to 120"
+}
+```
+
+This is a field excerpt, not a complete import. Use `invest schema` for the full
+model. A verified duplicate requires the same holding identity, date and quantity
+plus explicit `duplicate_of_id`; numerical equality alone is insufficient.
+Unlinked amended holdings remain UNRESOLVED. Two unlinked observations at the
+same latest effective date, whether quantities disagree or agree, appear under
+`conflicting_latest_observations` with warnings and no uniquely current selection.
+Every observation includes status, `is_effective` and `exclusion_reason`; historical
+rows and source references remain inspectable. Reports cover one run only.
+
+A transaction correction may change date or SEC code when the matching Form 4/A
+or 5/A and `correction_source_locator` explicitly support the changed field.
+Verify issuer/owner, instrument/table, ownership form/nature and A/D direction
+remain identical. Notes alone do not establish this evidence. A documented
+May 2 M row corrected to May 3 P retains both filings; the original is superseded,
+and only the amended P contributes under May 3. Purchase venue remains UNKNOWN
+without separate explicit evidence. Unsupported corrections stay UNRESOLVED and
+excluded, rather than doubling activity or erasing the original.
+
+For human acceptance, read the original and amendment side by side, verify the
+exact row and accession chain, and check the cited explanation against every
+changed field. Structural validation cannot prove what the filing actually says.
+
 ## Interpreting reports
 
 P means reported open-market **or private** purchase; only explicit cited venue
@@ -123,13 +175,16 @@ For real acceptance, independently check the original SEC/issuer pages:
 - Record gaps, late filings, unresolved matches and limited scope. Citations and
   strict validation cannot establish factual truth, rights or exhaustive coverage.
 
-The separate real-data gate uses one U.S. issuer with Form 3 holdings, representative
+The separate real-data gate additionally verifies an original Form 4 and available
+Form 4/A correction, including both ownership balances and explanatory footnotes.
+The broader V2.9 gate uses one U.S. issuer with Form 3 holdings, representative
 Form 4 purchase/sale/exercise/grant/tax rows, an amendment if available and DEF 14A
 compensation. Compare originals and footnotes and document mismatches. Offline
 fictional tests do not establish real extraction accuracy or remote CI success.
 
-Schema 8 initializes fresh databases and rejects schema 7 and earlier without
+Schema 9 initializes fresh databases and rejects schema 8 and earlier without
 migration or automatic deletion. Keep private ledgers unchanged and backed up;
 use disposable data for evaluation. If deliberately discarding a selected
 disposable ledger, follow [reset instructions](development.md#deliberate-schema-reset)
-and preserve prompt files. Requirements remain in [PRD-v2.9.md](PRD-v2.9.md).
+and preserve prompt files. Requirements remain in [PRD-v2.9.md](PRD-v2.9.md) and
+its [corrections addendum](PRD-v2.9-Addendum-Amendment-Corrections.md).

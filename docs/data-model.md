@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 8** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 9** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -32,7 +32,7 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `research_insider_transactions` | As-filed codes, prices, ownership labels and explicit same-run correction/duplicate links |
 | `research_insider_ownership` | Dated beneficial holdings observations; never reconstructed household positions |
 
-Version 8 initializes a fresh database. Incompatible older databases are rejected
+Version 9 initializes a fresh database. Incompatible older databases are rejected
 with reset instructions; startup never deletes data. There are no migrations,
 backfills or legacy saved-plan readers. See the deliberate
 [reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are
@@ -45,9 +45,19 @@ provenance. Four child tables enforce composite same-run person/source/link keys
 unique filing rows and an indexed `(run_id,person_id,transaction_date)` inspection
 path. Link foreign keys are deferred so canonical ID ordering can insert a
 correction before its original within the single atomic import transaction.
-No schema-7 migration occurs. Read-only previews do not create a selected ledger.
+No schema-8 migration occurs. Read-only previews do not create a selected ledger.
 List and reports project summary/relational fields; only show reads the full package.
 All research remains outside financial state and planning hashes.
+
+Schema 9 adds `correction_source_locator` to insider transactions and ownership,
+plus ownership `supersedes_id`/`duplicate_of_id` deferred composite same-run keys
+and a mutual-exclusion check. No table is added. Ownership status is derived for
+reports rather than persisted. Explicit supported amendments exclude originals;
+unlinked amended observations remain unresolved. Latest selection uses effective
+observation dates, and multiple unlinked same-date candidates produce conflicts
+rather than a selected balance. All original amounts, dates, codes and sources
+remain immutable. Contract 1.1 normalizes optional fields to null for new inputs
+and hashes them with trusted skill 1.1.0; older 1.0 input needs explicit updating.
 
 ## Accepted snapshots and security identity
 

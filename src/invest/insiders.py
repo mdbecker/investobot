@@ -44,7 +44,8 @@ DDL = [
         rule_10b5_1_status TEXT NOT NULL CHECK(rule_10b5_1_status IN
           ('REPORTED_YES','REPORTED_NO','NOT_DISCLOSED')),
         review_status TEXT NOT NULL CHECK(review_status IN ('VERIFIED','UNRESOLVED')),
-        purchase_venue_locator TEXT, supersedes_id TEXT, duplicate_of_id TEXT, notes TEXT NOT NULL,
+        purchase_venue_locator TEXT, supersedes_id TEXT, duplicate_of_id TEXT,
+        correction_source_locator TEXT, notes TEXT NOT NULL,
         PRIMARY KEY(run_id,transaction_id), UNIQUE(run_id,source_id,source_row_id),
         FOREIGN KEY(run_id,person_id) REFERENCES research_insider_people(run_id,person_id),
         FOREIGN KEY(run_id,source_id) REFERENCES research_sources(run_id,source_id),
@@ -63,10 +64,16 @@ DDL = [
         security_title TEXT NOT NULL,
         quantity_text TEXT NOT NULL CHECK(quantity_text<>'' AND quantity_text NOT GLOB '*[^0-9.]*'),
         ownership_form TEXT NOT NULL CHECK(ownership_form IN ('DIRECT','INDIRECT')),
-        indirect_nature TEXT, notes TEXT NOT NULL,
+        indirect_nature TEXT, supersedes_id TEXT, duplicate_of_id TEXT,
+        correction_source_locator TEXT, notes TEXT NOT NULL,
         PRIMARY KEY(run_id,holding_id), UNIQUE(run_id,source_id,source_row_id),
         FOREIGN KEY(run_id,person_id) REFERENCES research_insider_people(run_id,person_id),
-        FOREIGN KEY(run_id,source_id) REFERENCES research_sources(run_id,source_id))""",
+        FOREIGN KEY(run_id,source_id) REFERENCES research_sources(run_id,source_id),
+        FOREIGN KEY(run_id,supersedes_id) REFERENCES research_insider_ownership(run_id,holding_id)
+          DEFERRABLE INITIALLY DEFERRED,
+        FOREIGN KEY(run_id,duplicate_of_id) REFERENCES research_insider_ownership(run_id,holding_id)
+          DEFERRABLE INITIALLY DEFERRED,
+        CHECK(supersedes_id IS NULL OR duplicate_of_id IS NULL))""",
     """CREATE INDEX research_insider_transaction_person_idx
        ON research_insider_transactions(run_id,person_id,transaction_date)""",
 ]
@@ -126,6 +133,11 @@ def validation_warnings(data):
     for row in [*data['transactions'], *data['ownership']]:
         if row['ownership_form'] == 'INDIRECT' and not row['indirect_ownership_nature']:
             warnings.append(f"Indirect ownership nature not disclosed for {row['id']}.")
+    sources = {source['id']: source for source in data['sources']}
+    for row in data['ownership']:
+        if sources[row['source_id']]['is_amendment'] and not row['supersedes_id']:
+            warnings.append(f"Unresolved ownership amendment {row['id']} from {row['source_id']}: "
+                            'no supported original-row correction link; excluded from effective holdings.')
     return list(dict.fromkeys(warnings))
 
 

@@ -206,7 +206,7 @@ hypotheses support compact prior context and deterministic changes between
 selected runs. Repeated articles, title edits and missing coverage cannot become
 new developments or implied resolutions. No scheduling, scraping or financial
 planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
-Active schema 8 rejects existing older databases without deleting them; evaluate
+Active schema 9 rejects existing older databases without deleting them; evaluate
 with a fresh disposable ledger and preserve private data before any manual reset.
 Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
 skill discovery passed in Docker. Work remains local; remote CI is unverified.
@@ -236,3 +236,12 @@ totals. No SEC API, credentials or dashboard change is required. Fresh schema 8
 rejects existing ledgers without migration or deletion; evaluate with a disposable
 database. The [original PRD](docs/PRD-v2.9.md) and
 [verification record](docs/v2.9-verification.md) preserve scope and release gates.
+
+The [V2.9 amendment addendum](docs/PRD-v2.9-Addendum-Amendment-Corrections.md)
+adds explicitly linked ownership corrections and documented transaction date/code
+corrections. Conflicting same-date balances remain uncertain; unsupported amendment
+rows never establish a new effective balance. Insider JSON is now **1.1**, its
+skill is **1.1.0**, and fresh database schema **9** rejects schema 8 without
+migration or deletion. Update new JSON inputs explicitly after reviewing their
+sources. Existing accepted evidence is never rewritten. See
+[correction verification](docs/v2.9-corrections-verification.md).

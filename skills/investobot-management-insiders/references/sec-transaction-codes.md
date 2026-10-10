@@ -28,6 +28,16 @@ Amendments require original accession and explicit same-package supersedes links
 Repeated economic events require supported duplicate links; matching numerical
 fields alone cannot establish duplication. Exclude ambiguous rows as UNRESOLVED.
 
+A documented transaction amendment may change its date or code while retaining
+the same verified issuer/owner, title, table, ownership form/nature and A/D
+direction. Supply `correction_source_locator` identifying the corrected field;
+notes alone are insufficient. Verify the matching Form 4/A or 5/A, original
+accession and filing order. Only the verified corrected date/code drives effective
+classification and ordering. Unsupported changes remain UNRESOLVED and excluded;
+do not link incompatible identities. Reject branching, cycles and duplicate
+targets; later amendments form a linear chain to the immediately previous row.
+Corrected P still has UNKNOWN venue without separately cited venue evidence.
+
 Consult [Form 4 and instructions](https://www.sec.gov/about/forms/form4.pdf),
 [SEC dataset caveats](https://www.sec.gov/data-research/sec-markets-data/insider-transactions-data-sets)
 and [SEC Rule 10b5-1 disclosures](https://www.sec.gov/newsroom/modernizing-rule-10b5-1-insider-trading-plans).

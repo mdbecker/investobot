@@ -75,9 +75,9 @@ identifiers still cannot establish cross-run continuity by name alone.
 
 ## Deliberate schema reset
 
-SQLite schema 8 initializes only a fresh database and rejects incompatible older
+SQLite schema 9 initializes only a fresh database and rejects incompatible older
 schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2/3/4/5/6/7 records, including saved plans and research, are not migrated or converted.
+on startup. Version 2/3/4/5/6/7/8 records, including saved plans and research, are not migrated or converted.
 A reset discards all accepted holdings, lots, activity, targets, plans and research in the
 selected ledger. Reimport reviewed source observations and recreate targets after
 resetting. Keep a private backup first if any information may be needed later.
@@ -95,7 +95,7 @@ This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
 If `INVEST_DB` selects another file, identify its actual mounted path first and
 delete only that chosen database and matching sidecars. Do not use
 `docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 8 on the next access.
+and dependency volumes. The application initializes schema 9 on the next access.
 
 For native installations, stop every process using the ledger. Locate the exact
 `INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
@@ -503,8 +503,8 @@ review and a remote GitHub Actions result remain separate acceptance gates.
 ## V2.9 management and insider research
 
 See [the preserved PRD](PRD-v2.9.md), [workflow](insider-research.md) and
-[red/green evidence](v2.9-verification.md). The active database is schema 8:
-existing schema 7 ledgers are deliberately rejected without migration or reset.
+[red/green evidence](v2.9-verification.md). The amendment addendum now uses schema 9:
+existing schema 8 ledgers are deliberately rejected without migration or reset.
 Use a disposable database to evaluate the optional research feature.
 
 Final acceptance uses the standard locked Docker image with `--network none`,
@@ -515,3 +515,13 @@ Run `uv sync --locked`, `uv run --locked pytest` and
 `uv run --locked ruff check --config pyproject.toml src tests` in separate fresh
 containers. Container-only skill format validation also needs PyYAML; it is not
 an application dependency or host installation.
+
+## V2.9 amendment corrections
+
+The [addendum](PRD-v2.9-Addendum-Amendment-Corrections.md) and
+[verification record](v2.9-corrections-verification.md) cover schema 9, JSON 1.1,
+and insider skill 1.1.0. Test using a fresh disposable database; never reset a
+private schema-8 ledger automatically. Optional linkage fields default to null
+for new 1.1 input, but version 1.0 is deliberately rejected for new imports.
+All commands and Docker checks above remain unchanged. Explicit source review
+must compare the original and amendment rows, dates/codes, balances and locators.
