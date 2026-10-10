@@ -146,3 +146,29 @@ def test_invalid_json(tmp_path):
     path.write_text('{')
     with pytest.raises(ValueError):
         load_research(path)
+
+
+def test_refund_exactness_beyond_decimal_context():
+    incoming = package()
+    incoming['contributions'][0]['amount_usd'] = '1000.000000000000000000000000001'
+    incoming['contributions'].append({
+        **incoming['contributions'][0], 'id': 'refund', 'source_record_id': 'refund-record',
+        'underlying_transaction_key': 'refund-key', 'transaction_kind': 'REFUND',
+        'amount_usd': '-1000.000000000000000000000000002',
+        'original_contribution_id': 'gift'})
+    with pytest.raises(ValueError, match='refund exceeds'):
+        PoliticalResearchInput.model_validate(incoming)
+
+
+def test_transaction_requires_role_at_transaction_date():
+    incoming = package()
+    incoming['executives'][0]['role_start'] = '2026-02-01'
+    with pytest.raises(ValueError, match='role'):
+        PoliticalResearchInput.model_validate(incoming)
+
+
+def test_unrelated_additional_source_cannot_verify_identity():
+    incoming = package()
+    incoming['sources'][1]['source_type'] = 'COMMITTEE_METADATA'
+    with pytest.raises(ValueError, match='identity'):
+        PoliticalResearchInput.model_validate(incoming)
