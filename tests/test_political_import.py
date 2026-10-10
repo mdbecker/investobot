@@ -91,9 +91,11 @@ def test_schema_four_rejects_three_without_reset(tmp_path):
 
 
 def test_confirmed_transactions_are_atomic_and_run_scoped(tmp_path):
+    from test_political_models import package as research_package
+    from test_political_models import reviewed_policy
+
     from invest.political import import_research
     from invest.political_queries import summary
-    from test_political_models import package as research_package, reviewed_policy
     db = Ledger(tmp_path / 'research.db')
     try:
         payload = research_package()
@@ -139,5 +141,49 @@ def test_equivalent_decimal_research_is_idempotent(tmp_path):
         second['contributions'][0]['amount_usd'] = '1000.0000'
         second['sources'].reverse()
         assert import_research(db, first, yes=True, policy_path=policy)['research_run_id'] == import_research(db, second, yes=True, policy_path=policy)['research_run_id']
+    finally:
+        db.connection.close()
+
+
+def test_research_preserves_saved_plan_and_cli_readonly_checks(tmp_path, monkeypatch):
+    from test_storage_stabilization import snapshot
+
+    from invest.market import MarketClient
+    from invest.plans import generate, show
+    from invest.political import import_research
+    from invest.targets import save
+    db_path = tmp_path / 'plan.db'
+    db = Ledger(db_path)
+    try:
+        db.apply(snapshot(10, 'synthetic-original', '2026-10-08'))
+        identity = db.resolve('SYN')['id']
+        target = save(db, {'name': 'Synthetic allocation',
+                          'target_allocations': {identity: '.5', 'CASH': '.5'},
+                          'planning_constraints': {'eligible_accounts': ['ira'],
+                                                   'permitted_securities': {'ira': [identity]}}})
+        client = MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json')
+        plan = generate(db, client, target['id'], as_of='2026-10-08')
+        before = show(db, plan['id'])
+        incoming = package()
+        incoming['limitations'] = ['Synthetic limitation ' + str(i) + 'x' * 3000 for i in range(700)]
+        file = tmp_path / 'large.json'
+        file.write_text(json.dumps(incoming))
+        monkeypatch.setenv('INVEST_DB', str(db_path))
+        runner = CliRunner()
+        db_bytes = db_path.read_bytes()
+        assert runner.invoke(app, ['research', 'political', 'validate', str(file)]).exit_code == 0
+        preview = runner.invoke(app, ['research', 'political', 'import', str(file)])
+        assert preview.exit_code == 0
+        assert json.loads(preview.stdout)['committed'] is False
+        assert db_path.read_bytes() == db_bytes
+        accepted = import_research(db, incoming, yes=True)
+        assert show(db, plan['id']) == before
+        for args in [['list', '--ticker', 'fiction'], ['show', accepted['research_run_id']],
+                     ['summary', accepted['research_run_id']]]:
+            result = runner.invoke(app, ['research', 'political', *args])
+            assert result.exit_code == 0, result.stderr
+            json.loads(result.stdout)
+        result = runner.invoke(app, ['prompt', 'show', 'executive-political-contributions'])
+        assert result.exit_code == 0
     finally:
         db.connection.close()

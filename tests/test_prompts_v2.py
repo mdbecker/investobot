@@ -32,6 +32,7 @@ def defaults(ctx):
         "tax-loss-harvesting", "portfolio-concentration", "fund-comparison",
         "stock-research", "bond-research", "target-generation", "tax-aware-rebalancing",
         "alternative-portfolios", "recent-developments",
+        "executive-political-contributions",
     }
     assert all(item["source"] == "bundled" for item in ctx["result"])
 

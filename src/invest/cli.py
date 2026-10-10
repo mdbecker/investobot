@@ -436,3 +436,68 @@ def portfolio_overview():
     from invest.web import overview
 
     emit(lambda: overview(ledger()))
+
+
+research = typer.Typer()
+political = typer.Typer()
+app.add_typer(research, name='research')
+research.add_typer(political, name='political')
+
+
+@political.command('validate')
+def political_validate(file: str):
+    """Validate evidence and independently reviewed permissions without writes."""
+    from invest.political_models import PoliticalResearchInput, enforce_policy
+
+    def run():
+        model = PoliticalResearchInput.model_validate(read_json(file))
+        enforce_policy(model)
+        return {'valid': True, 'ready': True, 'coverage_status': model.scope.coverage_status,
+                'rights_status': model.scope.rights_status,
+                'verified_transactions': len(model.contributions),
+                'unresolved_match_count': len(model.unresolved_matches),
+                'limitations': model.limitations}
+    emit(run)
+
+
+@political.command('import')
+def political_import(file: str, yes: bool = False):
+    """Preview research; --yes stores it without financial mutations."""
+    from invest.political import import_research
+    from invest.political_models import PoliticalResearchInput, enforce_policy
+
+    def run():
+        model = PoliticalResearchInput.model_validate(read_json(file))
+        enforce_policy(model)
+        db = ledger()
+        try:
+            return import_research(db, model, yes=yes)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+def political_query(operation, *args):
+    db = ledger()
+    try:
+        return operation(db, *args)
+    finally:
+        db.connection.close()
+
+
+@political.command('list')
+def political_list(ticker: str = typer.Option(None)):
+    from invest.political_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@political.command('show')
+def political_show(run_id: str):
+    from invest.political_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@political.command('summary')
+def political_summary(run_id: str):
+    from invest.political_queries import summary
+    emit(lambda: political_query(summary, run_id))

@@ -3,9 +3,9 @@ All tests and dependency tools run in Docker. Conventional red/green commits tra
 
 ## Deliberate schema reset
 
-SQLite schema 3 initializes only a fresh database and rejects incompatible older
+SQLite schema 4 initializes only a fresh database and rejects incompatible older
 schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2 records, including saved plans, are not migrated or converted.
+on startup. Version 2/3 records, including saved plans, are not migrated or converted.
 A reset discards all accepted holdings, lots, activity, targets and plans in the
 selected ledger. Reimport reviewed source observations and recreate targets after
 resetting. Keep a private backup first if any information may be needed later.
@@ -23,7 +23,7 @@ This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
 If `INVEST_DB` selects another file, identify its actual mounted path first and
 delete only that chosen database and matching sidecars. Do not use
 `docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 3 on the next access.
+and dependency volumes. The application initializes schema 4 on the next access.
 
 For native installations, stop every process using the ledger. Locate the exact
 `INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
@@ -331,3 +331,35 @@ existing oversized HTTP-input test (304 passed); its isolated checks and the
 full rerun passed. Final CI passed without retries. No new browser-rendered smoke
 claim is made; this release's UI verification uses the existing HTTP BDD suite.
 All work stays on local `main`; no remote or push operation was performed.
+
+V2.5 adds isolated executive political-contribution research and uses SQLite
+schema **4**. Older schema versions, including 3, are rejected without modification.
+Do not reset a private ledger to try this optional feature. Use a disposable
+container/database for evaluation; stop the app and review the existing deliberate
+reset procedure only if the selected data is disposable. Prompt overrides remain
+separate and must be preserved. See [political research](political-research.md)
+for manual source review and Docker-only commands.
+
+## V2.5 verification
+
+Red commits recorded missing imports/contracts/schema rejection (`0bc6f2a`),
+missing queries (`396abdd`), three refund/role/evidence failures (`0315abf`),
+normalized-amount idempotence (`2b9a393`) and the decimal-string discovery schema
+mismatch (`a7fd003`). Production changes followed those observed failures.
+
+The integrated offline suite passes 350 tests, including 41 political research
+checks, and explicit-config Ruff passes. Fixtures are entirely fictional. Tests
+cover restricted sources, ambiguous/private inputs, role dates, candidate/PAC
+attribution, net linked refunds beyond Decimal context precision, memo/conduit
+exclusions, exact normalization, atomic rollback, same-run SQLite references,
+compact list projections, large valid input, read-only validation/preview,
+immutable reproducibility and unchanged persisted plan status.
+
+The standard Dockerfile builds with locked dependencies. Final checks use
+`uv run --locked` offline in fresh image containers with
+`INVEST_PROMPTS=/data/prompts`, no source/private-ledger mounts and no `--no-sync`.
+A stalled local Docker credential helper was bypassed using a temporary empty
+client configuration plus the already installed BuildKit plugin; no credentials
+or host packages were changed. A legacy-builder attempt was abandoned because
+its handling of the existing multi-source COPY differs from BuildKit. No Dockerfile
+change was needed. GitHub Actions has not been run on these unpushed commits.

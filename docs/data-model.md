@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 3** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 4** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -20,8 +20,9 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `targets`, `target_versions` | Current target metadata/pointer and immutable full target versions |
 | `plan_baselines` | Content-addressed immutable planning inputs, shared by alternatives |
 | `plans` | Baseline reference, dates/status, compact summary, immutable details and assumption hashes |
+| `research_political_*` | Six isolated immutable research/evidence tables; no financial-state mutation |
 
-Version 3 initializes a fresh database. Incompatible older databases are rejected
+Version 4 initializes a fresh database. Incompatible older databases are rejected
 with reset instructions; startup never deletes data. There are no migrations,
 backfills or legacy saved-plan readers. See the deliberate
 [reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are
@@ -186,3 +187,13 @@ when retained lots resolve it. Complete lot inventory must agree with supplied
 aggregate basis within one cent. Conflicting strong identities for an already
 held ticker require manual resolution. Fresh price observations do not establish
 fresh holdings; stale or unknown quantity source dates force plan review.
+
+Schema 4 adds six `research_political_*` tables (runs, sources, executives,
+recipients, contributions, evidence). Research never enters household or planning
+state. Runs retain a normalized `package_json` for immutable reproduction; compact
+listing selects metadata only. Child identifiers are namespaced by run and
+composite foreign keys enforce same-run references. Counted underlying transaction
+keys are unique per run. The evidence table includes `run_id` to enforce cross-run
+integrity. All inserts are atomic. See [V2.5 PRD](PRD-v2.5.md) and
+[research workflow](political-research.md). Schema 3 remains unsupported; no
+migration or automatic deletion is performed.

@@ -25,6 +25,11 @@ OUTPUT_CONTRACT = {
 # This describes behavior, not inputs: parameters come from the registered CLI,
 # and financial JSON validation comes from the same models used by domain code.
 PURPOSES = {
+    "research.political.validate": "Validate research evidence and reviewed source permissions without writes.",
+    "research.political.import": "Preview or explicitly accept immutable research; never mutate financial state.",
+    "research.political.list": "List compact research runs, optionally filtered by ticker.",
+    "research.political.show": "Read the full immutable research package and provenance.",
+    "research.political.summary": "Calculate descriptive net totals and inspect transaction evidence.",
     "schema": "Discover all command contracts and snapshot validation schemas.",
     "tools.list": "List available commands and persistent mutation scopes.",
     "tools.describe": "Describe a registered command's inputs and output contract.",
@@ -68,6 +73,7 @@ PURPOSES = {
     "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
+    "research.political.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",
     "target.save": "targets",
@@ -181,6 +187,10 @@ def _describe(name, command):
             "fields": ["security_id", "ticker", "canonical_type", "observed_type", "action_required"],
             "action_required": "EXPLICIT_CLASSIFICATION", "correction_tool": "security.classify"})
     model = getattr(models, JSON_MODELS.get(name, ""), None)
+    if name in {"research.political.validate", "research.political.import"}:
+        from invest.political_models import PoliticalResearchInput
+
+        model = PoliticalResearchInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -205,7 +215,10 @@ def tools_describe(name, app=None):
 
 
 def schema_contract(app=None):
+    from invest.political_models import PoliticalResearchInput
+
     return {
+        "political_research": PoliticalResearchInput.model_json_schema(),
         "snapshot": Snapshot.model_json_schema(),
         "output_contract": OUTPUT_CONTRACT,
         "tools": [_describe(name, cmd) for name, cmd in _registered(app).items()],
