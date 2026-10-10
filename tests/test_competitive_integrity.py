@@ -212,3 +212,28 @@ def test_unknown_peer_filter_reports_input_error(ctx):
     with pytest.raises(DomainError) as error:
         matrix(ctx['db'], run, peer='unknown-peer')
     assert error.value.code == 1
+
+
+def test_tiny_reported_decimals_remain_plain_and_revalidatable(ctx):
+    from invest.competitive import import_research
+    from invest.competitive_models import CompetitiveResearchInput
+    from invest.competitive_queries import show
+    ctx['payload']['metrics'][0]['value'] = '0.00000000000000000000000000000100'
+    run = accept(ctx)
+    saved = show(ctx['db'], run)
+    subject_metric = next(m for m in saved['metrics'] if m['entity_id'] == 'subject')
+    assert subject_metric['value'] == '0.000000000000000000000000000001'
+    original = {k: v for k, v in saved.items() if k in CompetitiveResearchInput.model_fields}
+    assert CompetitiveResearchInput.model_validate(original)
+    assert import_research(ctx['db'], original, yes=True)['status'] == 'UNCHANGED'
+
+
+def test_segment_name_whitespace_does_not_break_verified_overlap(ctx):
+    from invest.competitive_queries import matrix
+    subject, peer = ctx['payload']['metrics']
+    subject.update(scope='SEGMENT', segment_name='Cloud   Applications',
+                   overlap_id='enterprise-workflow')
+    peer.update(scope='SEGMENT', segment_name='Enterprise Services',
+                overlap_id='enterprise-workflow')
+    run = accept(ctx)
+    assert matrix(ctx['db'], run)['rows'][0]['comparison_status'] == 'COMPARABLE'
