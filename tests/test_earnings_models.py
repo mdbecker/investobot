@@ -8,6 +8,25 @@ from invest.earnings_models import EarningsResearchInput
 scenarios('features/earnings_models.feature')
 
 
+@pytest.mark.parametrize('path', [
+    '/api/xbrl/companyfacts/CIK0000000002.json',
+    '/submissions/CIK0000000002.json',
+])
+def test_sec_api_url_cannot_contradict_company_cik(path):
+    data = package()
+    data['sources'][0]['url'] = 'https://data.sec.gov' + path
+    with pytest.raises(ValueError, match='CIK'):
+        EarningsResearchInput.model_validate(data)
+
+
+@pytest.mark.parametrize('changes', [{'fiscal_year': 2200}, {'fiscal_period': 'Q1'}])
+def test_metric_fiscal_context_cannot_contradict_declared_period(changes):
+    data = package()
+    data['metrics'][0].update(changes)
+    with pytest.raises(ValueError, match='fiscal'):
+        EarningsResearchInput.model_validate(data)
+
+
 def package():
     return {
         'schema_version': '1.0', 'research_type': 'EARNINGS_FINANCIAL_STATEMENTS',
@@ -61,6 +80,15 @@ def confused(ctx):
     metric.update(metric_code='OPERATING_CASH_FLOW', period_start='2026-01-01',
                   period_end='2026-09-30', fiscal_period='Q3')
     ctx['package']['reporting_period'].update(fiscal_period='Q3', period_end='2026-09-30')
+    try:
+        EarningsResearchInput.model_validate(ctx['package'])
+    except ValueError as error:
+        ctx['error'] = error
+
+
+@when('a current-period metric claims another fiscal quarter')
+def wrong_fiscal_quarter(ctx):
+    ctx['package']['metrics'][0]['fiscal_period'] = 'Q1'
     try:
         EarningsResearchInput.model_validate(ctx['package'])
     except ValueError as error:

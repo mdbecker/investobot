@@ -11,6 +11,14 @@ from invest.models import DomainError
 
 scenarios('features/earnings_queries.feature')
 
+
+def test_exact_small_percentage_does_not_claim_division_rounding(ctx):
+    store(ctx, package(2025, '1'), 'previous')
+    store(ctx, package(2026, '1.00001'), 'current')
+    result = earnings_queries.compare(ctx['ledger'], 'previous', 'current')
+    assert result['comparisons'][0]['percentage_change'] == '0.00100'
+    assert not any('rounded' in warning.lower() for warning in result['warnings'])
+
 METRIC_COLUMNS = ('metric_id', 'metric_code', 'metric_label', 'metric_definition',
                   'value_text', 'unit', 'accounting_basis', 'period_type', 'period_length',
                   'period_start', 'period_end', 'fiscal_year', 'fiscal_period',

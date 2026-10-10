@@ -1,4 +1,9 @@
 Feature: Accurate source-backed earnings research
+  Scenario: Contradictory fiscal labels cannot produce comparisons
+    Given a synthetic source-backed earnings package
+    When a current-period metric claims another fiscal quarter
+    Then the unsupported quarterly representation is rejected
+
   Scenario: Accept a reported quarterly revenue observation
     Given a synthetic source-backed earnings package
     When earnings research is validated
