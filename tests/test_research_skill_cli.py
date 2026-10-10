@@ -45,3 +45,19 @@ def survives(ctx):
     assert ctx['prompt']['source'] == 'user'
     assert not ctx['prompt']['bundled_available']
     assert ctx['prompt']['content'] == '# Custom political workflow'
+
+
+def test_political_runs_pin_bundled_skill_identity(tmp_path):
+    from test_political_import import package
+
+    from invest.ledger import Ledger
+    from invest.political import import_research
+    from invest.political_queries import show
+    db = Ledger(tmp_path / 'political.db')
+    try:
+        result = import_research(db, package(), yes=True)
+        accepted = show(db, result['research_run_id'])
+        assert accepted['skill_name'] == 'investobot-political-contributions'
+        assert accepted['skill_version'] == '1.0.0'
+    finally:
+        db.connection.close()
