@@ -42,7 +42,7 @@ def compact(ctx):
     assert state['snapshots'][0]['source_timestamp'] == '2026-10-08'
     reversed_state = {key: list(reversed(value)) for key, value in state.items()}
     assert plans.state_hash(state) == plans.state_hash(reversed_state)
-    assert ctx['ledger'].connection.execute('PRAGMA user_version').fetchone()[0] == 8
+    assert ctx['ledger'].connection.execute('PRAGMA user_version').fetchone()[0] == 9
 
 
 @when('two alternatives are saved from identical planning inputs')

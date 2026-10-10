@@ -72,7 +72,7 @@ def installed(ctx):
 @then('the new method and authoritative contract are available')
 def skill_contract(ctx):
     skill = invoke(ctx, ['research', 'skills', 'show', 'investobot-management-insiders'])
-    assert skill['skill_version'] == '1.0.0'
+    assert skill['skill_version'] == '1.1.0'
     assert {'SKILL.md', 'references/research-method.md', 'references/sec-transaction-codes.md',
             'references/compensation-ownership-rules.md', 'references/json-contract.md'} <= skill['files'].keys()
     assert 'invest schema' in '\n'.join(skill['files'].values())
