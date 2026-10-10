@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "research_type": "ETF_MUTUAL_FUND_DILIGENCE",
+  "fund": {"name":"Fictional Broad Index ETF","ticker":"FAKE","exchange":"NYSE Arca","isin":null,"registrant_cik":"0000000123","series_id":"S000000123","class_id":"C000000123","class_name":"ETF Shares","adviser":"Fictional Adviser","security_id":null,"fund_type":"ETF","strategy_type":"INDEX"},
+  "scope": {"researched_as_of":"2026-10-10","coverage_status":"PARTIAL","coverage_notes":"Only the latest fictional prospectus and a top-holdings list were reviewed."},
+  "sources": [
+    {"id":"sec-identity","source_type":"SEC_EDGAR","publisher":"SEC EDGAR (fictional fixture)","url":"https://www.sec.gov/Archives/edgar/data/123/000000012326000001/fictional.htm","published_at":"2026-09-20","filed_at":"2026-09-20","accessed_at":"2026-10-10","source_locator":"Mock SEC filing: series S000000123 / class C000000123","accession_number":"0000000123-26-000001","registrant_cik":"0000000123","series_id":"S000000123","class_id":"C000000123"},
+    {"id":"prospectus","source_type":"PROSPECTUS","publisher":"Fictional Fund","url":"https://example.invalid/fake-prospectus","published_at":"2026-09-20","filed_at":null,"accessed_at":"2026-10-10","source_locator":"Series/class identifiers; fees and investment approach","accession_number":null,"registrant_cik":"0000000123","series_id":"S000000123","class_id":"C000000123"},
+    {"id":"holdings-page","source_type":"SPONSOR_HOLDINGS","publisher":"Fictional Fund","url":"https://example.invalid/fake-holdings","published_at":"2026-10-08","filed_at":null,"accessed_at":"2026-10-10","source_locator":"Top holdings as of 2026-10-07","accession_number":null,"registrant_cik":"0000000123","series_id":"S000000123","class_id":null}
+  ],
+  "methodology": {"objective":"Track a fictional broad index before fees.","index_name":"Fictional Market Index","index_provider":"Fictional Index Co.","benchmark_name":"Fictional Market Index","selection_rules":null,"weighting_method":"Market-cap weighted","rebalance_policy":null,"reconstitution_policy":null,"replication_method":"Sampling","active_approach":null,"source_ids":["prospectus"],"uncertainty":"Detailed constituent eligibility and rebalance rules were not available."},
+  "holdings_snapshot": {"as_of_date":"2026-10-07","coverage":"TOP_N","source_id":"holdings-page","holdings_count_reported":2,"notes":"Only two top holdings supplied; not a full portfolio."},
+  "holdings": [
+    {"id":"holding-a","name":"Fictional Stock A","security_identifier":null,"asset_class":"EQUITY","weight_pct":"6","source_id":"holdings-page","source_locator":"Holding A"},
+    {"id":"holding-b","name":"Fictional Stock B","security_identifier":null,"asset_class":"EQUITY","weight_pct":"4","source_id":"holdings-page","source_locator":"Holding B"}
+  ],
+  "metrics": [
+    {"id":"net-expense","code":"NET_EXPENSE_RATIO","value":"0.15","unit":"PCT","scope":"CLASS","period_start":null,"period_end":null,"observed_as_of":"2026-09-20","waiver_end_date":null,"source_id":"prospectus","source_locator":"Fees and expenses","notes":"Reported prospectus net annual operating expenses."}
+  ],
+  "findings": [
+    {"id":"fee-note","category":"FEES","fact":"The fictional share class reports a 0.15% net expense ratio.","interpretation":null,"uncertainty":"No brokerage spread or commission estimate is provided.","source_ids":["prospectus"],"source_locator":"Fee table"}
+  ],
+  "limitations": ["Entirely fictional evidence.","Only two top holdings; full concentration is unknown.","Portfolio turnover, spreads, distribution history and full index rules were not supplied."]
+}
