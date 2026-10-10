@@ -409,3 +409,11 @@ After corrections, the full offline mounted-source Docker suite passes 462 tests
 and Ruff. A separate agent followed the earnings skill using fictional facts and
 verified validation, preview without database creation, confirmed history,
 high-precision comparison and idempotent reimport. No live disclosures were used.
+
+V2.6 package 6: a fresh `investobot-v26-ci` image passes `uv sync --locked`,
+`uv run --locked pytest` (462 tests) and explicit-config Ruff in separate offline
+containers, without source bind mounts or private ledger volumes. An offline
+wheel build includes both canonical skills; discovery succeeds using only the
+extracted wheel outside `/app`. Both skill format validators passed earlier.
+No host dependencies were installed and no changes were pushed. GitHub Actions,
+live SEC/source review and real institution HTML remain unverified external gates.

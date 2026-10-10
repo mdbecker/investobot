@@ -197,3 +197,5 @@ preserve existing data before manually selecting a replacement database.
 Research validation, previews and reads do not create a missing database.
 External research and source review remain human responsibilities; no new API
 accounts, secrets or credentials are needed for the offline MVP.
+Local V2.6 verification: 462 tests, Ruff and wheel-only skill discovery passed
+in offline Docker. Changes remain local; GitHub Actions is unverified.
