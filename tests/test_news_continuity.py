@@ -188,3 +188,30 @@ def test_disputed_corroboration_and_cosmetics_are_not_new_claims(ledger):
     result = queries.compare(ledger, 'A', 'B')
     assert result['disputed_claim_changes'] == []
     assert result['new_evidence_only'] and result['updated_events'] == []
+
+
+def test_relabeling_dispute_without_new_citation_is_not_fresh_confirmation(ledger):
+    save(ledger, 'A', '2026-10-01', facts=[('claim', 'Contested claim.', 'DISPUTED')])
+    save(ledger, 'B', '2026-10-02', sources=('renamed',),
+         facts=[('claim', 'Contested claim.', 'VERIFIED')])
+    ledger.connection.execute("UPDATE research_sources SET url='https://example.invalid/s1',published_at='2026-10-01' WHERE run_id='B'")
+    result = queries.compare(ledger, 'A', 'B')
+    assert result['updated_events'] == []
+    row = result['disputed_claim_changes'][0]
+    assert row['supporting_evidence_status'] == 'UNCHANGED_CITATION_REVIEW_REQUIRED'
+    assert any('supporting evidence' in warning.lower() for warning in result['warnings'])
+
+
+def test_latest_changes_recovers_same_issuer_prior_ticker(ledger):
+    save(ledger, 'A', '2026-10-01', ticker='OLD')
+    save(ledger, 'B', '2026-10-02', ticker='NEW')
+    result = queries.changes(ledger, 'NEW')
+    assert result['baseline_available'] and result['from_run_id'] == 'A'
+
+
+def test_same_day_tie_cutoff_excludes_later_history(ledger):
+    save(ledger, 'Z', '2026-10-01')
+    save(ledger, 'A', '2026-10-01', event=False)
+    save(ledger, 'C', '2026-10-02')
+    result = queries.compare(ledger, 'A', 'C')
+    assert result['new_events'] and not result['reobserved_events']

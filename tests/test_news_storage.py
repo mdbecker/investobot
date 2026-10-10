@@ -192,3 +192,25 @@ def test_skill_instruction_update_preserves_accepted_hash_and_noop(ctx, monkeypa
     assert second['status'] == 'UNCHANGED'
     assert second['research_run_id'] == first['research_run_id']
     assert ctx['db'].connection.execute('SELECT skill_version FROM research_runs').fetchall() == [('1.0.0',)]
+
+
+def test_old_skill_package_validates_after_reordering_without_ticker(ctx, monkeypatch):
+    from typer.testing import CliRunner
+
+    from invest.cli import app
+    from invest.news import import_research
+    from invest.research_skills import SUPPORTED_SKILLS
+    data = ctx['payload']
+    data['company']['ticker'] = None
+    data['sources'].append(dict(data['sources'][0], id='a-second',
+                               url='https://example.invalid/second'))
+    monkeypatch.setitem(SUPPORTED_SKILLS['investobot-news'], 'skill_version', '1.0.0')
+    import_research(ctx['db'], data, yes=True)
+    monkeypatch.setitem(SUPPORTED_SKILLS['investobot-news'], 'skill_version', '1.0.1')
+    monkeypatch.setenv('INVEST_DB', str(ctx['path']))
+    file = ctx['path'].parent / 'reordered.json'
+    file.write_text(json.dumps(data))
+    before = ctx['path'].read_bytes()
+    result = CliRunner().invoke(app, ['research', 'news', 'validate', str(file)])
+    assert result.exit_code == 0, result.stderr
+    assert before == ctx['path'].read_bytes()
