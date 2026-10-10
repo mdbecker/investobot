@@ -169,7 +169,7 @@ and live FMP checks with user test credentials are still outstanding. Do not
 describe passing synthetic tests as confirmed institution/provider support.
 
 Executive political-contribution research is available through
-`invest prompt show executive-political-contributions` and
+`invest research skills show investobot-political-contributions` and
 `invest research political validate/import/list/show/summary`.
 Research externally using permitted sources, verify identities and recipient
 relationships manually, then validate and preview supplied JSON before an

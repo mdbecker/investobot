@@ -25,6 +25,9 @@ OUTPUT_CONTRACT = {
 # This describes behavior, not inputs: parameters come from the registered CLI,
 # and financial JSON validation comes from the same models used by domain code.
 PURPOSES = {
+    "research.skills.list": "Discover bundled external-agent research skills without executing them.",
+    "research.skills.show": "Read a bundled skill and its references without execution.",
+    "research.skills.install": "Explicitly copy bundled skills into a project; confirm overwrites modified canonical files.",
     "research.political.validate": "Validate research evidence and reviewed source permissions without writes.",
     "research.political.import": "Preview or explicitly accept immutable research; never mutate financial state.",
     "research.political.list": "List compact research runs, optionally filtered by ticker.",
@@ -73,6 +76,7 @@ PURPOSES = {
     "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
+    "research.skills.install": "project_skill_files",
     "research.political.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",

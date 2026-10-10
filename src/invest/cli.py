@@ -442,6 +442,27 @@ research = typer.Typer()
 political = typer.Typer()
 app.add_typer(research, name='research')
 research.add_typer(political, name='political')
+skills = typer.Typer()
+research.add_typer(skills, name='skills')
+
+
+@skills.command('list')
+def research_skills_list():
+    from invest.research_skills import list_skills
+    emit(list_skills)
+
+
+@skills.command('show')
+def research_skills_show(name: str):
+    from invest.research_skills import show_skill
+    emit(lambda: show_skill(name))
+
+
+@skills.command('install')
+def research_skills_install(agent: str = typer.Option(...),
+                            workspace: str = typer.Option(...), confirm: bool = False):
+    from invest.research_skills import install_skills
+    emit(lambda: install_skills(agent, workspace, confirm=confirm))
 
 
 @political.command('validate')

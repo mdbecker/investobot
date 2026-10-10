@@ -14,7 +14,8 @@ Keep research files in ignored `local-data`; container paths begin `/app`.
 
 ```sh
 docker compose build
-docker compose run --rm -T app invest prompt show executive-political-contributions
+docker compose run --rm -T app invest research skills show investobot-political-contributions
+docker compose run --rm -T app invest research skills install --agent codex --workspace /app
 docker compose run --rm -T app invest tools describe research.political.validate
 docker compose run --rm -T app invest tools describe research.political.import
 docker compose run --rm -T app invest schema
@@ -22,9 +23,12 @@ docker compose run --rm -T app invest research political validate /app/local-dat
 docker compose run --rm -T app invest research political import /app/local-data/political-research.json
 ```
 
-The bundled prompt is Markdown to copy into an external research agent. It is
-also available in the existing local Prompt Library. Investobot does not execute
-it, scrape political sites or provide an FEC client.
+The project-local skill is recognized by the external agent. Ask that agent to
+use `investobot-political-contributions`; for Claude Code install with
+`--agent claude-code`. Investobot does not execute the skill, scrape political
+sites or provide an FEC client. The general Prompt Library and user-created
+political prompt overrides remain available; only the bundled legacy political
+prompt has been removed. See [research skills](research-skills.md).
 
 Review the company and executive identity evidence, reporting period, source
 permissions, recipient relationships, ambiguities and transaction identifiers.

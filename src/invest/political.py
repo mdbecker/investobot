@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from invest.political_models import PoliticalResearchInput, enforce_policy
 from invest.research_identity import verify_company
+from invest.research_skills import SKILL_VERSION
 
 DDL = [
     """CREATE TABLE research_political_runs (
@@ -69,6 +70,7 @@ def import_research(ledger, payload, yes=False, policy_path=None):
     model = PoliticalResearchInput.model_validate(payload)
     enforce_policy(model, policy_path)
     data = model.model_dump(mode='json')
+    data.update(skill_name='investobot-political-contributions', skill_version=SKILL_VERSION)
     # Sort identified collections so an external agent's ordering is not identity.
     for collection in ('sources', 'executives', 'recipients', 'contributions'):
         data[collection].sort(key=lambda item: item['id'])

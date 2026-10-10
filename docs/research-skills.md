@@ -1,0 +1,56 @@
+# Research skills
+
+Agent skills describe how an external agent researches evidence. Investobot's
+CLI validates, stores and calculates; installing a skill does not run research.
+Skills follow the [Agent Skills specification](https://agentskills.io/specification).
+Canonical portable instructions live in `skills/` and are also bundled in the
+distribution. Both research skills use version `1.0.0`; their JSON contracts use
+schema `1.0`. These are different from SQLite schema 5.
+
+## Discovery and project-local installation
+
+Use Docker throughout; no host packages, new API account or secret are needed.
+
+```sh
+docker compose build
+docker compose run --rm -T app invest research skills list
+docker compose run --rm -T app invest research skills show investobot-earnings
+docker compose run --rm -T app invest research skills show investobot-political-contributions
+docker compose run --rm -T app invest research skills install --agent codex --workspace /app
+```
+
+Installation copies both skills into project-local `.agents/skills` for Codex.
+For Claude Code use `--agent claude-code`, which selects `.claude/skills`. The
+workspace must be mounted in the container; `/app` is the repository bind mount.
+No global agent configuration changes. Files can also be copied manually from
+the canonical directories. Installation reports copied files and skill versions.
+
+Identical files are preserved. Modified files require explicit `--confirm` before
+replacement; inspect your changes first. Unsafe symlinks and traversal are
+rejected even with confirmation. Unrelated skills remain untouched.
+
+Ask the agent to use `investobot-earnings` for quarterly/annual company financial
+research, or `investobot-political-contributions` for verified executive and
+recipient evidence. Codex may invoke the skills by name with `$`; Claude Code
+uses its normal project-skill discovery. Each skill's `SKILL.md` routes to focused
+references. Discover current authoritative models with `invest schema` and
+command behavior with `invest tools describe`; skill text does not maintain a
+second JSON Schema.
+
+## Research boundary
+
+The agent uses its existing browser and authorized sources. Investobot neither
+browses nor executes an LLM. Research JSON remains untrusted: validation checks
+structure, references and consistency, while a human verifies that original
+disclosures support the facts. Import previews by default; `--yes` accepts an
+immutable run and changes research records only.
+
+The political skill replaces its bundled V2.5 prompt. Other general prompts and
+user-created overrides remain available in the existing Prompt Library. Political
+source rights remain independently enforced; installing the skill does not grant
+permission to collect individual contributor information.
+
+See [earnings research](earnings-research.md), [political research](political-research.md)
+and the preserved [V2.6 PRD](PRD-v2.6.md). Automated fixtures are fictional and
+offline. Their success does not validate real SEC disclosures, institution HTML,
+live provider access or a remote GitHub Actions result.

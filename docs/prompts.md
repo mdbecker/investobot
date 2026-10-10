@@ -10,7 +10,8 @@ Saving an existing bundled ID creates a user override. Bundled documents remain 
 
 The shared domain API is `PromptLibrary(directory=None)`, with `list()`, `show(id)`, `save(id, content)`, and `delete(id)`. Reads return `id`, `title`, `content`, `source` (`bundled` or `user`), and `bundled_available`. Deletion returns `id`, `deleted`, and `bundled_restored`.
 
-`executive-political-contributions` bundles the external research workflow and
-strict JSON contract. The existing Prompt Library displays and copies it; it
-never runs research. The [political research guide](political-research.md) explains
-source-use review and import requirements.
+V2.6 moves the bundled political research workflow into the installable
+`investobot-political-contributions` skill. The nine general workflow prompts
+remain available; user political prompt overrides are preserved. The Prompt
+Library never executes instructions. See [research skills](research-skills.md)
+and [political research](political-research.md) for installation and import review.

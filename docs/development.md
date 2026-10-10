@@ -369,3 +369,12 @@ V2.6 package 1: six political-hardening failures observed and committed in
 candidate summaries, two ambiguous locators and explicitly sourced ticker aliases.
 The full offline Docker suite passes 356 tests and explicit-config Ruff passes.
 Schema remains 4 for this package; earnings will introduce schema 5 separately.
+
+V2.6 package 2: missing skill discovery/installation module observed before red
+commit `ecba618`; two CLI/migration failures committed in `3308aa7` and missing
+trusted political skill provenance in `23ba14c`. Both canonical skills pass the
+skill-creator format validator in disposable Docker containers. The frozen full
+suite passes 376 tests and Ruff. Installation tests include symlink/traversal
+rejection, modified-file confirmation, unrelated user-file preservation and
+atomic rollback. Political workflow regression remains green; saved runs pin
+trusted skill name/version without redesigning political tables.

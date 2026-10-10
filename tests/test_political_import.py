@@ -183,7 +183,7 @@ def test_research_preserves_saved_plan_and_cli_readonly_checks(tmp_path, monkeyp
             result = runner.invoke(app, ['research', 'political', *args])
             assert result.exit_code == 0, result.stderr
             json.loads(result.stdout)
-        result = runner.invoke(app, ['prompt', 'show', 'executive-political-contributions'])
+        result = runner.invoke(app, ['research', 'skills', 'show', 'investobot-political-contributions'])
         assert result.exit_code == 0
     finally:
         db.connection.close()

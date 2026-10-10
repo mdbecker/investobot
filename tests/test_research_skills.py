@@ -1,5 +1,7 @@
 """Project-local portable skill installation and trust-boundary scenarios."""
 
+from pathlib import Path
+
 import pytest
 from pytest_bdd import given, scenarios, then, when
 
@@ -135,3 +137,43 @@ def test_invalid_agent_never_writes(tmp_path):
     with pytest.raises(DomainError):
         install_skills('../../global', tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+def test_workspace_traversal_cannot_hide_symlink_ancestor(tmp_path):
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    link = tmp_path / 'link'
+    link.symlink_to(workspace, target_is_directory=True)
+    with pytest.raises(DomainError):
+        install_skills('codex', link / '..' / 'workspace')
+    assert not list(workspace.iterdir())
+
+
+def test_custom_skill_resources_survive_confirmed_update(tmp_path):
+    install_skills('codex', tmp_path)
+    root = tmp_path / '.agents/skills/investobot-earnings'
+    custom = root / 'references/local-notes.md'
+    custom.write_text('Private user notes')
+    (root / 'SKILL.md').write_text('User edit')
+    install_skills('codex', tmp_path, confirm=True)
+    assert custom.read_text() == 'Private user notes'
+
+
+def test_install_rolls_back_all_skills_on_replace_failure(tmp_path, monkeypatch):
+    install_skills('codex', tmp_path)
+    path = tmp_path / '.agents/skills/investobot-earnings/SKILL.md'
+    path.write_text('User edit')
+    political = tmp_path / '.agents/skills/investobot-political-contributions/SKILL.md'
+    political.write_text('Other edit')
+    before = files(tmp_path)
+    rename = Path.rename
+
+    def fail_second_tree(self, target):
+        if self.name == 'investobot-political-contributions' and '.investobot-skills-' in str(self.parent):
+            raise OSError('Synthetic replacement failure')
+        return rename(self, target)
+
+    monkeypatch.setattr(Path, 'rename', fail_second_tree)
+    with pytest.raises(DomainError):
+        install_skills('codex', tmp_path, confirm=True)
+    assert files(tmp_path) == before
