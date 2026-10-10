@@ -3,10 +3,10 @@ All tests and dependency tools run in Docker. Conventional red/green commits tra
 
 ## Deliberate schema reset
 
-SQLite schema 4 initializes only a fresh database and rejects incompatible older
+SQLite schema 5 initializes only a fresh database and rejects incompatible older
 schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2/3 records, including saved plans, are not migrated or converted.
-A reset discards all accepted holdings, lots, activity, targets and plans in the
+on startup. Version 2/3/4 records, including saved plans and research, are not migrated or converted.
+A reset discards all accepted holdings, lots, activity, targets, plans and research in the
 selected ledger. Reimport reviewed source observations and recreate targets after
 resetting. Keep a private backup first if any information may be needed later.
 
@@ -23,7 +23,7 @@ This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
 If `INVEST_DB` selects another file, identify its actual mounted path first and
 delete only that chosen database and matching sidecars. Do not use
 `docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 4 on the next access.
+and dependency volumes. The application initializes schema 5 on the next access.
 
 For native installations, stop every process using the ledger. Locate the exact
 `INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
@@ -384,3 +384,11 @@ three type/schema/unknown guidance-date gaps were then observed and committed in
 `5739771`. The frozen model package passes 417 full offline Docker tests, including
 41 earnings validation checks, and Ruff. The bundled fictional JSON example
 validates against the model; this does not validate live SEC research or parsing.
+
+V2.6 package 4: five schema/persistence failures observed before red commit
+`77b6a83`. Schema 5 adds shared research runs/sources and earnings-specific
+metrics/guidance/findings, with composite same-run foreign keys. Political tables
+remain separate. The full offline Docker suite passes 422 tests and Ruff;
+preview preserves database bytes, reordered/equivalent inputs are idempotent,
+constraint failures roll back all inserts, incompatible schema 4 stays untouched,
+and an actual saved synthetic plan retains its stale status and financial inputs.

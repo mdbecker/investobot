@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 4** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 5** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -21,8 +21,11 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `plan_baselines` | Content-addressed immutable planning inputs, shared by alternatives |
 | `plans` | Baseline reference, dates/status, compact summary, immutable details and assumption hashes |
 | `research_political_*` | Six isolated immutable research/evidence tables; no financial-state mutation |
+| `research_runs`, `research_sources` | Shared immutable research metadata, packages and source provenance |
+| `research_earnings_metrics` | Exact reported financial facts, definitions, units, periods, scopes and source locators |
+| `research_earnings_guidance`, `research_earnings_findings` | Separate management outlook and classified qualitative evidence |
 
-Version 4 initializes a fresh database. Incompatible older databases are rejected
+Version 5 initializes a fresh database. Incompatible older databases are rejected
 with reset instructions; startup never deletes data. There are no migrations,
 backfills or legacy saved-plan readers. See the deliberate
 [reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are
@@ -197,3 +200,14 @@ keys are unique per run. The evidence table includes `run_id` to enforce cross-r
 integrity. All inserts are atomic. See [V2.5 PRD](PRD-v2.5.md) and
 [research workflow](political-research.md). Schema 3 remains unsupported; no
 migration or automatic deletion is performed.
+
+V2.6 schema 5 leaves political tables separate and adds the shared run/source
+foundation plus three earnings tables. Runs record trusted skill name/version,
+contract identity, compact summaries and canonical evidence packages. Content
+hashes normalize financial decimal strings and identified collection ordering,
+never arbitrary identifier strings. Metrics additionally retain `metric_definition`,
+`period_length`, optional source-unit scaling and reconciliation disclosure flags;
+sources retain CIK, acceptance time and amendment/restatement references. Guidance
+retains unknown issue dates and prior-guidance references without inventing facts.
+Composite foreign keys scope financial observations and evidence to their run.
+Research inserts use one transaction and never enter household/planning state.

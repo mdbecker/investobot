@@ -132,7 +132,7 @@ unitemized activity and unresolved findings remain visible limitations.
 
 ## Schema and verification
 
-Schema 4 deliberately rejects older ledgers. There are no migrations, legacy
+Schema 5 deliberately rejects older ledgers, including schema 4. There are no migrations, legacy
 readers or automatic deletion. Do not run a reset against the private Docker
 ledger to try this feature. Use a fresh disposable database first; if retaining
 private state matters, keep its backup and postpone switching until a deliberate
