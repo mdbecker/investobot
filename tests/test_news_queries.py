@@ -77,6 +77,15 @@ def save(ledger, run, day='2026-10-02', *, ticker='FAKE', cik='0000000001',
     db.commit()
 
 
+def test_warning_counts_are_part_of_delta_and_missing_baseline(ledger):
+    save(ledger, 'old')
+    save(ledger, 'new', '2026-10-03')
+    result = queries.compare(ledger, 'old', 'new')
+    assert result['counts']['warnings'] == len(result['warnings'])
+    missing = queries.changes(ledger, 'ABSENT')
+    assert missing['counts']['warnings'] == len(missing['warnings'])
+
+
 def test_compact_reads_and_context_never_scan_package(ledger):
     save(ledger, 'old')
     save(ledger, 'new', '2026-10-03')

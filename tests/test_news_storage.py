@@ -148,3 +148,25 @@ def test_news_skill_version_is_pinned_independently(ctx, monkeypatch):
                                        (run,)).fetchone()[0] == '1.0.1'
     assert show_skill('investobot-earnings')['skill_version'] == '1.0.0'
     assert show_skill('investobot-political-contributions')['skill_version'] == '1.0.0'
+
+
+def test_nested_collection_reordering_is_content_idempotent(ctx):
+    from invest.news import import_research
+    data = ctx['payload']
+    data['sources'].append(dict(data['sources'][0], id='independent',
+                                url='https://example.invalid/independent'))
+    event = data['events'][0]
+    event['source_ids'].append('independent')
+    event['affected_segments'].append('Other verified segment')
+    event['facts'].append(dict(event['facts'][0], fact_key='second-fact',
+                               statement='A separately attributed fictional fact.',
+                               source_id='independent'))
+    first = import_research(ctx['db'], data, yes=True)
+    reordered = copy.deepcopy(data)
+    for key in ('sources', 'events', 'catalysts', 'theses', 'limitations'):
+        reordered[key].reverse()
+    for key in ('facts', 'source_ids', 'affected_segments', 'implications', 'follow_up_questions'):
+        reordered['events'][0][key].reverse()
+    second = import_research(ctx['db'], reordered, yes=True)
+    assert first['research_run_id'] == second['research_run_id']
+    assert second['status'] == 'UNCHANGED'
