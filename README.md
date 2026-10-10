@@ -1,5 +1,12 @@
 # Investobot
 
+The [October 10 unified MVP rebuild specification](docs/PRD-unified-mvp-2026-10-10.md)
+is preserved in this repository. The rebuild is in its red-first specification
+phase; new acceptance tests intentionally fail and the new capabilities are not
+implemented yet. See [implementation evidence and remaining gates](docs/implementation/unified-mvp-status.md).
+Treat the current app as a development preview, with provisional institution
+adapters and an unverified live-provider gate.
+
 Local financial tools for a browser-equipped coding agent: accepted portfolio
 facts, tax/exposure analysis, hypothetical targets, proposed manual trades and
 reproducible reports. The agent researches and explains; the human decides and
