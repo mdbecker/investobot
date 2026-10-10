@@ -151,3 +151,16 @@ Local Docker evidence does not establish a GitHub Actions result. Work remains
 on local `main` with conventional red/green commits and no pushes. Institution
 HTML validation and live market-provider setup are separate manual release
 gates; this feature adds neither an institution adapter nor market-data setup.
+
+V2.6 hardening preserves a narrow set of public query locators: `record_id`,
+`filing_id`, `transaction_id`, `committee_id`, `candidate_id` and
+`accession_number`. Values must be short public identifier strings; duplicated
+or unsafe locators are rejected. Other query parameters, URL credentials and
+fragments are removed. Use optional `source_locator` for a disclosure section or
+record that cannot be represented safely in a URL. Never put credentials there.
+
+A supplied canonical `security_id` must exist. A supplied ticker must match that
+security's canonical ticker or an explicitly sourced `ticker_aliases` entry
+accepted through `security register`; company-name similarity and different
+share-class tickers are insufficient. Research cannot register or reclassify a
+security. Recipient groups retain verified committee and candidate identifiers.

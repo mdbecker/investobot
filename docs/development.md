@@ -363,3 +363,9 @@ client configuration plus the already installed BuildKit plugin; no credentials
 or host packages were changed. A legacy-builder attempt was abandoned because
 its handling of the existing multi-source COPY differs from BuildKit. No Dockerfile
 change was needed. GitHub Actions has not been run on these unpushed commits.
+
+V2.6 package 1: six political-hardening failures observed and committed in
+`90b54ce` before implementation: public locators, contradictory security linkage,
+candidate summaries, two ambiguous locators and explicitly sourced ticker aliases.
+The full offline Docker suite passes 356 tests and explicit-config Ruff passes.
+Schema remains 4 for this package; earnings will introduce schema 5 separately.

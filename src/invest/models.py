@@ -144,6 +144,12 @@ class TargetInput(BaseModel):
         return self
 
 
+class SecurityTickerAlias(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    ticker: str = Field(min_length=1, max_length=32, pattern=r"^[A-Z0-9.\-^]+$")
+    source: str = Field(min_length=1, max_length=1000)
+
+
 class SecurityInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     ticker: str = Field(min_length=1, max_length=32, pattern=r"^[A-Z0-9.\-^]+$")
@@ -154,6 +160,7 @@ class SecurityInput(BaseModel):
     isin: str | None = None
     figi: str | None = None
     source: str = Field(min_length=1, max_length=1000)
+    ticker_aliases: list[SecurityTickerAlias] | None = None
 
 
 class ActivityAllocation(BaseModel):

@@ -78,7 +78,11 @@ def summary(ledger, run_id):
     ]
     by_recipient = [
         {'recipient_id': recipient['id'], 'name': recipient['name'],
+         'recipient_name': recipient['name'],
          'recipient_type': recipient['recipient_type'],
+         'committee_id': recipient.get('committee_id'),
+         'candidate_id': recipient.get('candidate_id'),
+         'candidate_name': recipient.get('candidate_name'),
          'recipient_party': recipient['recipient_party'],
          'transactions': [row for row in transactions
                           if row['recipient_id'] == recipient['id']]}

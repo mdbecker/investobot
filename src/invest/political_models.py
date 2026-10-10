@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal, localcontext
 from pathlib import Path
 from typing import Annotated, Literal
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import (
     BaseModel,
@@ -45,8 +45,17 @@ def safe_url(value):
         host = f'[{host}]'
     if parts.port:
         host += f':{parts.port}'
-    # Query strings and fragments can contain credentials under arbitrary names.
-    return urlunsplit((parts.scheme, host, parts.path, '', ''))
+    locators = {'record_id', 'filing_id', 'transaction_id', 'committee_id',
+                'candidate_id', 'accession_number'}
+    retained = {}
+    for key, locator in parse_qsl(parts.query, keep_blank_values=True):
+        if key not in locators:
+            continue
+        if key in retained or not re.fullmatch(r'[A-Za-z0-9._:-]{1,200}', locator):
+            raise ValueError('unsafe or ambiguous public record locator')
+        retained[key] = locator
+    return urlunsplit((parts.scheme, host, parts.path,
+                       urlencode(sorted(retained.items())), ''))
 
 
 class StrictModel(BaseModel):
@@ -85,6 +94,7 @@ class Source(StrictModel):
     accessed_at: date
     individual_contributor_data: StrictBool
     rights_basis: Text
+    source_locator: Text | None = None
 
     @field_validator('url')
     @classmethod

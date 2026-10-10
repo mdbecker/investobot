@@ -4,8 +4,8 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
-from invest.models import DomainError
 from invest.political_models import PoliticalResearchInput, enforce_policy
+from invest.research_identity import verify_company
 
 DDL = [
     """CREATE TABLE research_political_runs (
@@ -82,8 +82,7 @@ def import_research(ledger, payload, yes=False, policy_path=None):
     package = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
     run_id = hashlib.sha256(package.encode()).hexdigest()
     security_id = data['company'].get('security_id')
-    if security_id and not ledger.connection.execute('SELECT 1 FROM securities WHERE id=?', (security_id,)).fetchone():
-        raise DomainError('Research references an unknown canonical security ID', 3)
+    verify_company(ledger, data['company'])
     exists = ledger.connection.execute('SELECT 1 FROM research_political_runs WHERE id=?', (run_id,)).fetchone()
     result = {'research_run_id': run_id, 'status': 'UNCHANGED' if exists else 'PREVIEW',
               'committed': False, 'mutation_scope': 'research',
