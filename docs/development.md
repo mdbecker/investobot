@@ -378,3 +378,9 @@ suite passes 376 tests and Ruff. Installation tests include symlink/traversal
 rejection, modified-file confirmation, unrelated user-file preservation and
 atomic rollback. Political workflow regression remains green; saved runs pin
 trusted skill name/version without redesigning political tables.
+
+V2.6 package 3: missing earnings model observed before red commit `9da3341`;
+three type/schema/unknown guidance-date gaps were then observed and committed in
+`5739771`. The frozen model package passes 417 full offline Docker tests, including
+41 earnings validation checks, and Ruff. The bundled fictional JSON example
+validates against the model; this does not validate live SEC research or parsing.

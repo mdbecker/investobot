@@ -207,3 +207,10 @@ def test_unknown_guidance_issue_date_is_not_a_filing_date():
         'accounting_basis': 'GAAP', 'guidance_status': 'ISSUED',
         'source_id': 'filing', 'source_locator': 'Outlook', 'qualifiers': 'Synthetic'}]
     assert EarningsResearchInput.model_validate(incoming).guidance[0].issued_at is None
+
+
+def test_sec_archive_reporting_entity_cannot_contradict_company():
+    incoming = package()
+    incoming['sources'][0]['url'] = 'https://www.sec.gov/Archives/edgar/data/2/filing.htm'
+    with pytest.raises(ValueError, match='CIK'):
+        EarningsResearchInput.model_validate(incoming)
