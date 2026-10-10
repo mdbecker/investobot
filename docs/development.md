@@ -392,3 +392,12 @@ remain separate. The full offline Docker suite passes 422 tests and Ruff;
 preview preserves database bytes, reordered/equivalent inputs are idempotent,
 constraint failures roll back all inserts, incompatible schema 4 stays untouched,
 and an actual saved synthetic plan retains its stale status and financial inputs.
+
+V2.6 package 5: missing earnings commands/read-only boundaries were observed and
+committed in `e3d189b`; missing query implementation was committed in `4c91d77`.
+The frozen full offline Docker suite passes 456 tests and Ruff. Saved facts are
+queried without loading package JSON for list/summary/compare. Exact changes,
+incompatible bases/periods/entities, ambiguous matches, zero/negative baselines,
+amended filings and high-precision values are covered. Validation and previews
+leave a missing selected database uncreated; canonical identity contradictions
+fail without changing an existing database.

@@ -33,6 +33,12 @@ PURPOSES = {
     "research.political.list": "List compact research runs, optionally filtered by ticker.",
     "research.political.show": "Read the full immutable research package and provenance.",
     "research.political.summary": "Calculate descriptive net totals and inspect transaction evidence.",
+    "research.earnings.validate": "Validate sourced financial facts without writes.",
+    "research.earnings.import": "Preview or explicitly accept immutable earnings research.",
+    "research.earnings.list": "List compact earnings history, optionally filtered by ticker.",
+    "research.earnings.show": "Read the full immutable earnings package and provenance.",
+    "research.earnings.summary": "Inspect reported financial facts and source limitations.",
+    "research.earnings.compare": "Compare compatible reported facts with Decimal arithmetic.",
     "schema": "Discover all command contracts and snapshot validation schemas.",
     "tools.list": "List available commands and persistent mutation scopes.",
     "tools.describe": "Describe a registered command's inputs and output contract.",
@@ -78,6 +84,7 @@ PURPOSES = {
 SCOPES = {
     "research.skills.install": "project_skill_files",
     "research.political.import": "research",
+    "research.earnings.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",
     "target.save": "targets",
@@ -195,6 +202,10 @@ def _describe(name, command):
         from invest.political_models import PoliticalResearchInput
 
         model = PoliticalResearchInput
+    if name in {"research.earnings.validate", "research.earnings.import"}:
+        from invest.earnings_models import EarningsResearchInput
+
+        model = EarningsResearchInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -219,9 +230,11 @@ def tools_describe(name, app=None):
 
 
 def schema_contract(app=None):
+    from invest.earnings_models import EarningsResearchInput
     from invest.political_models import PoliticalResearchInput
 
     return {
+        "earnings_research": EarningsResearchInput.model_json_schema(),
         "political_research": PoliticalResearchInput.model_json_schema(),
         "snapshot": Snapshot.model_json_schema(),
         "output_contract": OUTPUT_CONTRACT,

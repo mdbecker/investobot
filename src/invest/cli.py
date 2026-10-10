@@ -442,6 +442,8 @@ research = typer.Typer()
 political = typer.Typer()
 app.add_typer(research, name='research')
 research.add_typer(political, name='political')
+earnings = typer.Typer()
+research.add_typer(earnings, name='earnings')
 skills = typer.Typer()
 research.add_typer(skills, name='skills')
 
@@ -473,6 +475,9 @@ def political_validate(file: str):
     def run():
         model = PoliticalResearchInput.model_validate(read_json(file))
         enforce_policy(model)
+        from invest.research_identity import read_ledger, verify_company
+        with read_ledger(database_path()) as db:
+            verify_company(db, model.company.model_dump(mode='json'))
         return {'valid': True, 'ready': True, 'coverage_status': model.scope.coverage_status,
                 'rights_status': model.scope.rights_status,
                 'verified_transactions': len(model.contributions),
@@ -490,6 +495,10 @@ def political_import(file: str, yes: bool = False):
     def run():
         model = PoliticalResearchInput.model_validate(read_json(file))
         enforce_policy(model)
+        from invest.research_identity import read_ledger
+        if not yes:
+            with read_ledger(database_path()) as db:
+                return import_research(db, model, yes=False)
         db = ledger()
         try:
             return import_research(db, model, yes=yes)
@@ -499,11 +508,9 @@ def political_import(file: str, yes: bool = False):
 
 
 def political_query(operation, *args):
-    db = ledger()
-    try:
+    from invest.research_identity import read_ledger
+    with read_ledger(database_path()) as db:
         return operation(db, *args)
-    finally:
-        db.connection.close()
 
 
 @political.command('list')
@@ -522,3 +529,63 @@ def political_show(run_id: str):
 def political_summary(run_id: str):
     from invest.political_queries import summary
     emit(lambda: political_query(summary, run_id))
+
+
+@earnings.command('validate')
+def earnings_validate(file: str):
+    from invest.earnings import validation_warnings
+    from invest.earnings_models import EarningsResearchInput
+    from invest.research_identity import read_ledger, verify_company
+
+    def run():
+        model = EarningsResearchInput.model_validate(read_json(file))
+        data = model.model_dump(mode='json')
+        with read_ledger(database_path()) as db:
+            verify_company(db, data['company'])
+        return {'valid': True, 'coverage_status': model.coverage_status,
+                'metric_count': len(model.metrics), 'guidance_count': len(model.guidance),
+                'finding_count': len(model.findings), 'warnings': validation_warnings(data)}
+    emit(run)
+
+
+@earnings.command('import')
+def earnings_import(file: str, yes: bool = False):
+    from invest.earnings import import_research
+    from invest.earnings_models import EarningsResearchInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = EarningsResearchInput.model_validate(read_json(file))
+        if not yes:
+            with read_ledger(database_path()) as db:
+                return import_research(db, model, yes=False)
+        db = ledger()
+        try:
+            return import_research(db, model, yes=True)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+@earnings.command('list')
+def earnings_list(ticker: str = typer.Option(None)):
+    from invest.earnings_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@earnings.command('show')
+def earnings_show(run_id: str):
+    from invest.earnings_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@earnings.command('summary')
+def earnings_summary(run_id: str):
+    from invest.earnings_queries import summary
+    emit(lambda: political_query(summary, run_id))
+
+
+@earnings.command('compare')
+def earnings_compare(run_a: str, run_b: str):
+    from invest.earnings_queries import compare
+    emit(lambda: political_query(compare, run_a, run_b))

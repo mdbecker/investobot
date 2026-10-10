@@ -29,6 +29,15 @@ Research retrieval freshness never changes the age of the reporting period.
 New amendments/restatements create new runs; preserve original filing references
 and historical observations rather than overwriting them.
 
+Summaries return an array of saved metrics so multiple bases or segments remain
+distinct. Growth stays null until you explicitly select two runs with `compare`.
+Comparisons require matching entities, definitions, bases, units, scopes, fiscal
+periods and actual duration lengths; mismatches return null with warnings.
+Percentage change is unavailable for zero or negative baselines. Repeating
+Decimal quotients disclose rounding. This deliberately conservative policy can
+reject otherwise useful comparisons, such as quarters with different day counts;
+review the original facts rather than treating missing comparisons as zero.
+
 ## Docker workflow
 
 No new credentials or host installation are required for the synthetic MVP.

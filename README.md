@@ -175,7 +175,7 @@ is included. SQLite, Decimal and small deterministic domain modules remain the
 foundation.
 
 V2.5 adds [executive political-contribution research](docs/political-research.md):
-a bundled external-agent prompt, strict JSON validation, preview/confirmed
+an external-agent research workflow, strict JSON validation, preview/confirmed
 immutable imports, compact listing and descriptive totals with evidence.
 Named transactions require an independently reviewed local source policy;
 agent assertions and `--yes` cannot grant permission. No scraping, FEC client,
@@ -185,3 +185,15 @@ rejects older databases without deleting them; evaluate with a disposable ledger
 before deciding how to preserve/recreate existing data. Local verification:
 350 offline Docker tests and Ruff passed; remote GitHub Actions remains unverified
 because no changes were pushed.
+
+V2.6 adds project-local [research skills](docs/research-skills.md) for Codex and
+Claude Code, stronger political source/identity checks, and immutable
+[earnings research](docs/earnings-research.md) with strict financial facts,
+source provenance and conservative Decimal comparisons. The political skill
+replaces the bundled political prompt; existing user prompt overrides remain.
+The [V2.6 PRD](docs/PRD-v2.6.md) is preserved. Active schema 5 rejects older
+databases without changing them. Use a disposable ledger to evaluate it;
+preserve existing data before manually selecting a replacement database.
+Research validation, previews and reads do not create a missing database.
+External research and source review remain human responsibilities; no new API
+accounts, secrets or credentials are needed for the offline MVP.
