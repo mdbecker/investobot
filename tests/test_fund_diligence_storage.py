@@ -88,3 +88,25 @@ def test_tiny_plain_decimals_hash_identically_without_magnitude_loss(payload):
     payload['sources'].reverse()
     payload['holdings'].reverse()
     assert funds.canonical_package(payload)[2] == run
+
+
+def test_top_n_saved_input_roundtrips_with_adversarial_ids(tmp_path, payload):
+    from invest.fund_diligence_models import FundDiligenceInput
+
+    funds, queries = module('fund_diligence'), module('fund_diligence_queries')
+    payload['holdings'][0]['id'] = 'z-largest'
+    payload['holdings'][1]['id'] = 'a-smaller'
+    db = Ledger(tmp_path / 'roundtrip.db')
+    try:
+        first = funds.import_research(db, payload, yes=True)['run_id']
+        original = queries.show(db, first)
+        saved_input = {field: original[field] for field in FundDiligenceInput.model_fields}
+        restored = FundDiligenceInput.model_validate(saved_input)
+        assert [row.weight_pct for row in restored.holdings] == [6, 4]
+        repeated = funds.import_research(db, saved_input, yes=True)
+        assert repeated['status'] == 'UNCHANGED'
+        assert repeated['run_id'] == first
+        assert len(queries.list_runs(db)['runs']) == 1
+        assert queries.show(db, first) == original
+    finally:
+        db.connection.close()

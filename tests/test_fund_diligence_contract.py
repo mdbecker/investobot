@@ -305,3 +305,40 @@ def test_verified_zero_is_an_explicit_reported_fee_not_missing_data():
     payload = package()
     payload['metrics'][0].update(value='0', notes='Prospectus explicitly reports zero net expenses.')
     assert validate(payload).model_dump(mode='json')['metrics'][0]['value'] == '0'
+
+
+def test_sec_homepage_is_not_a_filing_or_series_class_record():
+    payload = package()
+    payload['sources'][0]['url'] = 'https://www.sec.gov/'
+    contract = model()
+    with pytest.raises(ValidationError):
+        contract.model_validate(payload)
+
+
+def test_explicit_absence_of_fee_waiver_does_not_require_expiration():
+    payload = package()
+    payload['metrics'][0]['notes'] = 'Reported net expenses. No fee waiver applies.'
+    assert validate(payload).metrics[0].waiver_end_date is None
+
+
+def test_query_accession_locator_cannot_contradict_sec_archive_accession():
+    payload = package()
+    payload['sources'][0]['url'] += '?accession_number=0000000123-26-000002'
+    contract = model()
+    with pytest.raises(ValidationError):
+        contract.model_validate(payload)
+
+
+def test_complete_declared_scope_still_requires_missing_disclosure_limitations():
+    payload = package()
+    payload['scope']['coverage_status'] = 'COMPLETE_WITHIN_DECLARED_SCOPE'
+    payload['limitations'] = []
+    contract = model()
+    with pytest.raises(ValidationError):
+        contract.model_validate(payload)
+
+
+def test_not_waived_expenses_do_not_imply_temporary_waiver():
+    payload = package()
+    payload['metrics'][0]['notes'] = 'These reported expenses are not waived.'
+    assert validate(payload).metrics[0].waiver_end_date is None
