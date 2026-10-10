@@ -123,3 +123,28 @@ def test_package_contains_no_agent_selected_provenance_or_fingerprint(ctx):
     package = json.loads(ctx['db'].connection.execute(
         'SELECT package_json FROM research_runs WHERE id=?', (result['research_run_id'],)).fetchone()[0])
     assert 'skill_version' not in package and 'material_fingerprint' not in package['events'][0]
+
+
+def test_resolution_locator_survives_summary_and_comparison(ctx):
+    from invest.news import import_research
+    from invest.news_queries import compare, summary
+    first = import_research(ctx['db'], ctx['payload'], yes=True)['research_run_id']
+    updated = copy.deepcopy(ctx['payload'])
+    updated['events'][0].update(event_status='RESOLVED', status_source_id='release',
+                                status_source_locator='Explicit outcome paragraph')
+    second = import_research(ctx['db'], updated, yes=True)['research_run_id']
+    assert summary(ctx['db'], second)['events'][0]['status_source_locator'] == 'Explicit outcome paragraph'
+    delta = compare(ctx['db'], first, second)
+    assert delta['updated_events'][0]['after']['status_source_locator'] == 'Explicit outcome paragraph'
+
+
+def test_news_skill_version_is_pinned_independently(ctx, monkeypatch):
+    from invest.news import import_research
+    from invest.research_skills import SUPPORTED_SKILLS, show_skill
+    monkeypatch.setitem(SUPPORTED_SKILLS['investobot-news'], 'skill_version', '1.0.1')
+    assert show_skill('investobot-news')['skill_version'] == '1.0.1'
+    run = import_research(ctx['db'], ctx['payload'], yes=True)['research_run_id']
+    assert ctx['db'].connection.execute('SELECT skill_version FROM research_runs WHERE id=?',
+                                       (run,)).fetchone()[0] == '1.0.1'
+    assert show_skill('investobot-earnings')['skill_version'] == '1.0.0'
+    assert show_skill('investobot-political-contributions')['skill_version'] == '1.0.0'
