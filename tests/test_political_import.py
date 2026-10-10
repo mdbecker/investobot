@@ -88,3 +88,56 @@ def test_schema_four_rejects_three_without_reset(tmp_path):
     with pytest.raises(DomainError):
         Ledger(path)
     assert path.read_bytes() == before
+
+
+def test_confirmed_transactions_are_atomic_and_run_scoped(tmp_path):
+    from invest.political import import_research
+    from invest.political_queries import summary
+    from test_political_models import package as research_package, reviewed_policy
+    db = Ledger(tmp_path / 'research.db')
+    try:
+        payload = research_package()
+        policy = tmp_path / "policy.json"
+        policy.write_text(json.dumps(reviewed_policy()))
+        before = db.planning_state()
+        first = import_research(db, payload, yes=True, policy_path=policy)
+        assert summary(db, first['research_run_id'])['verified_transactions'] == 1
+        assert db.planning_state() == before
+        changed = copy.deepcopy(payload)
+        changed['limitations'].append('Independent follow-up.')
+        second = import_research(db, changed, yes=True, policy_path=policy)
+        assert first['research_run_id'] != second['research_run_id']
+        sources = db.connection.execute('SELECT id,run_id FROM research_political_sources').fetchall()
+        contributions = db.connection.execute('SELECT id,run_id FROM research_political_contributions').fetchall()
+        foreign_source = next(s[0] for s in sources if s[1] == second['research_run_id'])
+        original = next(c[0] for c in contributions if c[1] == first['research_run_id'])
+        with pytest.raises(sqlite3.IntegrityError), db.connection:
+            db.connection.execute('INSERT INTO research_political_evidence VALUES (?,?,?)',
+                                  (original, foreign_source, first['research_run_id']))
+        with db.connection:
+            db.connection.execute("CREATE TRIGGER fail_research BEFORE INSERT ON research_political_contributions BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+        changed['limitations'].append('Fail atomically.')
+        with pytest.raises(sqlite3.IntegrityError):
+            import_research(db, changed, yes=True, policy_path=policy)
+        assert db.connection.execute('SELECT COUNT(*) FROM research_political_runs').fetchone()[0] == 2
+        assert db.connection.execute('PRAGMA foreign_key_check').fetchall() == []
+    finally:
+        db.connection.close()
+
+
+def test_equivalent_decimal_research_is_idempotent(tmp_path):
+    from test_political_models import package as research_package
+    from test_political_models import reviewed_policy
+
+    from invest.political import import_research
+    db = Ledger(tmp_path / 'normalized.db')
+    policy = tmp_path / 'policy.json'
+    policy.write_text(json.dumps(reviewed_policy()))
+    try:
+        first = research_package()
+        second = copy.deepcopy(first)
+        second['contributions'][0]['amount_usd'] = '1000.0000'
+        second['sources'].reverse()
+        assert import_research(db, first, yes=True, policy_path=policy)['research_run_id'] == import_research(db, second, yes=True, policy_path=policy)['research_run_id']
+    finally:
+        db.connection.close()
