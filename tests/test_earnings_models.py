@@ -185,3 +185,25 @@ def test_amended_source_preserves_original_accession():
                                   original_accession_number='ORIGINAL-SYNTHETIC-ACCESSION')
     model = EarningsResearchInput.model_validate(incoming)
     assert model.sources[0].original_accession_number == 'ORIGINAL-SYNTHETIC-ACCESSION'
+
+
+def test_nonstrings_units_are_input_errors():
+    incoming = package()
+    incoming['metrics'][0]['unit'] = 123
+    with pytest.raises(ValueError):
+        EarningsResearchInput.model_validate(incoming)
+
+
+def test_earnings_schema_advertises_decimal_strings():
+    schema = EarningsResearchInput.model_json_schema()
+    assert schema['$defs']['EarningsMetric']['properties']['value']['type'] == 'string'
+
+
+def test_unknown_guidance_issue_date_is_not_a_filing_date():
+    incoming = package()
+    incoming['guidance'] = [{'id': 'outlook', 'metric_code': 'REVENUE',
+        'period_start': '2026-07-01', 'period_end': '2026-09-30',
+        'lower_value': '1', 'upper_value': '2', 'unit': 'USD',
+        'accounting_basis': 'GAAP', 'guidance_status': 'ISSUED',
+        'source_id': 'filing', 'source_locator': 'Outlook', 'qualifiers': 'Synthetic'}]
+    assert EarningsResearchInput.model_validate(incoming).guidance[0].issued_at is None
