@@ -90,7 +90,8 @@ def _sources(ledger, run_id):
 def _events(ledger, run_id):
     columns = ('event_key', 'title', 'category', 'event_date', 'date_status', 'event_status',
                'affected_segments_json', 'primary_source_id', 'source_ids_json',
-               'implications_json', 'follow_up_questions_json')
+               'implications_json', 'follow_up_questions_json',
+               'status_source_id', 'status_source_locator')
     facts = _select(ledger, 'research_news_facts',
                     ('event_key', 'fact_key', 'statement', 'verification_status',
                      'source_id', 'source_locator'), run_id)

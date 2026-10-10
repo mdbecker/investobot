@@ -94,7 +94,8 @@ def canonical_package(model):
             event[key].sort(key=lambda item: item[identifier])
     for thesis in data['theses']:
         thesis['related_event_keys'].sort()
-    identity = {'skill_name': 'investobot-news', 'skill_version': SKILL_VERSION,
+    identity = {'skill_name': 'investobot-news', 'skill_version':
+                SUPPORTED_SKILLS['investobot-news'].get('skill_version', SKILL_VERSION),
                 'schema_version': SUPPORTED_SKILLS['investobot-news']['schema_version'],
                 'research_type': data['research_type']}
     if identity['schema_version'] != data['schema_version']:
@@ -140,8 +141,8 @@ def import_research(ledger, payload, yes=False):
     verify_company(ledger, data['company'])
     _verify_event_ownership(ledger, data)
     warnings = validation_warnings(data)
-    compact = {f'{key[:-1]}_count': len(data[key]) for key in ('events', 'catalysts', 'theses')}
-    compact['thesis_count'] = compact.pop('these_count')
+    compact = {'event_count': len(data['events']), 'catalyst_count': len(data['catalysts']),
+               'thesis_count': len(data['theses'])}
     compact.update(fact_count=sum(len(e['facts']) for e in data['events']), warnings=warnings,
                    warning_count=len(warnings))
     exists = ledger.connection.execute('SELECT 1 FROM research_runs WHERE id=?', (run_id,)).fetchone()

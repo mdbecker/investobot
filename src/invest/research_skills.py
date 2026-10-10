@@ -10,6 +10,7 @@ from invest.models import DomainError
 SKILL_VERSION = '1.0.0'
 SUPPORTED_SKILLS = {
     'investobot-news': {
+        'skill_version': '1.0.0',
         'description': 'Research source-backed company news, catalysts and thesis hypotheses with incremental evidence.',
         'research_command': 'research.news',
         'schema_version': '1.0',
@@ -36,7 +37,7 @@ def _root():
 def _metadata(name):
     if name not in SUPPORTED_SKILLS:
         raise DomainError('Unknown research skill')
-    return {'name': name, **SUPPORTED_SKILLS[name], 'skill_version': SKILL_VERSION}
+    return {'name': name, 'skill_version': SKILL_VERSION, **SUPPORTED_SKILLS[name]}
 
 
 def _safe_path(path):
@@ -142,7 +143,8 @@ def install_skills(agent, workspace, confirm=False):
         if modified:
             changed.append(name)
     result = {'agent': agent, 'workspace': str(workspace), 'destination': str(destination),
-              'skills': [{'name': name, 'skill_version': SKILL_VERSION} for name in bundles],
+              'skills': [{'name': name, 'skill_version': _metadata(name)['skill_version']}
+                         for name in bundles],
               'copied_files': copied, 'unchanged_files': unchanged}
     if not changed:
         return result

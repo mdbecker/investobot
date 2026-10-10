@@ -76,7 +76,7 @@ cache, targets, plans or financial stale status.
 
 ## Database and verification
 
-Schema 5 deliberately rejects older databases, with no migration, automatic
+Schema 6 deliberately rejects older databases, with no migration, automatic
 deletion or legacy reader. Test first with a fresh disposable ledger. Do not reset
 the private Docker ledger merely to try the feature. A separately authorized reset
 selects only its disposable database plus `-wal`/`-shm` sidecars and preserves

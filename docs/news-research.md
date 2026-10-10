@@ -68,6 +68,11 @@ dates and changes require evidence. Hypothesis statements remain unchanged under
 one thesis ID; new statements require new identities. Thesis assessments are
 research judgments, not trading signals or changes to accepted investment decisions.
 Answered questions need cited evidence or an explicit closure limitation.
+Set `answered_fact_key` to a VERIFIED same-event fact, or supply
+`closure_limitation`; optional `evidence_needed` describes the missing evidence.
+RESOLVED/RETRACTED events require `status_source_id` and
+`status_source_locator`, referencing a cited event source. Summary and changes
+retain these exact outcome locators alongside before/after source links.
 
 Actual event dates differ from source publication dates, source access dates and
 import timestamps. Unknown dates remain unknown. Future catalysts may have future

@@ -28,7 +28,8 @@ def ledger():
     CREATE TABLE research_news_events(run_id TEXT,event_key TEXT,title TEXT,category TEXT,
     event_date TEXT,date_status TEXT,event_status TEXT,affected_segments_json TEXT,
     primary_source_id TEXT,source_ids_json TEXT,implications_json TEXT,
-    follow_up_questions_json TEXT,material_fingerprint TEXT);
+    follow_up_questions_json TEXT,material_fingerprint TEXT,
+    status_source_id TEXT,status_source_locator TEXT);
     CREATE TABLE research_news_facts(run_id TEXT,event_key TEXT,fact_key TEXT,
     statement TEXT,verification_status TEXT,source_id TEXT,source_locator TEXT);
     CREATE TABLE research_news_catalysts(run_id TEXT,catalyst_id TEXT,title TEXT,
@@ -58,11 +59,11 @@ def save(ledger, run, day='2026-10-02', *, ticker='FAKE', cik='0000000001',
                     'https://example.invalid/' + source, None, None, day, None, None,
                     0, 0, None, day, 'Release paragraph'))
     if event:
-        db.execute('INSERT INTO research_news_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        db.execute('INSERT INTO research_news_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                    (run, 'launch', title, 'PRODUCT', '2026-09-30', 'CONFIRMED', status,
                     '["Enterprise"]', sources[0], json.dumps(list(sources)), '[]',
                     json.dumps([{'id': 'uptake', 'question': 'Has adoption been disclosed?',
-                                 'status': question}]), 'internally-generated'))
+                                 'status': question}]), 'internally-generated', None, None))
         for key, text, verification in facts or [('announced', 'Launch announced.', 'VERIFIED')]:
             db.execute('INSERT INTO research_news_facts VALUES (?,?,?,?,?,?,?)',
                        (run, 'launch', key, text, verification, sources[0], 'Paragraph one'))

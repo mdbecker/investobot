@@ -13,6 +13,14 @@ retains actual synthetic plan contents/status and full planning inputs unchanged
 Existing political/earnings behavior and skill content remain intact. These
 fixtures do not establish real-news accuracy or a GitHub Actions result.
 
+Independent review reproduced missing outcome locators in summaries/deltas and
+global-version coupling for the new skill. Red commit `3ead858` preserves both
+regressions. Corrections retain explicit status citations and pin the news skill
+version independently without changing existing skill content or hashes. The
+frozen full offline Docker suite passes 518 tests and Ruff. A separate agent
+installed and followed the news skill using the fictional PRD example, preserving
+unknown dates and producing fact/catalyst/thesis/question deltas across saved runs.
+
 ## Deliberate schema reset
 
 SQLite schema 6 initializes only a fresh database and rejects incompatible older
