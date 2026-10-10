@@ -170,3 +170,12 @@ def test_nested_collection_reordering_is_content_idempotent(ctx):
     second = import_research(ctx['db'], reordered, yes=True)
     assert first['research_run_id'] == second['research_run_id']
     assert second['status'] == 'UNCHANGED'
+
+
+def test_identical_unregistered_company_without_ticker_is_still_idempotent(ctx):
+    from invest.news import import_research
+    ctx['payload']['company']['ticker'] = None
+    first = import_research(ctx['db'], ctx['payload'], yes=True)
+    second = import_research(ctx['db'], ctx['payload'], yes=True)
+    assert first['research_run_id'] == second['research_run_id']
+    assert second['status'] == 'UNCHANGED'
