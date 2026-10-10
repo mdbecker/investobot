@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "research_type": "COMPETITIVE_POSITION_PEER_COMPARISON",
+  "subject": {"entity_id": "subject", "name": "Fictional Cloud A", "ticker": "FICA", "cik": null, "security_id": null},
+  "scope": {"market_focus": "Enterprise workflow software", "geography": "United States", "researched_as_of": "2026-10-10", "coverage_status": "PARTIAL", "coverage_notes": "Fictional product releases and annual disclosures only."},
+  "sources": [
+    {"id": "a-release", "source_type": "ISSUER_RELEASE", "publisher": "Fictional Cloud A", "url": "https://example.invalid/a", "published_at": "2026-09-15", "accessed_at": "2026-10-10", "source_locator": "Products", "accession_number": null, "cik": null},
+    {"id": "b-release", "source_type": "ISSUER_RELEASE", "publisher": "Fictional Cloud B", "url": "https://example.invalid/b", "published_at": "2026-09-16", "accessed_at": "2026-10-10", "source_locator": "Solutions", "accession_number": null, "cik": null},
+    {"id": "a-financials", "source_type": "ISSUER_REPORT", "publisher": "Fictional Cloud A", "url": "https://example.invalid/a-results", "published_at": "2026-08-01", "accessed_at": "2026-10-10", "source_locator": "Income statement", "accession_number": null, "cik": null},
+    {"id": "b-financials", "source_type": "ISSUER_REPORT", "publisher": "Fictional Cloud B", "url": "https://example.invalid/b-results", "published_at": "2026-08-02", "accessed_at": "2026-10-10", "source_locator": "Income statement", "accession_number": null, "cik": null}
+  ],
+  "peers": [
+    {"entity_id": "peer-b", "name": "Fictional Cloud B", "ticker": "FICB", "cik": null, "security_id": null, "relationship": "DIRECT_COMPETITOR", "rationale": "Offers competing workflow products to enterprise customers.", "selection_source_id": "b-release"}
+  ],
+  "overlaps": [
+    {"id": "enterprise-workflow", "peer_id": "peer-b", "market": "Enterprise workflow software", "geography": "United States", "subject_segment": "Cloud Applications", "peer_segment": "Enterprise Services", "overlap_type": "DIRECT", "description": "Both offer workflow automation to U.S. enterprises.", "subject_source_id": "a-release", "peer_source_id": "b-release", "uncertainty": "Product compatibility and customer win rates are not known."}
+  ],
+  "findings": [
+    {"id": "integration", "peer_id": "peer-b", "overlap_id": "enterprise-workflow", "kind": "SUBJECT_ADVANTAGE", "factual_basis": "Fictional A discloses a native integration absent from B's cited product catalog.", "interpretation": "May reduce deployment friction for some customers.", "assumptions": "Customers use the integrated platform.", "uncertainty": "Absence from B's catalog does not prove B lacks an equivalent capability.", "source_id": "a-release", "source_locator": "Integrations", "corroborating_source_ids": ["b-release"]}
+  ],
+  "metrics": [
+    {"id": "a-revenue", "entity_id": "subject", "metric_code": "REVENUE", "metric_definition": "Consolidated revenue", "value": "120000000.00", "unit": "USD", "accounting_basis": "GAAP", "period_type": "DURATION", "period_start": "2026-01-01", "period_end": "2026-06-30", "scope": "CONSOLIDATED", "segment_name": null, "overlap_id": null, "source_id": "a-financials", "source_locator": "Revenue"},
+    {"id": "b-revenue", "entity_id": "peer-b", "metric_code": "REVENUE", "metric_definition": "Consolidated revenue", "value": "100000000.00", "unit": "USD", "accounting_basis": "GAAP", "period_type": "DURATION", "period_start": "2026-01-01", "period_end": "2026-06-30", "scope": "CONSOLIDATED", "segment_name": null, "overlap_id": null, "source_id": "b-financials", "source_locator": "Revenue"}
+  ],
+  "limitations": ["All companies and disclosures are fictional.", "No independently verified pricing or market-share figures."]
+}

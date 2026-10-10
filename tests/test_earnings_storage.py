@@ -64,7 +64,7 @@ def immutable(ctx):
 
 def test_schema_five_rejects_four_without_reset(tmp_path):
     current = Ledger(tmp_path / 'fresh.db')
-    assert current.connection.execute('PRAGMA user_version').fetchone()[0] == 6
+    assert current.connection.execute('PRAGMA user_version').fetchone()[0] == 7
     current.connection.close()
     old = tmp_path / 'schema-four.db'
     with sqlite3.connect(old) as connection:

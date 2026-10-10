@@ -26,7 +26,7 @@ def scoped(ctx):
     assert ctx['install'].exit_code == 0
     assert json.loads(ctx['install'].stdout)['mutation_scope'] == 'project_skill_files'
     assert ctx['list'].exit_code == 0
-    assert len(json.loads(ctx['list'].stdout)['skills']) == 3
+    assert len(json.loads(ctx['list'].stdout)['skills']) == 4
 
 
 @given('a user override of the legacy political prompt')

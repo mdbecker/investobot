@@ -115,5 +115,5 @@ def test_cli_invalid_input_is_stderr_only_without_database(ctx):
 def test_explicit_cli_skill_install_reports_files_without_financial_writes(ctx):
     result = invoke(ctx, ['research', 'skills', 'install', '--agent', 'codex',
                           '--workspace', str(ctx['directory'])])
-    assert result['copied_files'] and len(result['skills']) == 3
+    assert result['copied_files'] and len(result['skills']) == 4
     assert not ctx['path'].exists()
