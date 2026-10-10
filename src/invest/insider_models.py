@@ -188,6 +188,8 @@ class InsiderCompensation(InsiderModel):
 
     @model_validator(mode='after')
     def reported(self):
+        if self.compensation_type in {'VESTING_TERMS', 'PERFORMANCE_CONDITIONS', 'CLAWBACK'} and self.value_basis != 'UNQUANTIFIED_TERMS':
+            raise ValueError('vesting/performance/clawback terms require unquantified terms basis')
         if self.value_basis == 'UNQUANTIFIED_TERMS':
             if self.value is not None or self.currency is not None:
                 raise ValueError('unquantified terms cannot contain value or currency')
@@ -313,6 +315,13 @@ class InsiderResearchInput(InsiderModel):
                 raise ValueError('unknown same-run person')
             return people[key]
 
+        def issuer_ref(source):
+            matching_cik = self.company.cik and source.cik == self.company.cik
+            matching_name = (' '.join(source.publisher.split()).casefold() ==
+                             ' '.join(self.company.name.split()).casefold())
+            if not matching_cik and not matching_name:
+                raise ValueError('primary source issuer attribution cannot be verified')
+
         def owner_ref(row, forms):
             person, source = person_ref(row.person_id), source_ref(row.source_id)
             if source.source_type not in forms:
@@ -326,6 +335,7 @@ class InsiderResearchInput(InsiderModel):
         for source in self.sources:
             if source.cik and self.company.cik and source.cik != self.company.cik:
                 raise ValueError('source issuer CIK contradicts company')
+            issuer_ref(source)
             if source.accessed_at > self.scope.researched_as_of or (source.filed_at and source.filed_at > self.scope.researched_as_of) or (source.accepted_at and source.accepted_at.date() > self.scope.researched_as_of):
                 raise ValueError('source dates exceed research cutoff')
         for person in self.people:
@@ -333,7 +343,10 @@ class InsiderResearchInput(InsiderModel):
             if person.reporting_owner_cik and person.reporting_owner_cik not in identity.reporting_owner_ciks:
                 raise ValueError('identity source does not verify reporting owner CIK')
             for role in person.roles:
-                source_ref(role.source_id)
+                source = source_ref(role.source_id)
+                if any(d and d > self.scope.researched_as_of for d in (role.start_date, role.end_date)):
+                    if source.source_type != 'ISSUER_AGREEMENT' or not re.search(r'\b(expected|scheduled)\b', source.source_locator, re.I):
+                        raise ValueError('future tenure requires explicitly expected issuer agreement evidence')
         for item in self.compensation:
             person = person_ref(item.person_id)
             source = source_ref(item.source_id)
@@ -346,8 +359,9 @@ class InsiderResearchInput(InsiderModel):
             if len(set(row_keys)) != len(row_keys):
                 raise ValueError('duplicate row in a filing')
             for row in collection:
-                if row.ownership_form == 'INDIRECT' and not row.indirect_ownership_nature and not self.limitations:
-                    raise ValueError('undisclosed indirect nature requires limitations')
+                if row.ownership_form == 'INDIRECT' and not row.indirect_ownership_nature:
+                    if not any('indirect' in limitation.casefold() for limitation in self.limitations):
+                        raise ValueError('undisclosed indirect nature requires explicit indirect ownership limitation')
         replaced = set()
         for row in self.transactions:
             source = owner_ref(row, {'4', '4/A', '5', '5/A'})
@@ -371,6 +385,10 @@ class InsiderResearchInput(InsiderModel):
                     target_source = sources[target.source_id]
                     if not source.is_amendment or source.original_accession_number != target_source.accession_number:
                         raise ValueError('correction requires amendment and original accession linkage')
+                    if target.duplicate_of_id:
+                        raise ValueError('correction must link original economic row, not an excluded duplicate')
+                    if source.source_type.removesuffix('/A') != target_source.source_type.removesuffix('/A'):
+                        raise ValueError('amendment form must match original filing form')
                     if source.filed_at < target_source.filed_at or target.id in replaced:
                         raise ValueError('ambiguous branched or earlier correction')
                     replaced.add(target.id)

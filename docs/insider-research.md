@@ -100,6 +100,14 @@ prices are null, not zero; no FX is inferred. Ownership reports latest as-filed
 observations plus dated history, not reconstructed current balances. Compensation
 retains person/fiscal year, valuation basis and arrangements separately.
 
+Primary issuer disclosures need matching sourced issuer CIK or exact legal issuer
+publisher attribution. Future tenure is accepted only from `ISSUER_AGREEMENT`
+evidence whose locator explicitly describes an expected/scheduled event. Vesting,
+performance and clawback conditions use `UNQUANTIFIED_TERMS` and null value/currency.
+If indirect nature is absent, limitations must explicitly explain that indirect
+ownership disclosure gap. Corrections link the original economic row and matching
+form type; they cannot replace an excluded duplicate.
+
 ## Human source review and release gates
 
 For real acceptance, independently check the original SEC/issuer pages:

@@ -499,3 +499,19 @@ Use the existing offline CI commands with a freshly built locked image and
 `INVEST_PROMPTS=/data/prompts`; never mount the private ledger volume for tests.
 The competitive skill needs no provider account or secret. Original-source human
 review and a remote GitHub Actions result remain separate acceptance gates.
+
+## V2.9 management and insider research
+
+See [the preserved PRD](PRD-v2.9.md), [workflow](insider-research.md) and
+[red/green evidence](v2.9-verification.md). The active database is schema 8:
+existing schema 7 ledgers are deliberately rejected without migration or reset.
+Use a disposable database to evaluate the optional research feature.
+
+Final acceptance uses the standard locked Docker image with `--network none`,
+`INVEST_PROMPTS=/data/prompts` and `UV_OFFLINE=1`, without source or private-ledger
+mounts. Explicit offline mode uses the cached build dependencies when uv rebuilds
+the project; it avoids attempting a network refresh while network is disabled.
+Run `uv sync --locked`, `uv run --locked pytest` and
+`uv run --locked ruff check --config pyproject.toml src tests` in separate fresh
+containers. Container-only skill format validation also needs PyYAML; it is not
+an application dependency or host installation.
