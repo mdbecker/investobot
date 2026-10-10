@@ -1,0 +1,125 @@
+import copy
+import json
+import sqlite3
+
+import pytest
+from pytest_bdd import given, scenarios, then, when
+
+from invest.ledger import Ledger
+from invest.models import DomainError
+
+scenarios('features/news_storage.feature')
+
+
+def news_package():
+    return {
+        'schema_version': '1.0', 'research_type': 'NEWS_CATALYSTS_THESIS_CHANGES',
+        'company': {'name': 'Fictional Corporation', 'ticker': 'FAKE', 'cik': None,
+                    'security_id': None},
+        'scope': {'window_start': '2026-10-01', 'window_end': '2026-10-10',
+                  'researched_as_of': '2026-10-10', 'coverage_status': 'PARTIAL',
+                  'searched_source_types': ['ISSUER_RELEASE'],
+                  'coverage_notes': 'Fictional selected releases only.'},
+        'sources': [{'id': 'release', 'source_type': 'ISSUER_RELEASE',
+                     'publisher': 'Fictional Corporation',
+                     'url': 'https://example.invalid/announcement?record_id=public&token=secret',
+                     'published_at': '2026-10-06', 'accessed_at': '2026-10-10',
+                     'source_locator': 'Opening paragraph'}],
+        'events': [{'event_key': 'product-release', 'title': 'Fictional launch',
+                    'category': 'PRODUCT', 'event_date': '2026-10-06',
+                    'date_status': 'CONFIRMED', 'event_status': 'ANNOUNCED',
+                    'affected_segments': ['Enterprise'], 'primary_source_id': 'release',
+                    'source_ids': ['release'],
+                    'facts': [{'fact_key': 'announced', 'statement': 'Company announced a product.',
+                               'source_id': 'release', 'source_locator': 'Opening paragraph',
+                               'verification_status': 'VERIFIED'}],
+                    'implications': [], 'follow_up_questions': []}],
+        'catalysts': [], 'theses': [], 'limitations': ['Entirely fictional.'],
+    }
+
+
+@pytest.fixture
+def ctx(tmp_path):
+    path = tmp_path / 'news.db'
+    db = Ledger(path)
+    yield {'db': db, 'path': path, 'payload': news_package()}
+    db.connection.close()
+
+
+@given('a fictional news package and fresh ledger')
+def initial(ctx):
+    ctx['financial'] = ctx['db'].planning_state()
+
+
+@when('the package is previewed then explicitly accepted twice')
+def accept(ctx):
+    from invest.news import import_research
+    before = ctx['path'].read_bytes()
+    ctx['preview'] = import_research(ctx['db'], ctx['payload'])
+    assert before == ctx['path'].read_bytes()
+    ctx['first'] = import_research(ctx['db'], ctx['payload'], yes=True)
+    reordered = copy.deepcopy(ctx['payload'])
+    reordered['events'][0]['source_ids'].reverse()
+    ctx['second'] = import_research(ctx['db'], dict(reversed(list(reordered.items()))), yes=True)
+
+
+@then('preview changes no bytes and one immutable run preserves financial state')
+def isolated(ctx):
+    assert ctx['preview']['status'] == 'PREVIEW' and not ctx['preview']['committed']
+    assert ctx['first']['committed'] and ctx['second']['status'] == 'UNCHANGED'
+    assert ctx['first']['research_run_id'] == ctx['second']['research_run_id']
+    conn = ctx['db'].connection
+    assert conn.execute('SELECT COUNT(*) FROM research_news_events').fetchone()[0] == 1
+    assert conn.execute('SELECT COUNT(*) FROM research_news_facts').fetchone()[0] == 1
+    assert conn.execute('SELECT skill_name,skill_version FROM research_runs').fetchone() == ('investobot-news', '1.0.0')
+    assert conn.execute('PRAGMA foreign_key_check').fetchall() == []
+    assert ctx['db'].planning_state() == ctx['financial']
+
+
+def test_schema_six_rejects_five_without_deletion(tmp_path):
+    db = Ledger(tmp_path / 'fresh.db')
+    assert db.connection.execute('PRAGMA user_version').fetchone()[0] == 6
+    db.connection.close()
+    old = tmp_path / 'old.db'
+    with sqlite3.connect(old) as conn:
+        conn.execute('PRAGMA user_version=5')
+        conn.execute('CREATE TABLE sentinel (id TEXT)')
+    before = old.read_bytes()
+    with pytest.raises(DomainError) as error:
+        Ledger(old)
+    assert error.value.code == 3 and before == old.read_bytes()
+
+
+def test_rollback_and_run_scoped_references(ctx):
+    from invest.news import import_research
+    conn = ctx['db'].connection
+    first = import_research(ctx['db'], ctx['payload'], yes=True)
+    with conn:
+        conn.execute("CREATE TRIGGER refuse_news BEFORE INSERT ON research_news_facts BEGIN SELECT RAISE(ABORT,'fictional failure'); END")
+    second = copy.deepcopy(ctx['payload'])
+    second['limitations'].append('Second observation')
+    with pytest.raises(sqlite3.IntegrityError):
+        import_research(ctx['db'], second, yes=True)
+    assert conn.execute('SELECT COUNT(*) FROM research_runs').fetchone()[0] == 1
+    assert conn.execute('SELECT COUNT(*) FROM research_sources').fetchone()[0] == 1
+    with pytest.raises(sqlite3.IntegrityError), conn:
+        conn.execute('UPDATE research_news_facts SET source_id=? WHERE run_id=?',
+                     ('another-run-source', first['research_run_id']))
+
+
+def test_cross_company_event_key_reuse_rejects_atomically(ctx):
+    from invest.news import import_research
+    import_research(ctx['db'], ctx['payload'], yes=True)
+    other = copy.deepcopy(ctx['payload'])
+    other['company'].update(name='Unrelated Fictional Corporation', ticker='OTHER')
+    with pytest.raises(DomainError):
+        import_research(ctx['db'], other, yes=True)
+    assert ctx['db'].connection.execute('SELECT COUNT(*) FROM research_runs').fetchone()[0] == 1
+
+
+def test_package_contains_no_agent_selected_provenance_or_fingerprint(ctx):
+    from invest.news import import_research
+    result = import_research(ctx['db'], ctx['payload'], yes=True)
+    package = json.loads(ctx['db'].connection.execute(
+        'SELECT package_json FROM research_runs WHERE id=?', (result['research_run_id'],)).fetchone()[0])
+    assert 'skill_version' not in package and 'material_fingerprint' not in package['events'][0]
