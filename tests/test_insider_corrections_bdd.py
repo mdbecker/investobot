@@ -73,6 +73,28 @@ def ownership_pair(ctx):
         supersedes_id='original', correction_source_locator='Amendment footnote 1 corrects shares held.')]
 
 
+@given('an amendment repeats an original holding without a correction link')
+def amendment_repeat(ctx):
+    ctx['package']['ownership'] = [holding(), holding('amended-repeat', 'amend',
+        duplicate_of_id='original')]
+
+
+@then('the amended repeat remains unresolved and the original remains latest')
+def amended_repeat_unresolved(ctx):
+    row = next(r for r in ctx['ownership']['observations'] if r['id'] == 'amended-repeat')
+    assert row['status'] == 'UNRESOLVED'
+    assert row['exclusion_reason'] == 'UNRESOLVED' and row['is_effective'] is False
+    assert [r['id'] for r in ctx['ownership']['latest_observations']] == ['original']
+
+
+@given('a supported correction targets an unresolved original transaction')
+def unresolved_original_transaction(ctx):
+    transaction_pair(ctx)
+    validate_baseline(ctx)
+    ctx['package']['transactions'][0].update(review_status='UNRESOLVED',
+        notes='Original economic event identity remains unverified.')
+
+
 def transaction_pair(ctx, date='2026-05-03', code='P'):
     ctx['package']['transactions'] = [transaction(), transaction('corrected', 'amend', date, code,
         supersedes_id='original', correction_source_locator='Amendment note corrects date and code.')]

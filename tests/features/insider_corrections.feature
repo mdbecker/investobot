@@ -1,4 +1,14 @@
 Feature: Corrected insider ownership disclosures
+
+  Scenario: An amended repeat cannot bypass unresolved amendment review
+    Given an amendment repeats an original holding without a correction link
+    When the insider ownership report is requested
+    Then the amended repeat remains unresolved and the original remains latest
+
+  Scenario: A correction cannot upgrade an unresolved original transaction
+    Given a supported correction targets an unresolved original transaction
+    When correction validation is attempted
+    Then the correction is rejected without creating storage
   Scenario: An amended holding replaces the originally reported balance
     Given a Form 4 discloses 125 directly held common shares on May 2
     And its cited Form 4 amendment corrects the same holding to 120 shares on May 2
