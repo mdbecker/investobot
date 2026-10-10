@@ -6,7 +6,8 @@ Skills follow the [Agent Skills specification](https://agentskills.io/specificat
 Canonical portable instructions live in `skills/` and are also bundled in the
 distribution. News uses version `1.0.1`; competitive, earnings and political use `1.0.0`. Their JSON contracts use
 schema `1.0`. Management/insider research uses skill version `1.1.0` and input
-contract `1.1`. These are different from SQLite schema 9.
+contract `1.1`. Fund diligence uses skill `1.0.0` and contract `1.0`.
+These are different from current SQLite schema 10.
 
 ## Discovery and project-local installation
 
@@ -22,7 +23,7 @@ docker compose run --rm -T app invest research skills show investobot-management
 docker compose run --rm -T app invest research skills install --agent codex --workspace /app
 ```
 
-Installation copies all five skills into project-local `.agents/skills` for Codex.
+Installation copies all six skills into project-local `.agents/skills` for Codex.
 For Claude Code use `--agent claude-code`, which selects `.claude/skills`. The
 workspace must be mounted in the container; `/app` is the repository bind mount.
 No global agent configuration changes. Files can also be copied manually from
@@ -77,3 +78,14 @@ corrections retain original observations and require explicit amendment evidence
 ambiguous latest balances remain conflicts. Documented transaction date/code
 corrections use amended fields without double-counting originals. Earlier research
 skills keep their instructions, contracts and trusted versions unchanged.
+
+## ETF and mutual-fund diligence
+
+`investobot-fund-diligence` researches one supported U.S. SEC series/share class
+through primary disclosures. Its own skill version `1.0.0` and input schema `1.0`
+are pinned independently. Original SEC identity, class-specific costs, dated
+holdings coverage and product-specific liquidity are required; absent facts remain
+unknown. Use `research funds validate`, preview `import`, then human-approved
+`import --yes`; reports are read-only. Nothing enters provider caches or portfolio
+state. See [the fund workflow](fund-diligence.md) and
+[original PRD](PRD-v3.0.md). The earlier five bundles remain unchanged.

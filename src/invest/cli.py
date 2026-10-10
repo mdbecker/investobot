@@ -803,3 +803,71 @@ def insiders_activity(run_id: str, person: str = typer.Option(None)):
 def insiders_ownership(run_id: str, person: str = typer.Option(None)):
     from invest.insider_queries import ownership
     emit(lambda: political_query(ownership, run_id, person))
+
+
+funds_research = typer.Typer()
+research.add_typer(funds_research, name='funds')
+
+
+@funds_research.command('validate')
+def funds_validate(file: str):
+    from invest.fund_diligence import validation_warnings, verify_fund
+    from invest.fund_diligence_models import FundDiligenceInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = FundDiligenceInput.model_validate(read_json(file))
+        data = model.model_dump(mode='json')
+        with read_ledger(database_path()) as db:
+            verify_fund(db, data['fund'])
+        return {'valid': True, 'fund': data['fund'],
+                'coverage_status': model.scope.coverage_status,
+                'holding_count': len(model.holdings), 'metric_count': len(model.metrics),
+                'finding_count': len(model.findings), 'source_count': len(model.sources),
+                'warnings': validation_warnings(data)}
+    emit(run)
+
+
+@funds_research.command('import')
+def funds_import(file: str, yes: bool = False):
+    from invest.fund_diligence import import_research, verify_fund
+    from invest.fund_diligence_models import FundDiligenceInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = FundDiligenceInput.model_validate(read_json(file))
+        with read_ledger(database_path()) as db:
+            preview = import_research(db, model, yes=False)
+            if not yes or preview['status'] == 'UNCHANGED':
+                return preview
+            verify_fund(db, model.model_dump(mode='json')['fund'])
+        db = ledger()
+        try:
+            return import_research(db, model, yes=True)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+@funds_research.command('list')
+def funds_list(ticker: str = typer.Option(None)):
+    from invest.fund_diligence_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@funds_research.command('show')
+def funds_show(run_id: str):
+    from invest.fund_diligence_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@funds_research.command('summary')
+def funds_summary(run_id: str):
+    from invest.fund_diligence_queries import summary
+    emit(lambda: political_query(summary, run_id))
+
+
+@funds_research.command('holdings')
+def funds_holdings(run_id: str):
+    from invest.fund_diligence_queries import holdings
+    emit(lambda: political_query(holdings, run_id))

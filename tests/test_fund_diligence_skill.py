@@ -6,7 +6,6 @@ from invest.contracts import schema_contract, tools_describe, tools_list
 from invest.models import DomainError
 from invest.research_skills import install_skills, list_skills, show_skill
 
-
 NAME = 'investobot-fund-diligence'
 EXISTING = {
     'investobot-earnings': '1.0.0',

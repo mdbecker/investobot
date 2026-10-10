@@ -525,3 +525,29 @@ private schema-8 ledger automatically. Optional linkage fields default to null
 for new 1.1 input, but version 1.0 is deliberately rejected for new imports.
 All commands and Docker checks above remain unchanged. Explicit source review
 must compare the original and amendment rows, dates/codes, balances and locators.
+
+## V3.0 fund diligence
+
+The [original PRD](PRD-v3.0.md), [workflow](fund-diligence.md) and
+[verification record](v3.0-verification.md) cover schema **10**, fund input **1.0**
+and its independent skill **1.0.0**. Earlier skills and research hashes are preserved.
+Schema 9 is rejected unchanged: use a separate disposable ledger for development,
+never migrate or reset private data. No new API account, secret or runtime package
+is needed. Manual original-source verification of one ETF and one mutual-fund
+share class remains separate from fictional Docker acceptance.
+
+Reproduce final checks using an isolated image and no private volumes:
+
+```sh
+docker build -t investobot-v3-test .
+docker run --rm --network none -e UV_OFFLINE=1 -e INVEST_PROMPTS=/data/prompts investobot-v3-test uv sync --locked
+docker run --rm --network none -e UV_OFFLINE=1 -e INVEST_PROMPTS=/data/prompts investobot-v3-test uv run --locked pytest
+docker run --rm --network none -e UV_OFFLINE=1 -e INVEST_PROMPTS=/data/prompts investobot-v3-test uv run --locked ruff check --config pyproject.toml src tests
+```
+
+For a deliberately disposable database reset, stop all its users first, then
+remove only the explicitly selected file and its `-wal`/`-shm` sidecars inside
+Docker. Preserve `/data/prompts` and unrelated files. Prefer a new `INVEST_DB`
+path; no automatic migration or deletion is provided. Do not use private ledger
+volumes for tests or benchmarks. Local checks cannot verify GitHub Actions on
+unpushed commits.

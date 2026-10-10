@@ -260,3 +260,20 @@ list reads compact metadata and summary/matrix read relational projections.
 Collection ordering and financial trailing zeros normalize before hashing; trusted
 competitive skill/contract identity is included. No research rows enter portfolio
 or planning state. Older ledgers are rejected unchanged, without migrations.
+
+## V3.0 fund diligence
+
+Fresh schema **10** adds exactly four fund-only tables: profiles, holdings,
+metrics and findings under `research_fund_*`. Existing shared runs and sources
+store trusted skill/contract identity, compact summary and full canonical package.
+The profile holds exact registrant CIK, SEC series/class, methodology and snapshot
+coverage. Source registrant CIK maps to shared `cik`; series/class remain in the
+immutable package/profile, without extending shared source columns.
+
+Direct citations have composite same-run foreign keys; multi-source findings are
+validated before one atomic transaction. Financial strings normalize only in the
+fund-specific canonicalizer, in plain decimal notation. Identifiers and earlier
+research hash contracts stay unchanged. `list`, `summary` and `holdings` select
+compact relational fields; only `show` reads `package_json`. Research rows do not
+enter financial/planning state or provider caches. No migration or automatic
+reset is supported; schema 9 is rejected without modification.

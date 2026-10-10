@@ -30,7 +30,7 @@ def discover(ctx):
 @then('news guidance and all existing bundles are available unchanged')
 def available(ctx):
     assert ctx['names'] == {*ctx['existing'], 'investobot-news', 'investobot-competitive',
-                            'investobot-management-insiders'}
+                            'investobot-management-insiders', 'investobot-fund-diligence'}
     assert ctx['news']['skill_version'] == '1.0.1'
     expected = {'SKILL.md', 'references/research-method.md', 'references/event-identity.md',
                 'references/json-contract.md', 'references/change-review.md'}

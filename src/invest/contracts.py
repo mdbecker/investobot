@@ -25,6 +25,12 @@ OUTPUT_CONTRACT = {
 # This describes behavior, not inputs: parameters come from the registered CLI,
 # and financial JSON validation comes from the same models used by domain code.
 PURPOSES = {
+    "research.funds.validate": "Validate fund series/class identity and dated disclosures without writes.",
+    "research.funds.import": "Preview or explicitly accept immutable fund diligence research only.",
+    "research.funds.list": "List compact fund share-class research metadata, optionally by ticker.",
+    "research.funds.show": "Read one full immutable fund package and trusted provenance.",
+    "research.funds.summary": "Inspect sourced fees, methodology, turnover, liquidity and distributions.",
+    "research.funds.holdings": "Inspect dated observed holdings without renormalization or portfolio adoption.",
     "research.insiders.validate": "Validate issuer, reporting owner and filing evidence without writes.",
     "research.insiders.import": "Preview or explicitly accept immutable management/insider research only.",
     "research.insiders.list": "List compact management/insider research history, optionally by ticker.",
@@ -103,6 +109,7 @@ PURPOSES = {
     "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
+    "research.funds.import": "research",
     "research.skills.install": "project_skill_files",
     "research.political.import": "research",
     "research.earnings.import": "research",
@@ -256,6 +263,10 @@ def _describe(name, command):
         from invest.insider_models import InsiderResearchInput
 
         model = InsiderResearchInput
+    if name in {"research.funds.validate", "research.funds.import"}:
+        from invest.fund_diligence_models import FundDiligenceInput
+
+        model = FundDiligenceInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -282,11 +293,13 @@ def tools_describe(name, app=None):
 def schema_contract(app=None):
     from invest.competitive_models import CompetitiveResearchInput
     from invest.earnings_models import EarningsResearchInput
+    from invest.fund_diligence_models import FundDiligenceInput
     from invest.insider_models import InsiderResearchInput
     from invest.news_models import NewsResearchInput
     from invest.political_models import PoliticalResearchInput
 
     return {
+        "fund_diligence": FundDiligenceInput.model_json_schema(),
         "insider_research": InsiderResearchInput.model_json_schema(),
         "competitive_research": CompetitiveResearchInput.model_json_schema(),
         "news_research": NewsResearchInput.model_json_schema(),

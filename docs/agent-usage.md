@@ -213,3 +213,19 @@ effective/excluded rows, and `ownership` for dated observations. Exercises,
 grants, withholding and gifts cannot inflate purchase/sale totals; holdings are
 never reconstructed by adding filings. Research changes no financial state or
 saved-plan stale status. See [Docker examples and human review](insider-research.md).
+
+## Fund share-class diligence
+
+Use `investobot-fund-diligence` for a supported SEC-registered U.S. ETF or open-end
+mutual-fund share class. Read `fund_diligence` in `invest schema` and
+`invest tools describe research.funds.import` for the authoritative contract.
+Verify registrant CIK, series and exact class using original SEC evidence, then
+review primary disclosures through the external agent's browser. Save the strict
+JSON under ignored `local-data`; validate and preview in Docker. Only explicit
+human approval authorizes `import --yes`.
+
+Keep percentages as published (`0.15` means 0.15%), expense ratios separate from
+loads/spreads, and distributions as historical USD per share. Missing remains
+unknown; partial holdings are never rescaled. Fund diligence neither fetches live
+data nor changes securities, holdings, caches or plans. No provider credential
+or account is required. See [setup and human review](fund-diligence.md).

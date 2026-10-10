@@ -9,6 +9,12 @@ from invest.models import DomainError
 
 SKILL_VERSION = '1.0.0'
 SUPPORTED_SKILLS = {
+    'investobot-fund-diligence': {
+        'skill_version': '1.0.0',
+        'description': 'Research a U.S. ETF or mutual-fund share class using primary fund disclosures.',
+        'research_command': 'research.funds',
+        'schema_version': '1.0',
+    },
     'investobot-management-insiders': {
         'skill_version': '1.1.0',
         'description': 'Research management, compensation, SEC insider activity and reported ownership.',

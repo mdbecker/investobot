@@ -78,7 +78,7 @@ def isolated(ctx):
 
 def test_schema_six_rejects_five_without_deletion(tmp_path):
     db = Ledger(tmp_path / 'fresh.db')
-    assert db.connection.execute('PRAGMA user_version').fetchone()[0] == 9
+    assert db.connection.execute('PRAGMA user_version').fetchone()[0] == 10
     db.connection.close()
     old = tmp_path / 'old.db'
     with sqlite3.connect(old) as conn:

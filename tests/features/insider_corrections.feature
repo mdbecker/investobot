@@ -51,4 +51,4 @@ Feature: Corrected insider ownership disclosures
     Given a source-backed correction package
     When correction commands and schemas are inspected
     Then input version 1.1 and trusted skill version 1.1.0 are exposed
-    And accepted research uses fresh schema 9
+    And accepted research uses fresh schema 10

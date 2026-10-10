@@ -245,3 +245,15 @@ skill is **1.1.0**, and fresh database schema **9** rejects schema 8 without
 migration or deletion. Update new JSON inputs explicitly after reviewing their
 sources. Existing accepted evidence is never rewritten. See
 [correction verification](docs/v2.9-corrections-verification.md).
+
+V3.0 adds [ETF and mutual-fund diligence](docs/fund-diligence.md) for one
+SEC series and exact share class. The portable `investobot-fund-diligence` skill
+produces cited disclosures; `research funds validate/import/list/show/summary/holdings`
+preserve fees, dated holdings, methodology, turnover, liquidity and distributions.
+Preview is read-only; human-approved `--yes` acceptance writes immutable research
+only. Provider-based fund analysis and portfolio plans remain independent.
+Fresh SQLite schema **10** rejects earlier ledgers unchanged; select a separate
+new database. No fund API account, credentials or new dependency is needed.
+The [preserved V3.0 PRD](docs/PRD-v3.0.md) and
+[verification record](docs/v3.0-verification.md) distinguish offline software
+acceptance from remote CI and human real-source review.
