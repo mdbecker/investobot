@@ -313,6 +313,9 @@ class EarningsResearchInput(StrictModel):
             parts = urlsplit(source.url)
             if parts.hostname == 'sec.gov' or parts.hostname.endswith('.sec.gov'):
                 match = re.search(r'/Archives/edgar/data/(\d+)/', parts.path, re.IGNORECASE)
+                if not match:
+                    match = re.search(r'/(?:api/xbrl/companyfacts|submissions)/CIK(\d+)\.json$',
+                                      parts.path, re.IGNORECASE)
                 if match and self.company.cik and match[1].zfill(10) != self.company.cik:
                     raise ValueError('SEC filing URL reporting entity contradicts company CIK')
         for metric in self.metrics:
@@ -320,6 +323,15 @@ class EarningsResearchInput(StrictModel):
                 raise ValueError('invalid metric source reference')
             if metric.period_end > self.reporting_period.period_end:
                 raise ValueError('metric period exceeds researched reporting period')
+            if metric.fiscal_year > self.reporting_period.fiscal_year:
+                raise ValueError('metric fiscal year exceeds declared reporting context')
+            if metric.period_end == self.reporting_period.period_end:
+                if metric.fiscal_year != self.reporting_period.fiscal_year:
+                    raise ValueError('current metric fiscal year contradicts reporting context')
+                if (metric.fiscal_period not in {'YTD', 'TTM'} and
+                        self.reporting_period.fiscal_period not in {'YTD', 'TTM'} and
+                        metric.fiscal_period != self.reporting_period.fiscal_period):
+                    raise ValueError('current metric fiscal period contradicts reporting context')
             source = sources[metric.source_id]
             if source.filed_at and metric.period_end > source.filed_at:
                 raise ValueError('reported metric period ends after source filing')

@@ -165,8 +165,9 @@ def compare(ledger, run_a, run_b):
                 if old > 0:
                     context.clear_flags()
                     percentage = change * Decimal(100) / old
+                    division_rounded = context.flags[Inexact]
                     result['percentage_change'] = format(percentage, '.2f') if percentage == percentage.quantize(Decimal('0.01')) else format(percentage, 'f')
-                    if context.flags[Inexact]:
+                    if division_rounded:
                         warnings.append(f"Percentage change for {first['id']} is rounded to "
                                         f'{context.prec} significant Decimal digits.')
                 else:

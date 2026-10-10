@@ -28,6 +28,10 @@ interpretations. Missing or conflicting data stays unknown with limitations.
 Research retrieval freshness never changes the age of the reporting period.
 New amendments/restatements create new runs; preserve original filing references
 and historical observations rather than overwriting them.
+SEC Archives, Company Facts and submissions URL CIKs must agree with the
+declared issuer. Current-end-date metrics must agree with the package fiscal
+year and quarter, with explicit YTD/TTM contexts kept separate. Older source
+periods remain allowed; validation does not infer fiscal years from calendar dates.
 
 Summaries return an array of saved metrics so multiple bases or segments remain
 distinct. Growth stays null until you explicitly select two runs with `compare`.

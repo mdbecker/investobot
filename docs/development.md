@@ -401,3 +401,11 @@ incompatible bases/periods/entities, ambiguous matches, zero/negative baselines,
 amended filings and high-precision values are covered. Validation and previews
 leave a missing selected database uncreated; canonical identity contradictions
 fail without changing an existing database.
+
+Independent V2.6 review found SEC API issuer contradictions, current-period
+fiscal-label contradictions and an exact-percentage rounding-warning defect.
+Six failing regression/BDD cases were observed before red commit `9fb28a3`.
+After corrections, the full offline mounted-source Docker suite passes 462 tests
+and Ruff. A separate agent followed the earnings skill using fictional facts and
+verified validation, preview without database creation, confirmed history,
+high-precision comparison and idempotent reimport. No live disclosures were used.
