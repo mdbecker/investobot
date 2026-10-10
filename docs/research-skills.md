@@ -5,7 +5,8 @@ CLI validates, stores and calculates; installing a skill does not run research.
 Skills follow the [Agent Skills specification](https://agentskills.io/specification).
 Canonical portable instructions live in `skills/` and are also bundled in the
 distribution. News uses version `1.0.1`; competitive, earnings and political use `1.0.0`. Their JSON contracts use
-schema `1.0`. These are different from SQLite schema 7.
+schema `1.0`. Management/insider research uses version `1.0.0`. These are
+different from SQLite schema 8.
 
 ## Discovery and project-local installation
 
@@ -17,10 +18,11 @@ docker compose run --rm -T app invest research skills list
 docker compose run --rm -T app invest research skills show investobot-earnings
 docker compose run --rm -T app invest research skills show investobot-news
 docker compose run --rm -T app invest research skills show investobot-political-contributions
+docker compose run --rm -T app invest research skills show investobot-management-insiders
 docker compose run --rm -T app invest research skills install --agent codex --workspace /app
 ```
 
-Installation copies all four skills into project-local `.agents/skills` for Codex.
+Installation copies all five skills into project-local `.agents/skills` for Codex.
 For Claude Code use `--agent claude-code`, which selects `.claude/skills`. The
 workspace must be mounted in the container; `/app` is the repository bind mount.
 No global agent configuration changes. Files can also be copied manually from
@@ -64,3 +66,10 @@ operating-company peers, segment overlaps and reported financial comparisons.
 Its method and comparability references link back to the authoritative CLI model.
 See [competitive research](competitive-research.md) for Docker commands and human
 source review. Earlier skill files and pinned versions remain unchanged.
+
+Use `investobot-management-insiders` for sourced officer/director tenure,
+compensation, SEC Forms 3/4/5 and reported ownership. It distinguishes purchases,
+sales, exercises, grants, tax/exercise payments, gifts and other codes; neither
+filing availability nor validation establishes comprehensive or factual coverage.
+See [management and insider research](insider-research.md) for a complete fictional
+example, original-source human review and the schema-8 boundary.

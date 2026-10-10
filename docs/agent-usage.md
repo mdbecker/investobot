@@ -29,7 +29,7 @@ A market cache write never changes accepted holdings, marks or tax lots.
 The Compose ledger is `/data/portfolio.db` in a named volume. `INVEST_DB` selects
 another explicit path; confirm its mount before using it. Back up the ledger
 before changing runtimes. Dependency resolution, execution and tests use Docker.
-Schema 3 rejects incompatible older databases. Reset only after a deliberate
+Schema 8 rejects incompatible older databases. Reset only after a deliberate
 decision to discard the selected ledger; follow the
 [reset procedure](development.md#deliberate-schema-reset). No migration or old-plan
 conversion is available. Prompt files can be retained independently.
@@ -196,3 +196,20 @@ preview, independently review sources, then explicitly accept. `summary` keeps
 facts separate from inferences; `matrix` compares only strict reported matches.
 Market competition does not imply a suitable stock replacement. See the complete
 [workflow and boundaries](competitive-research.md).
+
+## Management and insider disclosures
+
+Use `investobot-management-insiders` for one issuer and explicit research window.
+Discover `InsiderResearchInput` through `invest schema`; validate and preview
+`research insiders import FILE`, review original SEC/issuer evidence, then accept
+only with explicit human approval and `--yes`. A reporting owner is not necessarily
+an officer. Verify issuer and reporting-owner CIKs, transaction table rows,
+amendment links, ownership form, grant-date valuation basis and disclosed plan
+status; unknown information stays unknown.
+
+Use `list` for compact metadata, `show` for a complete immutable package,
+`summary` for separated event categories and compensation, `activity` for
+effective/excluded rows, and `ownership` for dated observations. Exercises,
+grants, withholding and gifts cannot inflate purchase/sale totals; holdings are
+never reconstructed by adding filings. Research changes no financial state or
+saved-plan stale status. See [Docker examples and human review](insider-research.md).

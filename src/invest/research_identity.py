@@ -30,8 +30,8 @@ def read_ledger(path):
     if Path(path).exists():
         connection = sqlite3.connect(Path(path).absolute().as_uri() + '?mode=ro', uri=True)
         try:
-            if connection.execute('PRAGMA user_version').fetchone()[0] != 7:
-                raise DomainError('Incompatible database schema; select a schema 7 database', 3)
+            if connection.execute('PRAGMA user_version').fetchone()[0] != 8:
+                raise DomainError('Incompatible database schema; select a schema 8 database', 3)
             yield SimpleNamespace(connection=connection)
         finally:
             connection.close()

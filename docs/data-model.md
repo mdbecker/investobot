@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 7** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 8** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -27,13 +27,27 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `research_news_scopes` | Declared monitoring window, coverage and checked source categories |
 | `research_news_events`, `research_news_facts` | Stable event identities and attributed verified/disputed facts |
 | `research_news_catalysts`, `research_news_theses` | Immutable timeline observations and agent hypothesis assessments |
+| `research_insider_people` | Per-run individual/entity owner identities and sourced role/tenure JSON |
+| `research_insider_compensation` | Reported values, grant-date bases and arrangements; totals separate from components |
+| `research_insider_transactions` | As-filed codes, prices, ownership labels and explicit same-run correction/duplicate links |
+| `research_insider_ownership` | Dated beneficial holdings observations; never reconstructed household positions |
 
-Version 6 initializes a fresh database. Incompatible older databases are rejected
+Version 8 initializes a fresh database. Incompatible older databases are rejected
 with reset instructions; startup never deletes data. There are no migrations,
 backfills or legacy saved-plan readers. See the deliberate
 [reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are
 platformdirs Investobot directories. `INVEST_DB` selects an explicit path; two
 paths are the same ledger only when they refer to the same mounted file.
+
+Management/insider runs reuse `research_runs` and `research_sources`; reporting
+owner CIK lists remain in immutable packages while issuer CIK stays shared source
+provenance. Four child tables enforce composite same-run person/source/link keys,
+unique filing rows and an indexed `(run_id,person_id,transaction_date)` inspection
+path. Link foreign keys are deferred so canonical ID ordering can insert a
+correction before its original within the single atomic import transaction.
+No schema-7 migration occurs. Read-only previews do not create a selected ledger.
+List and reports project summary/relational fields; only show reads the full package.
+All research remains outside financial state and planning hashes.
 
 ## Accepted snapshots and security identity
 

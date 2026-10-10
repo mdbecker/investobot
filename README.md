@@ -206,7 +206,7 @@ hypotheses support compact prior context and deterministic changes between
 selected runs. Repeated articles, title edits and missing coverage cannot become
 new developments or implied resolutions. No scheduling, scraping or financial
 planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
-Active schema 7 rejects existing older databases without deleting them; evaluate
+Active schema 8 rejects existing older databases without deleting them; evaluate
 with a fresh disposable ledger and preserve private data before any manual reset.
 Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
 skill discovery passed in Docker. Work remains local; remote CI is unverified.
@@ -225,3 +225,14 @@ peer matrices. Install `investobot-competitive` through `research skills install
 validate and preview `research competitive import`, then explicitly accept with
 `--yes`. Private-company gaps and incompatible observations remain unknown.
 Schema 7 requires a separate fresh ledger; no private data migration or reset.
+
+V2.9 adds [management and insider research](docs/insider-research.md), with the
+portable `investobot-management-insiders` skill and `research insiders` commands.
+Strict fictional/offline validation, preview and explicit `--yes` acceptance
+preserve immutable filing evidence. Reports distinguish P/S purchases/sales from
+M/A/F/G and other codes, exclude linked corrections/duplicates and unresolved
+rows, and show dated ownership and reported compensation without misleading
+totals. No SEC API, credentials or dashboard change is required. Fresh schema 8
+rejects existing ledgers without migration or deletion; evaluate with a disposable
+database. The [original PRD](docs/PRD-v2.9.md) and
+[verification record](docs/v2.9-verification.md) preserve scope and release gates.

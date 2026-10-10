@@ -731,3 +731,75 @@ def competitive_summary(run_id: str):
 def competitive_matrix(run_id: str, peer: str = typer.Option(None)):
     from invest.competitive_queries import matrix
     emit(lambda: political_query(matrix, run_id, peer))
+
+
+insiders = typer.Typer()
+research.add_typer(insiders, name='insiders')
+
+
+@insiders.command('validate')
+def insiders_validate(file: str):
+    from invest.insider_models import InsiderResearchInput
+    from invest.insiders import validation_warnings
+    from invest.research_identity import read_ledger, verify_company
+
+    def run():
+        model = InsiderResearchInput.model_validate(read_json(file))
+        data = model.model_dump(mode='json')
+        with read_ledger(database_path()) as db:
+            verify_company(db, data['company'])
+        return {'valid': True, 'coverage_status': model.scope.coverage_status,
+                'person_count': len(model.people), 'compensation_count': len(model.compensation),
+                'transaction_count': len(model.transactions), 'ownership_count': len(model.ownership),
+                'warnings': validation_warnings(data)}
+    emit(run)
+
+
+@insiders.command('import')
+def insiders_import(file: str, yes: bool = False):
+    from invest.insider_models import InsiderResearchInput
+    from invest.insiders import import_research
+    from invest.research_identity import read_ledger, verify_company
+
+    def run():
+        model = InsiderResearchInput.model_validate(read_json(file))
+        with read_ledger(database_path()) as db:
+            if not yes:
+                return import_research(db, model, yes=False)
+            verify_company(db, model.model_dump(mode='json')['company'])
+        db = ledger()
+        try:
+            return import_research(db, model, yes=True)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+@insiders.command('list')
+def insiders_list(ticker: str = typer.Option(None)):
+    from invest.insider_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@insiders.command('show')
+def insiders_show(run_id: str):
+    from invest.insider_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@insiders.command('summary')
+def insiders_summary(run_id: str):
+    from invest.insider_queries import summary
+    emit(lambda: political_query(summary, run_id))
+
+
+@insiders.command('activity')
+def insiders_activity(run_id: str, person: str = typer.Option(None)):
+    from invest.insider_queries import activity
+    emit(lambda: political_query(activity, run_id, person))
+
+
+@insiders.command('ownership')
+def insiders_ownership(run_id: str, person: str = typer.Option(None)):
+    from invest.insider_queries import ownership
+    emit(lambda: political_query(ownership, run_id, person))

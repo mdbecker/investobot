@@ -176,9 +176,13 @@ def holdings(ctx):
 
 @then('grant-date values retain their basis and reported totals remain separate')
 def compensation(ctx):
-    text = json.dumps(ctx['summary'])
-    assert 'GRANT_DATE_FAIR_VALUE' in text and 'SUMMARY_COMPENSATION_TOTAL' in text
-    assert '300000' in text and '600000' not in text
+    groups = ctx['summary']['compensation']
+    items = [item for group in groups for item in group['items']]
+    stock = next(item for item in items if item['compensation_type'] == 'STOCK_AWARD')
+    assert stock['value_basis'] == 'GRANT_DATE_FAIR_VALUE'
+    totals = [item for group in groups for item in group['reported_totals']]
+    assert len(totals) == 1 and Decimal(totals[0]['value']) == 300000
+    assert all(Decimal(item['value']) != 600000 for item in items)
 
 
 @when('insider research is validated and previewed')

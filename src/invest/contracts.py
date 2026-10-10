@@ -25,6 +25,13 @@ OUTPUT_CONTRACT = {
 # This describes behavior, not inputs: parameters come from the registered CLI,
 # and financial JSON validation comes from the same models used by domain code.
 PURPOSES = {
+    "research.insiders.validate": "Validate issuer, reporting owner and filing evidence without writes.",
+    "research.insiders.import": "Preview or explicitly accept immutable management/insider research only.",
+    "research.insiders.list": "List compact management/insider research history, optionally by ticker.",
+    "research.insiders.show": "Read one full immutable insider package and trusted provenance.",
+    "research.insiders.summary": "Summarize separate reported transaction categories and compensation bases.",
+    "research.insiders.activity": "Inspect effective and excluded as-filed transactions with source evidence.",
+    "research.insiders.ownership": "Inspect dated beneficial ownership observations, never calculated holdings.",
     "research.competitive.validate": "Validate source-backed operating peer evidence without writes.",
     "research.competitive.import": "Preview or explicitly accept immutable competitive research only.",
     "research.competitive.list": "List compact competitive research history, optionally by ticker.",
@@ -101,6 +108,7 @@ SCOPES = {
     "research.earnings.import": "research",
     "research.news.import": "research",
     "research.competitive.import": "research",
+    "research.insiders.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",
     "target.save": "targets",
@@ -244,6 +252,10 @@ def _describe(name, command):
         from invest.competitive_models import CompetitiveResearchInput
 
         model = CompetitiveResearchInput
+    if name in {"research.insiders.validate", "research.insiders.import"}:
+        from invest.insider_models import InsiderResearchInput
+
+        model = InsiderResearchInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -270,10 +282,12 @@ def tools_describe(name, app=None):
 def schema_contract(app=None):
     from invest.competitive_models import CompetitiveResearchInput
     from invest.earnings_models import EarningsResearchInput
+    from invest.insider_models import InsiderResearchInput
     from invest.news_models import NewsResearchInput
     from invest.political_models import PoliticalResearchInput
 
     return {
+        "insider_research": InsiderResearchInput.model_json_schema(),
         "competitive_research": CompetitiveResearchInput.model_json_schema(),
         "news_research": NewsResearchInput.model_json_schema(),
         "earnings_research": EarningsResearchInput.model_json_schema(),
