@@ -208,5 +208,5 @@ new developments or implied resolutions. No scheduling, scraping or financial
 planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
 Active schema 6 rejects existing older databases without deleting them; evaluate
 with a fresh disposable ledger and preserve private data before any manual reset.
-Local V2.7 verification: 520 tests, Ruff, skill format validation and wheel-only
+Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
 skill discovery passed in Docker. Work remains local; remote CI is unverified.

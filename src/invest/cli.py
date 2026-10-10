@@ -595,16 +595,17 @@ def earnings_compare(run_a: str, run_b: str):
 
 @news.command('validate')
 def news_validate(file: str):
-    from invest.news import _verify_event_ownership, validation_warnings
+    from invest.news import _verify_event_ownership, canonical_package, validation_warnings
     from invest.news_models import NewsResearchInput
     from invest.research_identity import read_ledger, verify_company
 
     def run():
         model = NewsResearchInput.model_validate(read_json(file))
         data = model.model_dump(mode='json')
+        _, _, run_id, _ = canonical_package(model)
         with read_ledger(database_path()) as db:
             verify_company(db, data['company'])
-            _verify_event_ownership(db, data)
+            _verify_event_ownership(db, data, run_id)
         return {'valid': True, 'coverage_status': model.scope.coverage_status,
                 'event_count': len(model.events), 'catalyst_count': len(model.catalysts),
                 'thesis_count': len(model.theses), 'warnings': validation_warnings(data)}

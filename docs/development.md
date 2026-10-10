@@ -28,13 +28,20 @@ suite passes 520 tests and Ruff; the news skill passes the official format
 validator with its YAML dependency confined to a disposable Docker container.
 Existing earnings and political skill directories are byte-for-byte unchanged.
 
-Final V2.7 CI verification: a fresh `investobot-v27-ci` image passes
+Initial fresh-image V2.7 CI verification: `investobot-v27-ci` passes
 `uv sync --locked`, `uv run --locked pytest` (520 tests) and explicit-config
 Ruff in offline containers with no source bind mounts or private ledger volumes.
 An offline wheel build contains all three skills; wheel-only discovery outside
 the repository succeeds. No host packages were installed and no changes were
 pushed. GitHub Actions and manually reviewed live sources remain external,
 unverified acceptance gates.
+
+Final idempotence audit: red commit `53d9bea` reproduces an identical accepted
+package without ticker/strong identifiers being rejected on reimport. Its exact
+content hash now permits the no-op without weakening new-run identity checks.
+Validation recognizes the same accepted package too. The frozen complete
+offline Docker suite now passes 521 tests and Ruff. Companies lacking comparable
+identifiers still cannot establish cross-run continuity by name alone.
 
 ## Deliberate schema reset
 

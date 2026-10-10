@@ -67,6 +67,9 @@ Reuse catalyst IDs, question IDs and thesis IDs across observations. Catalyst
 dates and changes require evidence. Hypothesis statements remain unchanged under
 one thesis ID; new statements require new identities. Thesis assessments are
 research judgments, not trading signals or changes to accepted investment decisions.
+Comparisons require nonconflicting shared CIK/security IDs, or matching ticker
+and reviewed company name when both runs lack strong IDs. Name-only continuity
+is insufficient; an identical already accepted package remains a safe no-op.
 Answered questions need cited evidence or an explicit closure limitation.
 Set `answered_fact_key` to a VERIFIED same-event fact, or supply
 `closure_limitation`; optional `evidence_needed` describes the missing evidence.

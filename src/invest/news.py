@@ -120,7 +120,11 @@ def validation_warnings(data):
     return warnings
 
 
-def _verify_event_ownership(ledger, data):
+def _verify_event_ownership(ledger, data, run_id=None):
+    if run_id and ledger.connection.execute(
+            'SELECT 1 FROM research_runs WHERE id=?', (run_id,)).fetchone():
+        # The content hash pins the identical validated company and whole package.
+        return
     company = dict(data['company'], company_name=data['company']['name'])
     for event in data['events']:
         rows = ledger.connection.execute(
@@ -139,7 +143,7 @@ def import_research(ledger, payload, yes=False):
     model = NewsResearchInput.model_validate(payload)
     data, package, run_id, identity = canonical_package(model)
     verify_company(ledger, data['company'])
-    _verify_event_ownership(ledger, data)
+    _verify_event_ownership(ledger, data, run_id)
     warnings = validation_warnings(data)
     compact = {'event_count': len(data['events']), 'catalyst_count': len(data['catalysts']),
                'thesis_count': len(data['theses'])}
