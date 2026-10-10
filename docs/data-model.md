@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 6** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 7** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -224,3 +224,15 @@ metadata while retaining verified claims, lifecycle, dates, segments and declare
 implications. Compact context reads omit facts and implications; only `show`
 loads a full package. Observations and comparisons never modify portfolio theses,
 financial inputs, caches or saved-plan freshness. See [news research](news-research.md).
+
+## V2.8 competitive evidence
+
+Schema 7 reuses immutable `research_runs` and run-scoped `research_sources`, adding
+`research_competitive_entities`, `research_competitive_overlaps`,
+`research_competitive_findings` and `research_competitive_metrics`. Composite
+foreign keys isolate evidence per run; canonical security references are read-only.
+All inserts share one transaction. Full canonical input is retained for show;
+list reads compact metadata and summary/matrix read relational projections.
+Collection ordering and financial trailing zeros normalize before hashing; trusted
+competitive skill/contract identity is included. No research rows enter portfolio
+or planning state. Older ledgers are rejected unchanged, without migrations.

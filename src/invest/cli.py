@@ -664,3 +664,70 @@ def news_compare(run_old: str, run_new: str):
 def news_changes(ticker: str = typer.Option(...)):
     from invest.news_queries import changes
     emit(lambda: political_query(changes, ticker))
+
+
+competitive = typer.Typer()
+research.add_typer(competitive, name='competitive')
+
+
+@competitive.command('validate')
+def competitive_validate(file: str):
+    from invest.competitive import validation_warnings, verify_entities
+    from invest.competitive_models import CompetitiveResearchInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = CompetitiveResearchInput.model_validate(read_json(file))
+        data = model.model_dump(mode='json')
+        with read_ledger(database_path()) as db:
+            verify_entities(db, data)
+        return {'valid': True, 'coverage_status': model.scope.coverage_status,
+                'peer_count': len(model.peers), 'overlap_count': len(model.overlaps),
+                'finding_count': len(model.findings), 'metric_count': len(model.metrics),
+                'warnings': validation_warnings(data)}
+    emit(run)
+
+
+@competitive.command('import')
+def competitive_import(file: str, yes: bool = False):
+    from invest.competitive import import_research, verify_entities
+    from invest.competitive_models import CompetitiveResearchInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = CompetitiveResearchInput.model_validate(read_json(file))
+        # Verify canonical identity before even creating a confirmed destination.
+        with read_ledger(database_path()) as db:
+            if not yes:
+                return import_research(db, model, yes=False)
+            verify_entities(db, model.model_dump(mode='json'))
+        db = ledger()
+        try:
+            return import_research(db, model, yes=True)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+@competitive.command('list')
+def competitive_list(ticker: str = typer.Option(None)):
+    from invest.competitive_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@competitive.command('show')
+def competitive_show(run_id: str):
+    from invest.competitive_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@competitive.command('summary')
+def competitive_summary(run_id: str):
+    from invest.competitive_queries import summary
+    emit(lambda: political_query(summary, run_id))
+
+
+@competitive.command('matrix')
+def competitive_matrix(run_id: str, peer: str = typer.Option(None)):
+    from invest.competitive_queries import matrix
+    emit(lambda: political_query(matrix, run_id, peer))

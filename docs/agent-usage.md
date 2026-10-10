@@ -187,3 +187,12 @@ Inspect source links and coverage warnings: newly observed is not necessarily
 newly occurred, source-only corroboration is separate, and absence never resolves
 a story. Hypothesis assessments belong to research, not portfolio decisions.
 See [the news workflow](news-research.md); tests use fictional evidence only.
+
+## Competitive research
+
+Use the portable `investobot-competitive` skill for one subject and up to eight
+operating peers. Discover `competitive_research` in `invest schema`; validate,
+preview, independently review sources, then explicitly accept. `summary` keeps
+facts separate from inferences; `matrix` compares only strict reported matches.
+Market competition does not imply a suitable stock replacement. See the complete
+[workflow and boundaries](competitive-research.md).

@@ -25,6 +25,12 @@ OUTPUT_CONTRACT = {
 # This describes behavior, not inputs: parameters come from the registered CLI,
 # and financial JSON validation comes from the same models used by domain code.
 PURPOSES = {
+    "research.competitive.validate": "Validate source-backed operating peer evidence without writes.",
+    "research.competitive.import": "Preview or explicitly accept immutable competitive research only.",
+    "research.competitive.list": "List compact competitive research history, optionally by ticker.",
+    "research.competitive.show": "Read the complete accepted competitive package and trusted provenance.",
+    "research.competitive.summary": "Inspect attributed overlaps and interpretations, never investment scores.",
+    "research.competitive.matrix": "Compare strictly compatible reported peer facts with Decimal differences.",
     "research.skills.list": "Discover bundled external-agent research skills without executing them.",
     "research.skills.show": "Read a bundled skill and its references without execution.",
     "research.skills.install": "Explicitly copy bundled skills into a project; confirm overwrites modified canonical files.",
@@ -94,6 +100,7 @@ SCOPES = {
     "research.political.import": "research",
     "research.earnings.import": "research",
     "research.news.import": "research",
+    "research.competitive.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",
     "target.save": "targets",
@@ -233,6 +240,10 @@ def _describe(name, command):
         from invest.news_models import NewsResearchInput
 
         model = NewsResearchInput
+    if name in {"research.competitive.validate", "research.competitive.import"}:
+        from invest.competitive_models import CompetitiveResearchInput
+
+        model = CompetitiveResearchInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -257,11 +268,13 @@ def tools_describe(name, app=None):
 
 
 def schema_contract(app=None):
+    from invest.competitive_models import CompetitiveResearchInput
     from invest.earnings_models import EarningsResearchInput
     from invest.news_models import NewsResearchInput
     from invest.political_models import PoliticalResearchInput
 
     return {
+        "competitive_research": CompetitiveResearchInput.model_json_schema(),
         "news_research": NewsResearchInput.model_json_schema(),
         "earnings_research": EarningsResearchInput.model_json_schema(),
         "political_research": PoliticalResearchInput.model_json_schema(),

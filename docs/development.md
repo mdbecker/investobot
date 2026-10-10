@@ -75,9 +75,9 @@ identifiers still cannot establish cross-run continuity by name alone.
 
 ## Deliberate schema reset
 
-SQLite schema 6 initializes only a fresh database and rejects incompatible older
+SQLite schema 7 initializes only a fresh database and rejects incompatible older
 schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2/3/4/5 records, including saved plans and research, are not migrated or converted.
+on startup. Version 2/3/4/5/6 records, including saved plans and research, are not migrated or converted.
 A reset discards all accepted holdings, lots, activity, targets, plans and research in the
 selected ledger. Reimport reviewed source observations and recreate targets after
 resetting. Keep a private backup first if any information may be needed later.
@@ -95,7 +95,7 @@ This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
 If `INVEST_DB` selects another file, identify its actual mounted path first and
 delete only that chosen database and matching sidecars. Do not use
 `docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 6 on the next access.
+and dependency volumes. The application initializes schema 7 on the next access.
 
 For native installations, stop every process using the ledger. Locate the exact
 `INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
@@ -489,3 +489,13 @@ wheel build includes both canonical skills; discovery succeeds using only the
 extracted wheel outside `/app`. Both skill format validators passed earlier.
 No host dependencies were installed and no changes were pushed. GitHub Actions,
 live SEC/source review and real institution HTML remain unverified external gates.
+
+## V2.8 competitive research
+
+The original [PRD](PRD-v2.8.md), [workflow](competitive-research.md) and
+[verification record](v2.8-verification.md) describe the bounded peer-research MVP.
+All new behavior scenarios were committed red before production implementation.
+Use the existing offline CI commands with a freshly built locked image and
+`INVEST_PROMPTS=/data/prompts`; never mount the private ledger volume for tests.
+The competitive skill needs no provider account or secret. Original-source human
+review and a remote GitHub Actions result remain separate acceptance gates.

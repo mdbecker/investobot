@@ -1,7 +1,7 @@
 # Company news, catalysts and thesis changes
 
 The [V2.7 continuity addendum](PRD-v2.7-Addendum-Research-Continuity.md) preserves
-schema 6 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
+schema 7 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
 a changed public URL, fact locator or publication date, the delta records the
 label change with `UNCHANGED_CITATION_REVIEW_REQUIRED` and a supporting-evidence
 warning; it is excluded from newly verified fact updates. Source-ID relabeling

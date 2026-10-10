@@ -40,6 +40,14 @@ def decimal_text(value):
     return '0' if result in {'-0', '0'} else result
 
 
+def canonical_json_hash(data, identity):
+    """Serialize an already domain-normalized package and trusted identity."""
+    package = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    hashed = json.dumps(dict(identity, package=data), sort_keys=True,
+                        separators=(',', ':'), ensure_ascii=False)
+    return package, hashlib.sha256(hashed.encode()).hexdigest()
+
+
 def canonical_package(model, skill_name):
     """Normalize financial strings only; identifiers retain their exact spelling."""
     data = model.model_dump(mode='json')

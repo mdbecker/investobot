@@ -9,6 +9,12 @@ from invest.models import DomainError
 
 SKILL_VERSION = '1.0.0'
 SUPPORTED_SKILLS = {
+    'investobot-competitive': {
+        'skill_version': '1.0.0',
+        'description': 'Research company operating competitors, market overlaps and source-backed financial facts.',
+        'research_command': 'research.competitive',
+        'schema_version': '1.0',
+    },
     'investobot-news': {
         'skill_version': '1.0.1',
         'description': 'Research source-backed company news, catalysts and thesis hypotheses with incremental evidence.',

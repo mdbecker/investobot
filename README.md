@@ -206,7 +206,7 @@ hypotheses support compact prior context and deterministic changes between
 selected runs. Repeated articles, title edits and missing coverage cannot become
 new developments or implied resolutions. No scheduling, scraping or financial
 planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
-Active schema 6 rejects existing older databases without deleting them; evaluate
+Active schema 7 rejects existing older databases without deleting them; evaluate
 with a fresh disposable ledger and preserve private data before any manual reset.
 Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
 skill discovery passed in Docker. Work remains local; remote CI is unverified.
@@ -218,3 +218,10 @@ Inherited records carry last-observed provenance; unchanged citations cannot
 establish fresh verification. Schema 6 and existing accepted research stay intact.
 Addendum verification: 540 tests, Ruff, skill format validation and wheel-only
 discovery pass in Docker. No host installs or pushes; remote CI remains unverified.
+
+V2.8 adds [competitive research](docs/competitive-research.md): source-backed
+market/segment overlaps, attributed advantages/disadvantages, and exact reported
+peer matrices. Install `investobot-competitive` through `research skills install`;
+validate and preview `research competitive import`, then explicitly accept with
+`--yes`. Private-company gaps and incompatible observations remain unknown.
+Schema 7 requires a separate fresh ledger; no private data migration or reset.
