@@ -1,5 +1,9 @@
 # Management, compensation and insider research
 
+An amended ownership repeat remains unresolved when it has no supported
+`supersedes_id`, even if it has `duplicate_of_id`. A verified transaction correction
+cannot upgrade an unresolved original identity; investigate that evidence first.
+
 V2.9 records source-backed management roles, reported executive compensation,
 SEC Section 16 transactions and beneficial ownership observations for one issuer.
 The external agent researches through its authorized browser; a human reviews

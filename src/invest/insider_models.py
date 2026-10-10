@@ -388,6 +388,8 @@ class InsiderResearchInput(InsiderModel):
                     raise ValueError('linked transactions describe different event identities')
                 if row.supersedes_id:
                     target_source = sources[target.source_id]
+                    if row.review_status == 'VERIFIED' and target.review_status != 'VERIFIED':
+                        raise ValueError('verified correction cannot upgrade an unresolved original transaction')
                     if not source.is_amendment or source.original_accession_number != target_source.accession_number:
                         raise ValueError('correction requires amendment and original accession linkage')
                     if target.duplicate_of_id:

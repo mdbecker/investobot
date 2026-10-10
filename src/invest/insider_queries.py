@@ -159,8 +159,8 @@ def ownership(ledger, run_id, person=None):
         row['reported_quantity'] = row.pop('quantity_text')
         row['indirect_ownership_nature'] = row.pop('indirect_nature')
         row['source'] = sources[row['source_id']]
-        reason = ('DUPLICATE' if row['duplicate_of_id'] is not None else
-                  'UNRESOLVED' if row['source']['is_amendment'] and not row['supersedes_id'] else
+        reason = ('UNRESOLVED' if row['source']['is_amendment'] and not row['supersedes_id'] else
+                  'DUPLICATE' if row['duplicate_of_id'] is not None else
                   'SUPERSEDED' if row['id'] in superseded else None)
         row['status'] = reason or 'EFFECTIVE'
         row['is_effective'] = reason is None
