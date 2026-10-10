@@ -179,3 +179,16 @@ def test_identical_unregistered_company_without_ticker_is_still_idempotent(ctx):
     second = import_research(ctx['db'], ctx['payload'], yes=True)
     assert first['research_run_id'] == second['research_run_id']
     assert second['status'] == 'UNCHANGED'
+
+
+def test_skill_instruction_update_preserves_accepted_hash_and_noop(ctx, monkeypatch):
+    from invest.news import import_research
+    from invest.research_skills import SUPPORTED_SKILLS
+    ctx['payload']['company']['ticker'] = None
+    monkeypatch.setitem(SUPPORTED_SKILLS['investobot-news'], 'skill_version', '1.0.0')
+    first = import_research(ctx['db'], ctx['payload'], yes=True)
+    monkeypatch.setitem(SUPPORTED_SKILLS['investobot-news'], 'skill_version', '1.0.1')
+    second = import_research(ctx['db'], ctx['payload'], yes=True)
+    assert second['status'] == 'UNCHANGED'
+    assert second['research_run_id'] == first['research_run_id']
+    assert ctx['db'].connection.execute('SELECT skill_version FROM research_runs').fetchall() == [('1.0.0',)]
