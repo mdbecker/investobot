@@ -28,7 +28,7 @@ def install(ctx):
 
 @then('both portable skills and their references are discoverable')
 def discover(ctx):
-    names = {'investobot-earnings', 'investobot-political-contributions'}
+    names = {'investobot-earnings', 'investobot-political-contributions', 'investobot-news'}
     assert {item['name'] for item in ctx['skills']} == names
     for entry in ctx['skills']:
         assert entry['skill_version'] == '1.0.0'

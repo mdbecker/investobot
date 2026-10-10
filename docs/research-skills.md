@@ -5,7 +5,7 @@ CLI validates, stores and calculates; installing a skill does not run research.
 Skills follow the [Agent Skills specification](https://agentskills.io/specification).
 Canonical portable instructions live in `skills/` and are also bundled in the
 distribution. Both research skills use version `1.0.0`; their JSON contracts use
-schema `1.0`. These are different from SQLite schema 5.
+schema `1.0`. These are different from SQLite schema 6.
 
 ## Discovery and project-local installation
 
@@ -15,11 +15,12 @@ Use Docker throughout; no host packages, new API account or secret are needed.
 docker compose build
 docker compose run --rm -T app invest research skills list
 docker compose run --rm -T app invest research skills show investobot-earnings
+docker compose run --rm -T app invest research skills show investobot-news
 docker compose run --rm -T app invest research skills show investobot-political-contributions
 docker compose run --rm -T app invest research skills install --agent codex --workspace /app
 ```
 
-Installation copies both skills into project-local `.agents/skills` for Codex.
+Installation copies all three skills into project-local `.agents/skills` for Codex.
 For Claude Code use `--agent claude-code`, which selects `.claude/skills`. The
 workspace must be mounted in the container; `/app` is the repository bind mount.
 No global agent configuration changes. Files can also be copied manually from
@@ -36,6 +37,9 @@ uses its normal project-skill discovery. Each skill's `SKILL.md` routes to focus
 references. Discover current authoritative models with `invest schema` and
 command behavior with `invest tools describe`; skill text does not maintain a
 second JSON Schema.
+Use `investobot-news` for incremental material developments, catalysts and
+hypothesis assessments; load `research news context --ticker TICKER` first.
+Existing earnings and political skills retain their versions and content.
 
 ## Research boundary
 

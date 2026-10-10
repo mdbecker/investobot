@@ -1,6 +1,6 @@
 # Canonical local data model
 
-SQLite schema **version 5** uses standard `sqlite3`; no ORM is involved.
+SQLite schema **version 6** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.
 Financial amounts, quantities and fractional weights are Decimal strings; dates
@@ -24,8 +24,11 @@ are ISO 8601. Historical risk statistics/correlations can be JSON numbers.
 | `research_runs`, `research_sources` | Shared immutable research metadata, packages and source provenance |
 | `research_earnings_metrics` | Exact reported financial facts, definitions, units, periods, scopes and source locators |
 | `research_earnings_guidance`, `research_earnings_findings` | Separate management outlook and classified qualitative evidence |
+| `research_news_scopes` | Declared monitoring window, coverage and checked source categories |
+| `research_news_events`, `research_news_facts` | Stable event identities and attributed verified/disputed facts |
+| `research_news_catalysts`, `research_news_theses` | Immutable timeline observations and agent hypothesis assessments |
 
-Version 5 initializes a fresh database. Incompatible older databases are rejected
+Version 6 initializes a fresh database. Incompatible older databases are rejected
 with reset instructions; startup never deletes data. There are no migrations,
 backfills or legacy saved-plan readers. See the deliberate
 [reset procedure](development.md#deliberate-schema-reset). Compose uses `/data/portfolio.db`; native defaults are

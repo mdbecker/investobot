@@ -199,3 +199,12 @@ External research and source review remain human responsibilities; no new API
 accounts, secrets or credentials are needed for the offline MVP.
 Local V2.6 verification: 462 tests, Ruff and wheel-only skill discovery passed
 in offline Docker. Changes remain local; GitHub Actions is unverified.
+
+V2.7 adds [incremental news research](docs/news-research.md) and the
+`investobot-news` skill. Source-backed immutable events, catalysts and research
+hypotheses support compact prior context and deterministic changes between
+selected runs. Repeated articles, title edits and missing coverage cannot become
+new developments or implied resolutions. No scheduling, scraping or financial
+planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
+Active schema 6 rejects existing older databases without deleting them; evaluate
+with a fresh disposable ledger and preserve private data before any manual reset.

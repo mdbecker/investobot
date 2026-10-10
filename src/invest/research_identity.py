@@ -9,14 +9,29 @@ from types import SimpleNamespace
 from invest.models import DomainError
 
 
+def same_research_company(first, second):
+    """Shared identifiers must agree; names are fallback only without strong IDs."""
+    keys = ('cik', 'security_id')
+    if any(first.get(k) and second.get(k) and first[k] != second[k] for k in keys):
+        return False
+    if any(first.get(k) and second.get(k) and first[k] == second[k] for k in keys):
+        return True
+    if any(item.get(k) for item in (first, second) for k in keys):
+        return False
+    return bool(first.get('ticker') and second.get('ticker') and
+                first['ticker'].casefold() == second['ticker'].casefold() and
+                ' '.join(first['company_name'].split()).casefold() ==
+                ' '.join(second['company_name'].split()).casefold())
+
+
 @contextmanager
 def read_ledger(path):
     """Read existing research without creating a selected database on disk."""
     if Path(path).exists():
         connection = sqlite3.connect(Path(path).absolute().as_uri() + '?mode=ro', uri=True)
         try:
-            if connection.execute('PRAGMA user_version').fetchone()[0] != 5:
-                raise DomainError('Incompatible database schema; select a schema 5 database', 3)
+            if connection.execute('PRAGMA user_version').fetchone()[0] != 6:
+                raise DomainError('Incompatible database schema; select a schema 6 database', 3)
             yield SimpleNamespace(connection=connection)
         finally:
             connection.close()

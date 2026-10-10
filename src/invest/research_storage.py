@@ -22,7 +22,7 @@ DDL = [
         filed_at TEXT, accessed_at TEXT NOT NULL, cik TEXT, accepted_at TEXT,
         is_amendment INTEGER NOT NULL CHECK(is_amendment IN (0,1)),
         is_restatement INTEGER NOT NULL CHECK(is_restatement IN (0,1)),
-        original_accession_number TEXT,
+        original_accession_number TEXT, published_at TEXT, source_locator TEXT,
         PRIMARY KEY(run_id,source_id),
         FOREIGN KEY(run_id) REFERENCES research_runs(id))""",
 ]

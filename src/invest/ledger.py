@@ -52,7 +52,7 @@ class Ledger:
         self.connection.execute("PRAGMA foreign_keys=ON")
         version = self.connection.execute("PRAGMA user_version").fetchone()[0]
         self.connection.execute("PRAGMA busy_timeout=5000")
-        if version not in {0, 5}:
+        if version not in {0, 6}:
             self.connection.close()
             raise DomainError("Incompatible database schema; stop Investobot and deliberately reset the database (see docs/development.md)", 3)
         if version == 0:
@@ -78,7 +78,10 @@ class Ledger:
 
                 create_research_tables(self.connection)
                 create_earnings_tables(self.connection)
-                self.connection.execute("PRAGMA user_version=5")
+                from invest.news import create_tables as create_news_tables
+
+                create_news_tables(self.connection)
+                self.connection.execute("PRAGMA user_version=6")
 
     def rows(self, table):
         if table not in TABLES:

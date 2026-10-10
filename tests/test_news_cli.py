@@ -48,18 +48,22 @@ def absent(ctx):
 
 @when('three fictional observations are explicitly accepted')
 def three_runs(ctx):
+    from test_storage_stabilization import snapshot
+
     from invest.ledger import Ledger
     from invest.market import MarketClient
     from invest.plans import generate, show
-    from test_storage_stabilization import snapshot
+    from invest.targets import save
     db = Ledger(ctx['path'])
-    db.apply(snapshot())
-    db.create_target({'name': 'fictional target', 'allocations': [
-        {'security_id': 'AAA', 'weight': '1'}]}, activate=True)
-    db.set_account_rules('taxable', {'planning_enabled': True, 'permitted_securities': ['AAA']})
-    plan = generate(db, MarketClient(db, provider='offline'), gain_budget='1000',
-                    as_of='2026-04-06', allow_stale_quotes=True)['plan']
-    ctx['plan_id'] = plan['plan_id']
+    db.apply(snapshot(10, 'fictional-original', '2026-10-08'))
+    security = db.resolve('SYN')['id']
+    target = save(db, {'name': 'Fictional allocation',
+        'target_allocations': {security: '.5', 'CASH': '.5'},
+        'planning_constraints': {'eligible_accounts': ['ira'],
+                                 'permitted_securities': {'ira': [security]}}})
+    plan = generate(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
+                    target['id'], as_of='2026-10-08')
+    ctx['plan_id'] = plan['id']
     ctx['state'] = db.planning_state()
     ctx['plan_before'] = show(db, ctx['plan_id'])
     db.connection.close()

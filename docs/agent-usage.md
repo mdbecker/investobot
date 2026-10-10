@@ -175,3 +175,15 @@ Research externally using permitted sources, verify identities and recipient
 relationships manually, then validate and preview supplied JSON before an
 explicit `--yes` import. No source permission can be granted by the agent's JSON
 or command confirmation. Consult [the setup guide](political-research.md).
+
+For news monitoring use `investobot-news`, then `research news context --ticker
+TICKER` before researching. Reuse reviewed event/catalyst/question/thesis IDs;
+check primary disclosures and preserve publication dates separately from event
+dates. Use `invest tools describe research.news.import` and `invest schema` for
+authoritative contracts. Validate and preview the JSON, obtain human approval,
+then explicitly import with `--yes`. `research news changes --ticker TICKER`
+selects the latest compatible runs; `compare RUN_OLD RUN_NEW` pins exact history.
+Inspect source links and coverage warnings: newly observed is not necessarily
+newly occurred, source-only corroboration is separate, and absence never resolves
+a story. Hypothesis assessments belong to research, not portfolio decisions.
+See [the news workflow](news-research.md); tests use fictional evidence only.

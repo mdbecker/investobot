@@ -1,11 +1,23 @@
 # Development evidence
 All tests and dependency tools run in Docker. Conventional red/green commits track feature work. Synthetic BDD fixtures need no credentials or internet.
 
+## V2.7 implementation evidence
+
+Red commits `8f29ee0`, `8697468`, `e6f589e` and `8193a1e` capture missing skill,
+strict models, storage/schema and executable comparison/three-run CLI scenarios.
+Query audit red commit `cfdc39e` captures partial strong-identity fallback,
+overbroad context reads, missing prior citation links and relabeled-source false
+corroboration. After implementation, the frozen full offline mounted-source
+Docker suite passes 516 tests and explicit-config Ruff. The three-run integration
+retains actual synthetic plan contents/status and full planning inputs unchanged.
+Existing political/earnings behavior and skill content remain intact. These
+fixtures do not establish real-news accuracy or a GitHub Actions result.
+
 ## Deliberate schema reset
 
-SQLite schema 5 initializes only a fresh database and rejects incompatible older
+SQLite schema 6 initializes only a fresh database and rejects incompatible older
 schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2/3/4 records, including saved plans and research, are not migrated or converted.
+on startup. Version 2/3/4/5 records, including saved plans and research, are not migrated or converted.
 A reset discards all accepted holdings, lots, activity, targets, plans and research in the
 selected ledger. Reimport reviewed source observations and recreate targets after
 resetting. Keep a private backup first if any information may be needed later.
@@ -23,7 +35,7 @@ This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
 If `INVEST_DB` selects another file, identify its actual mounted path first and
 delete only that chosen database and matching sidecars. Do not use
 `docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 5 on the next access.
+and dependency volumes. The application initializes schema 6 on the next access.
 
 For native installations, stop every process using the ledger. Locate the exact
 `INVEST_DB` file or the platformdirs `investobot` data directory, back up anything

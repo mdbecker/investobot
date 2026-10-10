@@ -444,6 +444,8 @@ app.add_typer(research, name='research')
 research.add_typer(political, name='political')
 earnings = typer.Typer()
 research.add_typer(earnings, name='earnings')
+news = typer.Typer()
+research.add_typer(news, name='news')
 skills = typer.Typer()
 research.add_typer(skills, name='skills')
 
@@ -589,3 +591,76 @@ def earnings_summary(run_id: str):
 def earnings_compare(run_a: str, run_b: str):
     from invest.earnings_queries import compare
     emit(lambda: political_query(compare, run_a, run_b))
+
+
+@news.command('validate')
+def news_validate(file: str):
+    from invest.news import _verify_event_ownership, validation_warnings
+    from invest.news_models import NewsResearchInput
+    from invest.research_identity import read_ledger, verify_company
+
+    def run():
+        model = NewsResearchInput.model_validate(read_json(file))
+        data = model.model_dump(mode='json')
+        with read_ledger(database_path()) as db:
+            verify_company(db, data['company'])
+            _verify_event_ownership(db, data)
+        return {'valid': True, 'coverage_status': model.scope.coverage_status,
+                'event_count': len(model.events), 'catalyst_count': len(model.catalysts),
+                'thesis_count': len(model.theses), 'warnings': validation_warnings(data)}
+    emit(run)
+
+
+@news.command('import')
+def news_import(file: str, yes: bool = False):
+    from invest.news import import_research
+    from invest.news_models import NewsResearchInput
+    from invest.research_identity import read_ledger
+
+    def run():
+        model = NewsResearchInput.model_validate(read_json(file))
+        if not yes:
+            with read_ledger(database_path()) as db:
+                return import_research(db, model, yes=False)
+        db = ledger()
+        try:
+            return import_research(db, model, yes=True)
+        finally:
+            db.connection.close()
+    emit(run)
+
+
+@news.command('list')
+def news_list(ticker: str = typer.Option(None)):
+    from invest.news_queries import list_runs
+    emit(lambda: political_query(list_runs, ticker))
+
+
+@news.command('show')
+def news_show(run_id: str):
+    from invest.news_queries import show
+    emit(lambda: political_query(show, run_id))
+
+
+@news.command('summary')
+def news_summary(run_id: str):
+    from invest.news_queries import summary
+    emit(lambda: political_query(summary, run_id))
+
+
+@news.command('context')
+def news_context(ticker: str = typer.Option(...)):
+    from invest.news_queries import context
+    emit(lambda: political_query(context, ticker))
+
+
+@news.command('compare')
+def news_compare(run_old: str, run_new: str):
+    from invest.news_queries import compare
+    emit(lambda: political_query(compare, run_old, run_new))
+
+
+@news.command('changes')
+def news_changes(ticker: str = typer.Option(...)):
+    from invest.news_queries import changes
+    emit(lambda: political_query(changes, ticker))

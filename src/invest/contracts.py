@@ -39,6 +39,14 @@ PURPOSES = {
     "research.earnings.show": "Read the full immutable earnings package and provenance.",
     "research.earnings.summary": "Inspect reported financial facts and source limitations.",
     "research.earnings.compare": "Compare compatible reported facts with Decimal arithmetic.",
+    "research.news.validate": "Validate sourced news observations without writes.",
+    "research.news.import": "Preview or explicitly accept immutable news research.",
+    "research.news.list": "List compact news run metadata.",
+    "research.news.show": "Read one immutable full news package.",
+    "research.news.summary": "Inspect sourced events, catalysts and research assessments.",
+    "research.news.context": "Read compact prior context for incremental research.",
+    "research.news.compare": "Compare exactly two saved news observations conservatively.",
+    "research.news.changes": "Compare the latest two compatible accepted company runs.",
     "schema": "Discover all command contracts and snapshot validation schemas.",
     "tools.list": "List available commands and persistent mutation scopes.",
     "tools.describe": "Describe a registered command's inputs and output contract.",
@@ -85,6 +93,7 @@ SCOPES = {
     "research.skills.install": "project_skill_files",
     "research.political.import": "research",
     "research.earnings.import": "research",
+    "research.news.import": "research",
     "portfolio.apply": "actual_portfolio",
     "portfolio.record-activity": "actual_portfolio",
     "target.save": "targets",
@@ -206,6 +215,10 @@ def _describe(name, command):
         from invest.earnings_models import EarningsResearchInput
 
         model = EarningsResearchInput
+    if name in {"research.news.validate", "research.news.import"}:
+        from invest.news_models import NewsResearchInput
+
+        model = NewsResearchInput
     if model is not None:
         result["json_input_schema"] = model.model_json_schema()
     elif "file" in properties:
@@ -231,9 +244,11 @@ def tools_describe(name, app=None):
 
 def schema_contract(app=None):
     from invest.earnings_models import EarningsResearchInput
+    from invest.news_models import NewsResearchInput
     from invest.political_models import PoliticalResearchInput
 
     return {
+        "news_research": NewsResearchInput.model_json_schema(),
         "earnings_research": EarningsResearchInput.model_json_schema(),
         "political_research": PoliticalResearchInput.model_json_schema(),
         "snapshot": Snapshot.model_json_schema(),

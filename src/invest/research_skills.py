@@ -9,6 +9,11 @@ from invest.models import DomainError
 
 SKILL_VERSION = '1.0.0'
 SUPPORTED_SKILLS = {
+    'investobot-news': {
+        'description': 'Research source-backed company news, catalysts and thesis hypotheses with incremental evidence.',
+        'research_command': 'research.news',
+        'schema_version': '1.0',
+    },
     'investobot-earnings': {
         'description': 'Research company earnings and financial disclosures with verified periods and source evidence.',
         'research_command': 'research.earnings',
