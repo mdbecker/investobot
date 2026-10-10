@@ -360,6 +360,7 @@ def compare(ledger, run_old, run_new):
             item.setdefault('to_run_id', run_new)
     result['warnings'] = sorted(set(result['warnings']))
     result['counts'] = {key: len(result[key]) for key in DELTA_KEYS}
+    result['counts']['warnings'] = len(result['warnings'])
     return result
 
 
@@ -372,5 +373,5 @@ def changes(ledger, ticker):
             return {'baseline_available': True, **compare(ledger, compatible[0]['id'], newest['id'])}
     return {'baseline_available': False, 'ticker': ticker,
             'to_run_id': runs[0]['id'] if runs else None,
-            **{key: [] for key in DELTA_KEYS}, 'counts': dict.fromkeys(DELTA_KEYS, 0),
+            **{key: [] for key in DELTA_KEYS}, 'counts': dict(dict.fromkeys(DELTA_KEYS, 0), warnings=1),
             'warnings': ['Fewer than two compatible accepted runs; no comparison baseline.']}

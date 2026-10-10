@@ -21,6 +21,13 @@ frozen full offline Docker suite passes 518 tests and Ruff. A separate agent
 installed and followed the news skill using the fictional PRD example, preserving
 unknown dates and producing fact/catalyst/thesis/question deltas across saved runs.
 
+Final count-contract red commit `43ce1b1` requires warnings to participate in
+structured delta counts, including missing baselines. Nested source/fact/segment
+reordering also preserves accepted run identity. The full offline mounted-source
+suite passes 520 tests and Ruff; the news skill passes the official format
+validator with its YAML dependency confined to a disposable Docker container.
+Existing earnings and political skill directories are byte-for-byte unchanged.
+
 ## Deliberate schema reset
 
 SQLite schema 6 initializes only a fresh database and rejects incompatible older
