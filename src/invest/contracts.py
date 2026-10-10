@@ -202,6 +202,20 @@ def _describe(name, command):
     elif name == "plan.show":
         result["output_contract"] = dict(OUTPUT_CONTRACT, response_detail="full_plan",
                                          potentially_large_response=True)
+    elif name in {'research.news.compare', 'research.news.changes'}:
+        from invest.news_queries import DELTA_KEYS
+
+        result['output_contract'] = dict(OUTPUT_CONTRACT,
+            delta_arrays=[*DELTA_KEYS, 'warnings'], counts_include_warnings=True,
+            reobservations='Prior compatible observations at or before the selected baseline only.',
+            disputed_claims='Evidence changes; DISPUTED is not a verified company fact.',
+            category_counts='Overlapping evidence categories, never summed as unique developments.')
+    elif name == 'research.news.context':
+        result['output_contract'] = dict(OUTPUT_CONTRACT,
+            response_detail='effective_historical_context', historical_metadata=[
+                'last_observed_run_id', 'last_observed_as_of', 'observation_status'],
+            observation_status=['OBSERVED_IN_BASELINE', 'NOT_REOBSERVED'],
+            historical_context='Latest compatible actual observations; inherited records are not freshly verified.')
     elif name == "portfolio.reconcile":
         result["output_contract"] = dict(OUTPUT_CONTRACT, classification_reviews={
             "fields": ["security_id", "ticker", "canonical_type", "observed_type", "action_required"],

@@ -6,8 +6,12 @@
    companies and different share classes are not interchangeable.
 2. Run `invest research news context --ticker TICKER`. Review stable event keys,
    open catalysts, tracked hypotheses, prior coverage and unresolved questions.
-   With no prior run, label this an initial baseline. Retrieve full runs with
-   `show` if compact context is insufficient; do not treat omission as closure.
+   Context identifies the latest baseline and carries unresolved records from
+   compatible older runs. Read `observation_status`, `last_observed_run_id` and
+   `last_observed_as_of`; inherited `NOT_REOBSERVED` records need explicit rechecking.
+   A missing thesis is `NOT_REASSESSED`, not rejected. With no prior run, label
+   this an initial baseline. Retrieve full runs with `show` if compact context
+   is insufficient; do not treat omission, even in complete coverage, as closure.
 3. Search the declared period using authorized external tools. Check issuer/IR
    releases, SEC filings, regulatory/legal announcements, product and partner
    disclosures and credible independent reporting when available. Record source
@@ -16,8 +20,12 @@
    dates separately from actual event dates. A reporting article is not issuer
    confirmation. Attribute statements, allegations and confirmed outcomes exactly.
 5. Match existing stable event identities using evidence, then record concise,
-   checkable facts with exact source IDs and locators. Unsupported claims cannot
+   checkable facts with exact source IDs and locators. Reuse previously tracked
+   keys when rediscovered after a gap; rediscovery is not novelty. Unsupported claims cannot
    be VERIFIED. Keep conflicting reports disputed and separately attributed.
+   Disputed allegations are research leads, never confirmed outcomes or trade
+   signals. Reclassification requires fresh supporting evidence; disappearance
+   does not establish withdrawal, falsity or resolution.
 6. Write possible business implications separately: demand, revenue, costs,
    margins, competition, operations, financing or regulatory exposure. Include
    assumptions and uncertainty; never fabricate financial impacts or probabilities.

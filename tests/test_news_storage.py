@@ -71,7 +71,7 @@ def isolated(ctx):
     conn = ctx['db'].connection
     assert conn.execute('SELECT COUNT(*) FROM research_news_events').fetchone()[0] == 1
     assert conn.execute('SELECT COUNT(*) FROM research_news_facts').fetchone()[0] == 1
-    assert conn.execute('SELECT skill_name,skill_version FROM research_runs').fetchone() == ('investobot-news', '1.0.0')
+    assert conn.execute('SELECT skill_name,skill_version FROM research_runs').fetchone() == ('investobot-news', '1.0.1')
     assert conn.execute('PRAGMA foreign_key_check').fetchall() == []
     assert ctx['db'].planning_state() == ctx['financial']
 

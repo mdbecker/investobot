@@ -1,5 +1,8 @@
 # Investobot — News, Catalysts & Thesis-Change Research
 
+Follow-up requirements are preserved in the [Research Continuity & Disputed-Claim
+Addendum](PRD-v2.7-Addendum-Research-Continuity.md). The original PRD below remains unchanged.
+
 **Product Requirements Document — Version 2.7**  
 **Repository:** https://github.com/mdbecker/investobot  
 **Baseline:** V2.6, commit `8722093` (verified on `main` October 10, 2026)  

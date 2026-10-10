@@ -102,7 +102,7 @@ def history(ctx):
     assert 'FACT_ADDED' in delta['updated_events'][0]['change_types']
     assert delta['catalyst_changes'][0]['new_status'] == 'DELAYED'
     assert delta['thesis_changes'][0]['new_assessment'] == 'MIXED'
-    assert invoke(ctx, ['show', ctx['second']])['skill_version'] == '1.0.0'
+    assert invoke(ctx, ['show', ctx['second']])['skill_version'] == '1.0.1'
     assert invoke(ctx, ['summary', ctx['third']])['events']
     assert len(invoke(ctx, ['list', '--ticker', 'FAKE'])['runs']) == 3
     assert invoke(ctx, ['context', '--ticker', 'FAKE'])['research_run_id'] == ctx['third']

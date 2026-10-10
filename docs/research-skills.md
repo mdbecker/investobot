@@ -4,7 +4,7 @@ Agent skills describe how an external agent researches evidence. Investobot's
 CLI validates, stores and calculates; installing a skill does not run research.
 Skills follow the [Agent Skills specification](https://agentskills.io/specification).
 Canonical portable instructions live in `skills/` and are also bundled in the
-distribution. All three research skills use version `1.0.0`; their JSON contracts use
+distribution. News uses version `1.0.1`; earnings and political remain `1.0.0`. Their JSON contracts use
 schema `1.0`. These are different from SQLite schema 6.
 
 ## Discovery and project-local installation

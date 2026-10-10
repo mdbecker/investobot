@@ -1,5 +1,3 @@
-import json
-
 import pytest
 from pytest_bdd import given, scenarios, then, when
 from test_news_queries import ledger as ledger

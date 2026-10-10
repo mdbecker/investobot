@@ -95,6 +95,64 @@ dismissed or disproven. Missing catalysts have not necessarily occurred or been
 cancelled. Partial coverage and empty arrays do not establish no news. Review
 unanswered questions and nonoverlapping windows before interpreting any delta.
 
+### Effective context across research gaps
+
+`context --ticker TICKER` names the latest accepted baseline, ordered by
+`researched_as_of`, then `imported_at`, then run ID. It reconstructs compact
+context from compatible same-company history using relational projections,
+without reading full packages or changing the ledger. Its baseline metadata,
+coverage window, limitations and warnings still describe the latest run.
+
+Each carried record adds `last_observed_run_id`, `last_observed_as_of` and
+`observation_status`: `OBSERVED_IN_BASELINE` or `NOT_REOBSERVED`. Source
+provenance identifies its originating run because source IDs are run-scoped.
+These fields mark recorded knowledge, not proof that an issue remains ongoing
+today. Recheck older evidence explicitly and retain unknown occurrence dates.
+
+For example, fictional Run A records a developing lawsuit and an open question;
+Run B omits both. Context before Run C still includes them as `NOT_REOBSERVED`,
+last observed in A. Pending catalysts and tracked hypotheses also survive
+omissions. An inherited thesis adds `reassessment_status: NOT_REASSESSED`; silence
+does not reject it. No automatic expiry applies, even if B declared complete
+coverage. The most recent actual observation governs each stable key, so carried
+records are not duplicated. Explicit sourced resolution or retraction stops
+active event carry-forward; historical runs remain retrievable with `show`.
+
+### Reobservations and disputed claims
+
+`compare` and `changes` add `reobserved_events` and `disputed_claim_changes`, with
+matching entries in `counts`. All existing arrays and counts remain available;
+missing-baseline responses include the new arrays as empty and their counts as
+zero. These are additive read-output changes; JSON input remains v1.0 and schema
+6 is unchanged. The bundled news skill is v1.0.1; earnings and political skills
+retain their versions.
+
+If C observes A's stable event again after B omitted it, B-versus-C reports
+`reobserved_events`, with A's last observation, C's record and before/after
+evidence. Any new verified facts are still visible; the event is not newly
+discovered. Explicit comparisons search compatible history only at or before
+their selected old baseline in research order, preventing future observations
+from leaking into earlier comparisons. Ambiguous issuers and title similarity
+never establish continuity.
+
+Disputed claims are reported separately by event and fact key:
+
+| Change | Interpretation |
+| --- | --- |
+| `DISPUTED_ADDED` | A newly recorded allegation, not a verified company fact. |
+| `DISPUTED_REVISED` | The checkable disputed proposition changed materially. |
+| `DISPUTED_TO_VERIFIED` | The proposition is now verified with supporting evidence. |
+| `VERIFIED_TO_DISPUTED` | Confirmed-fact treatment is withdrawn; falsity is not established. |
+| `DISPUTED_NOT_REOBSERVED` | Missing coverage, not withdrawal, resolution or disproof. |
+
+Each entry includes before/after facts as applicable, run IDs, source URLs,
+locators and an uncertainty caveat. Additional corroboration of an unchanged
+claim is evidence-only; whitespace, ordering, source-ID relabeling and headline
+edits alone are not material changes. A dispute becoming verified may also
+appear under `updated_events`; counts describe categories and must not be summed
+as distinct business developments. Humans assess significance after reviewing
+the evidence; disputed claims are research leads, never trading signals.
+
 Accepted runs are immutable, atomic and idempotent. Research changes no holdings,
 prices, classifications, lots, targets, market caches or plan freshness. Schema 6
 initializes fresh databases and rejects prior schemas; follow the deliberate

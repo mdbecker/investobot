@@ -120,7 +120,27 @@ def validation_warnings(data):
     return warnings
 
 
+def _accepted_id(ledger, data, proposed_id):
+    """Recognize identical accepted input under its original trusted skill version."""
+    if ledger.connection.execute('SELECT 1 FROM research_runs WHERE id=?',
+                                 (proposed_id,)).fetchone():
+        return proposed_id
+    versions = ledger.connection.execute(
+        '''SELECT DISTINCT skill_version FROM research_runs
+           WHERE research_type=? AND skill_name=? AND schema_version=?''',
+        (data['research_type'], 'investobot-news', data['schema_version']))
+    for (version,) in versions:
+        identity = dict(skill_name='investobot-news', skill_version=version,
+                        schema_version=data['schema_version'], research_type=data['research_type'])
+        candidate = hashlib.sha256(_json(dict(identity, package=data)).encode()).hexdigest()
+        if ledger.connection.execute('SELECT 1 FROM research_runs WHERE id=?', (candidate,)).fetchone():
+            return candidate
+    return proposed_id
+
+
 def _verify_event_ownership(ledger, data, run_id=None):
+    if run_id:
+        run_id = _accepted_id(ledger, data, run_id)
     if run_id and ledger.connection.execute(
             'SELECT 1 FROM research_runs WHERE id=?', (run_id,)).fetchone():
         # The content hash pins the identical validated company and whole package.
@@ -142,6 +162,7 @@ def import_research(ledger, payload, yes=False):
 
     model = NewsResearchInput.model_validate(payload)
     data, package, run_id, identity = canonical_package(model)
+    run_id = _accepted_id(ledger, data, run_id)
     verify_company(ledger, data['company'])
     _verify_event_ownership(ledger, data, run_id)
     warnings = validation_warnings(data)

@@ -10,7 +10,8 @@ RESEARCH_TYPE = 'NEWS_CATALYSTS_THESIS_CHANGES'
 RUN_COLUMNS = ('id', 'skill_name', 'skill_version', 'schema_version', 'company_name',
                'ticker', 'security_id', 'cik', 'researched_as_of', 'imported_at',
                'coverage_status', 'summary_json')
-DELTA_KEYS = ('new_events', 'updated_events', 'new_evidence_only', 'catalyst_changes',
+DELTA_KEYS = ('new_events', 'reobserved_events', 'updated_events', 'disputed_claim_changes',
+              'new_evidence_only', 'catalyst_changes',
               'thesis_changes', 'follow_up_changes', 'not_reobserved')
 
 
@@ -145,30 +146,73 @@ def summary(ledger, run_id):
             'warnings': sorted(set(warnings))}
 
 
+def _chronology(run):
+    return run['researched_as_of'], run['imported_at'], run['id']
+
+
+def _history(ledger, baseline):
+    return [run for run in _runs(ledger) if _chronology(run) <= _chronology(baseline)
+            and same_research_company(run, baseline)]
+
+
+def _observed(record, run, baseline):
+    return dict(record, last_observed_run_id=run['id'],
+                last_observed_as_of=run['researched_as_of'],
+                observation_status='OBSERVED_IN_BASELINE' if run['id'] == baseline['id']
+                else 'NOT_REOBSERVED')
+
+
 def context(ledger, ticker):
     runs = _runs(ledger, ticker=ticker)
     if not runs:
         return {'baseline_available': False, 'ticker': ticker, 'events': [],
                 'catalysts': [], 'theses': [], 'open_follow_up_questions': []}
     run = runs[0]
-    events = _select(ledger, 'research_news_events',
-                     ('event_key', 'title', 'event_status', 'event_date',
-                      'source_ids_json', 'follow_up_questions_json'), run['id'])
-    questions = []
-    for event in events:
-        event['source_ids'] = json.loads(event.pop('source_ids_json'))
-        questions.extend(dict(question, event_key=event['event_key'])
-                         for question in json.loads(event.pop('follow_up_questions_json'))
-                         if question['status'] == 'OPEN')
+    events, questions, catalysts, theses = {}, {}, {}, {}
+    warnings = list(json.loads(run['summary_json']).get('warnings', []))
+    for observed in _history(ledger, run):
+        rows = _select(ledger, 'research_news_events',
+                       ('event_key', 'title', 'event_status', 'event_date',
+                        'source_ids_json', 'follow_up_questions_json',
+                        'status_source_id', 'status_source_locator'), observed['id'])
+        sources = _sources(ledger, observed['id'])
+        for event in rows:
+            event['source_ids'] = json.loads(event.pop('source_ids_json'))
+            own_questions = json.loads(event.pop('follow_up_questions_json'))
+            event['sources'] = [s for s in sources if s['source_id'] in event['source_ids']]
+            events.setdefault(event['event_key'], _observed(event, observed, run))
+            for question in own_questions:
+                key = event['event_key'], question['id']
+                questions.setdefault(key, _observed(dict(question, event_key=event['event_key'],
+                                                        sources=event['sources']), observed, run))
+        for catalyst in _catalysts(ledger, observed['id']):
+            catalyst['sources'] = [s for s in sources if s['source_id'] == catalyst['source_id']]
+            catalysts.setdefault(catalyst['catalyst_id'], _observed(catalyst, observed, run))
+        for thesis in _theses(ledger, observed['id']):
+            thesis['sources'] = [s for s in sources if any(
+                event['event_key'] in thesis['related_event_keys'] and
+                s['source_id'] in event['source_ids'] for event in rows)]
+            existing = theses.get(thesis['thesis_id'])
+            if existing and _text(existing['statement']) != _text(thesis['statement']):
+                existing['identity_status'] = 'INCOMPATIBLE'
+                warnings.append(f"Incompatible historical hypothesis statement under {thesis['thesis_id']}.")
+            thesis['reassessment_status'] = 'REASSESSED_IN_BASELINE' if observed['id'] == run['id'] else 'NOT_REASSESSED'
+            theses.setdefault(thesis['thesis_id'], _observed(thesis, observed, run))
+    active_events = [event for event in events.values()
+                     if event['event_status'] not in {'RESOLVED', 'RETRACTED'} or
+                     not (event['status_source_id'] and event['status_source_locator'])]
+    active_catalysts = [c for c in catalysts.values() if c['status'] not in {'OCCURRED', 'CANCELLED'}]
+    open_questions = [q for q in questions.values() if q['status'] == 'OPEN']
+    if any(record['observation_status'] == 'NOT_REOBSERVED'
+           for record in [*active_events, *active_catalysts, *open_questions, *theses.values()]):
+        warnings.append('Some active context comes from older runs and has not been reverified; recorded status is not current proof.')
     return {**_metadata(run), 'baseline_available': True,
             'scope': _scope(ledger, run['id']),
-            'events': sorted((event for event in events
-                              if event['event_status'] not in {'RESOLVED', 'RETRACTED'}),
-                             key=lambda event: event['event_key']),
-            'catalysts': [item for item in _catalysts(ledger, run['id'])
-                          if item['status'] not in {'OCCURRED', 'CANCELLED'}],
-            'theses': _theses(ledger, run['id']), 'open_follow_up_questions': questions,
-            'warnings': json.loads(run['summary_json']).get('warnings', [])}
+            'events': sorted(active_events, key=lambda e: e['event_key']),
+            'catalysts': sorted(active_catalysts, key=lambda c: c['catalyst_id']),
+            'theses': sorted(theses.values(), key=lambda t: t['thesis_id']),
+            'open_follow_up_questions': sorted(open_questions, key=lambda q: (q['event_key'], q['id'])),
+            'warnings': sorted(set(warnings))}
 
 
 def _links(snapshot, ids):
@@ -204,11 +248,69 @@ def _question_changes(before, after, old, new):
     return result
 
 
-def _compare_events(old, new, result):
+def _disputed_changes(old, new, before, after, result):
+    first = {f['fact_key']: f for f in before['verified_facts'] + before['disputed_facts']} if before else {}
+    second = {f['fact_key']: f for f in after['verified_facts'] + after['disputed_facts']} if after else {}
+    changed = False
+    for key in sorted(set(first) | set(second)):
+        a, b = first.get(key), second.get(key)
+        status_a = a['verification_status'] if a else None
+        status_b = b['verification_status'] if b else None
+        kind = None
+        if status_a == 'DISPUTED':
+            if b is None:
+                kind = 'DISPUTED_NOT_REOBSERVED'
+            elif status_b == 'VERIFIED':
+                kind = 'DISPUTED_TO_VERIFIED'
+            elif _text(a['statement']) != _text(b['statement']):
+                kind = 'DISPUTED_REVISED'
+        elif status_b == 'DISPUTED':
+            kind = 'VERIFIED_TO_DISPUTED' if a else 'DISPUTED_ADDED'
+        if kind:
+            changed = True
+            prior_sources = _links(old, [a['source_id']]) if a else []
+            current_sources = _links(new, [b['source_id']]) if b else []
+            result['disputed_claim_changes'].append({
+                'event_key': (after or before)['event_key'], 'fact_key': key,
+                'change_type': kind, 'before': a, 'after': b,
+                'from_run_id': result['from_run_id'], 'to_run_id': result['to_run_id'],
+                'before_observed_run_id': old['research_run_id'] if a else None,
+                'before_sources': prior_sources, 'after_sources': current_sources,
+                'sources': prior_sources + current_sources,
+                'source_ids': sorted({s['source_id'] for s in prior_sources + current_sources}),
+                'warning': 'DISPUTED is not a verified company fact. Missing or withdrawn verification does not establish that a claim was disproven or resolved.'})
+    return changed
+
+
+def _historical_events(ledger, baseline, keys):
+    historical = {}
+    for run in _history(ledger, baseline):
+        if run['id'] == baseline['id']:
+            continue
+        needed = [key for key in keys if key not in historical and ledger.connection.execute(
+            'SELECT 1 FROM research_news_events WHERE run_id=? AND event_key=?',
+            (run['id'], key)).fetchone()]
+        if needed:
+            snapshot = summary(ledger, run['id'])
+            for event in snapshot['events']:
+                if event['event_key'] in needed:
+                    historical[event['event_key']] = snapshot, event
+        if len(historical) == len(keys):
+            break
+    return historical
+
+
+def _compare_events(old, new, result, historical=None):
     first = {event['event_key']: event for event in old['events']}
     second = {event['event_key']: event for event in new['events']}
     for key in sorted(set(first) | set(second)):
         a, b = first.get(key), second.get(key)
+        effective_old = old
+        reobserved = False
+        if a is None and historical and key in historical:
+            effective_old, a = historical[key]
+            reobserved = True
+        disputed_changed = _disputed_changes(effective_old, new, a, b, result)
         if b is None:
             result['not_reobserved'].append({'kind': 'EVENT', 'event_key': key,
                                              'status': 'NOT_REOBSERVED', 'before': a,
@@ -246,24 +348,25 @@ def _compare_events(old, new, result):
             if any(_normalized(a[field]) != _normalized(b[field]) for field in keys):
                 changes.append(kind)
         if changes:
-            result['updated_events'].append({'event_key': key, 'change_types': changes,
+            if not reobserved:
+                result['updated_events'].append({'event_key': key, 'change_types': changes,
                                              'added_facts': added, 'revised_facts': revised,
                                              'removed_facts': removed, 'before': a, 'after': b,
                                              'sources': links,
-                                             'before_sources': _event_links(old, a),
+                                             'before_sources': _event_links(effective_old, a),
                                              'after_sources': links})
         else:
-            old_sources = _event_links(old, a)
+            old_sources = _event_links(effective_old, a)
             old_evidence = {source['url'] for source in old_sources}
             added_sources = [source for source in links
                              if source['url'] not in old_evidence]
             old_urls = {source['source_id']: source['url'] for source in old_sources}
             new_urls = {source['source_id']: source['url'] for source in links}
             old_refs = {(fact['fact_key'], old_urls[fact['source_id']], _text(fact['source_locator']))
-                        for fact in a['verified_facts']}
+                        for fact in a['verified_facts'] + a['disputed_facts']}
             new_refs = {(fact['fact_key'], new_urls[fact['source_id']], _text(fact['source_locator']))
-                        for fact in b['verified_facts']}
-            if added_sources or new_refs - old_refs:
+                        for fact in b['verified_facts'] + b['disputed_facts']}
+            if not disputed_changed and not reobserved and (added_sources or new_refs - old_refs):
                 result['new_evidence_only'].append({'event_key': key,
                                                     'added_source_ids': sorted(
                                                         source['source_id'] for source in added_sources),
@@ -271,7 +374,16 @@ def _compare_events(old, new, result):
                                                     'before_sources': old_sources,
                                                     'after_sources': links,
                                                     'sources': added_sources or links})
-        result['follow_up_changes'].extend(_question_changes(a, b, old, new))
+        if reobserved:
+            result['reobserved_events'].append({
+                'event_key': key, 'observation_status': 'REOBSERVED',
+                'last_observed_run_id': effective_old['research_run_id'],
+                'last_observed_as_of': effective_old['researched_as_of'],
+                'before': a, 'after': b, 'change_types': changes,
+                'added_facts': added, 'revised_facts': revised, 'removed_facts': removed,
+                'sources': links, 'before_sources': _event_links(effective_old, a),
+                'after_sources': links})
+        result['follow_up_changes'].extend(_question_changes(a, b, effective_old, new))
 
 
 def _compare_records(old, new, result, kind):
@@ -351,7 +463,10 @@ def compare(ledger, run_old, run_new):
         result['warnings'].append('Coverage is not fully comparable; missing stories remain unobserved.')
     if first['researched_as_of'] > second['researched_as_of']:
         result['warnings'].append('Selected newer run has an earlier research date; explicit order is preserved.')
-    _compare_events(old, new, result)
+    old_keys = {e['event_key'] for e in old['events']}
+    history_keys = {e['event_key'] for e in new['events']} - old_keys
+    historical = _historical_events(ledger, first, history_keys) if history_keys else {}
+    _compare_events(old, new, result, historical)
     _compare_records(old, new, result, 'CATALYST')
     _compare_records(old, new, result, 'THESIS')
     for key in DELTA_KEYS:

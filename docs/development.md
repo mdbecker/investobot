@@ -1,6 +1,19 @@
 # Development evidence
 All tests and dependency tools run in Docker. Conventional red/green commits track feature work. Synthetic BDD fixtures need no credentials or internet.
 
+## V2.7 continuity addendum
+
+The [continuity/disputed-claim addendum](PRD-v2.7-Addendum-Research-Continuity.md)
+is preserved. Red commit `78ed229` observed 13 failures and one existing passing
+resolution scenario; `b7165f1` exposes accepted-input idempotence across news-skill
+instruction versions. The frozen full offline mounted-source Docker suite passes
+536 tests and Ruff. Context reconstructs actual historical observations through
+compact same-company projections, with independent question closure and explicit
+staleness. Selected-baseline history bounds reobservations; disputed fact changes
+remain separately attributed. Schema 6 and JSON input 1.0 remain unchanged.
+News skill 1.0.1 leaves both other skills unchanged; old accepted hashes/version
+provenance survive identical imports without loading historical packages.
+
 ## V2.7 implementation evidence
 
 Red commits `8f29ee0`, `8697468`, `e6f589e` and `8193a1e` capture missing skill,
