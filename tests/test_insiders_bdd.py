@@ -534,3 +534,54 @@ def test_inconsistent_filing_rows_fail_without_storage(ctx, case):
         p['sources'][2]['source_locator'] = 'SEC accession 0000000001-26-999999 row 1'
     assert research(ctx, 'validate', ctx['file'], code=1)['error']
     assert not ctx['path'].exists()
+
+
+@given('an ordinary proxy asserts tenure after the research cutoff')
+def future_tenure(ctx):
+    ctx['package']['people'][0]['roles'][0].update(start_date='2099-01-01', end_date='2100-01-01')
+
+
+@when('the future tenure is validated')
+def validate_future_tenure(ctx):
+    ctx['error'] = research(ctx, 'validate', ctx['file'], code=1)
+
+
+@then('the unsupported dates are rejected without storage')
+def future_tenure_rejected(ctx):
+    assert ctx['error']['error'] and not ctx['path'].exists()
+
+
+@given('vesting terms contain an annual compensation amount')
+def quantified_terms(ctx):
+    ctx['package']['compensation'][0]['compensation_type'] = 'VESTING_TERMS'
+
+
+@when('the compensation terms are validated')
+def validate_terms(ctx):
+    ctx['error'] = research(ctx, 'validate', ctx['file'], code=1)
+
+
+@then('the invented quantified terms are rejected without storage')
+def terms_rejected(ctx):
+    assert ctx['error']['error'] and not ctx['path'].exists()
+
+
+@pytest.mark.parametrize('case', ['correction_of_duplicate', 'wrong_amendment_form',
+                                 'unexplained_indirect', 'unattributed_issuer'])
+def test_ambiguous_economic_or_source_associations_are_rejected(ctx, case):
+    p = ctx['package']
+    if case == 'correction_of_duplicate':
+        # A replacement of an excluded repeat must not create a second effective sale.
+        duplicate = p['transactions'][8]
+        duplicate.update(duplicate_of_id='sale', quantity='100', source_id='f4')
+        p['transactions'][7]['supersedes_id'] = 'duplicate-sale'
+    elif case == 'wrong_amendment_form':
+        p['sources'][3]['source_type'] = '5/A'
+    elif case == 'unexplained_indirect':
+        p['transactions'][0]['ownership_form'] = 'INDIRECT'
+    elif case == 'unattributed_issuer':
+        source = p['sources'][0]
+        source.update(source_type='ISSUER_DISCLOSURE', cik=None,
+                      publisher='Unrelated Fictional Issuer', url='https://example.invalid/proxy')
+    assert research(ctx, 'validate', ctx['file'], code=1)['error']
+    assert not ctx['path'].exists()

@@ -63,3 +63,13 @@ Feature: Source-backed management and insider research
     Given a fictional insider package with sourced people
     When unavailable research is inspected
     Then unknown runs and people are rejected without creating a ledger
+
+  Scenario: Undocumented future tenure cannot become reported history
+    Given an ordinary proxy asserts tenure after the research cutoff
+    When the future tenure is validated
+    Then the unsupported dates are rejected without storage
+
+  Scenario: Vesting conditions remain terms rather than annual pay
+    Given vesting terms contain an annual compensation amount
+    When the compensation terms are validated
+    Then the invented quantified terms are rejected without storage
