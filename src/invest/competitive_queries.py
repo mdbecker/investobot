@@ -123,7 +123,7 @@ def _segment_matches(metric, peer_id, overlaps):
     if not overlap or overlap['peer_id'] != peer_id:
         return False
     expected = overlap['subject_segment' if metric['entity_id'] == 'subject' else 'peer_segment']
-    return metric['segment_name'] == expected
+    return ' '.join(metric['segment_name'].split()) == ' '.join(expected.split())
 
 
 def _precision(first, second):

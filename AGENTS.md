@@ -90,3 +90,4 @@
 - Peer matrices compare exact definitions, basis, units, dates and scope. Segment pairs require the same explicit overlap and corresponding named segments. Never infer FX, quarterization or equivalence from labels.
 - Competitive list projects compact metadata; only show reads package_json. Preview and reads use read-only ledger access and never create the selected database; accepted research never changes planning fingerprints.
 - Complete V2.8 BDD scenarios must be observed red before feature implementation. Keep remote CI and real-company human source review separate from fictional offline Docker acceptance.
+- Serialize competitive Decimal values in plain notation before trimming trailing zeros; exponent strings can corrupt magnitude. Matrix segment-name whitespace matching must agree with validation.

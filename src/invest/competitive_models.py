@@ -5,7 +5,7 @@ from datetime import date
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_serializer, field_validator, model_validator
 
 from invest.earnings_models import (
     CIK,
@@ -150,6 +150,11 @@ class CompetitiveMetric(StrictModel):
     overlap_id: Identifier | None = None
     source_id: Identifier
     source_locator: Text
+
+    @field_serializer('value')
+    def plain_decimal(self, value):
+        # The trailing-zero hash normalizer accepts plain decimals only.
+        return format(value, 'f')
 
     @model_validator(mode='after')
     def reported(self):
