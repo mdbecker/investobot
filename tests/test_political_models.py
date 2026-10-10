@@ -172,3 +172,8 @@ def test_unrelated_additional_source_cannot_verify_identity():
     incoming['sources'][1]['source_type'] = 'COMMITTEE_METADATA'
     with pytest.raises(ValueError, match='identity'):
         PoliticalResearchInput.model_validate(incoming)
+
+
+def test_amount_schema_matches_decimal_string_contract():
+    schema = PoliticalResearchInput.model_json_schema()
+    assert schema['$defs']['Contribution']['properties']['amount_usd']['type'] == 'string'
