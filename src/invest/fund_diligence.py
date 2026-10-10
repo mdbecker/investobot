@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from invest.fund_diligence_models import FundDiligenceInput
 from invest.research_identity import verify_company
@@ -67,6 +68,12 @@ def canonical_package(payload):
     identity = dict(skill_name=name, skill_version=entry['skill_version'],
                     schema_version=entry['schema_version'], research_type=data['research_type'])
     package, run_id = canonical_json_hash(data, identity)
+    if data['holdings_snapshot']['coverage'] == 'TOP_N':
+        # Hash identified collections by stable ID, but keep serialized TOP_N
+        # evidence valid under its descending-weight input contract. Ties retain
+        # the stable ID order established above; original weights never change.
+        data['holdings'].sort(key=lambda item: Decimal(item['weight_pct']), reverse=True)
+        package = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
     return data, package, run_id, identity
 
 

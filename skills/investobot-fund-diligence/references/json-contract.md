@@ -13,7 +13,7 @@ registrant/series/class evidence; verify SEC URL CIK/accession against the cited
 filing. Source credentials or ambiguous locators are rejected. Preserve observation,
 publication, filing and access dates independently.
 
-Use unique IDs within each collection and valid same-run citations. Use plain
+Use unique IDs across all collections and valid same-run citations. Use plain
 Decimal strings, never JSON floats or exponent notation. Metric code/unit/scope
 and date constraints come from the schema. Negative metrics are permitted only
 for average premium/discount. Fee/distribution facts are class-specific; duplicate

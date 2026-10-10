@@ -277,3 +277,7 @@ research hash contracts stay unchanged. `list`, `summary` and `holdings` select
 compact relational fields; only `show` reads `package_json`. Research rows do not
 enter financial/planning state or provider caches. No migration or automatic
 reset is supported; schema 9 is rejected without modification.
+
+Fund hashes order holdings by stable ID. Serialized TOP_N packages retain
+weight-descending order (ties by ID) so accepted input can pass its own contract
+on reimport; this representation ordering does not change the content hash.

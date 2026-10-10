@@ -4,7 +4,7 @@ import re
 from datetime import date
 from decimal import Decimal, localcontext
 from typing import Annotated, Literal
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from pydantic import Field, field_serializer, field_validator, model_validator
 
@@ -90,6 +90,9 @@ class FundSource(StrictModel):
         for observed in (self.published_at, self.filed_at):
             if observed and observed > self.accessed_at:
                 raise ValueError('source disclosure follows access date')
+        query_accession = parse_qs(urlsplit(self.url).query).get('accession_number')
+        if query_accession and query_accession != [self.accession_number]:
+            raise ValueError('URL accession locator contradicts reported source accession')
         if sec_host(self.url):
             parts = urlsplit(self.url)
             archive = re.search(r'/Archives/edgar/data/(\d+)/(\d{18})/', parts.path, re.I)
@@ -189,7 +192,9 @@ class FundMetric(StrictModel):
                 raise ValueError('distribution needs identified payable or ex date')
         if self.waiver_end_date and self.code != 'NET_EXPENSE_RATIO':
             raise ValueError('waiver expiration belongs to reported net expenses')
-        if self.code == 'NET_EXPENSE_RATIO' and 'waiver' in self.notes.lower() and not self.waiver_end_date:
+        no_waiver = re.search(r'\bno\s+(?:fee\s+)?waiver\b|\bnot\s+waived\b', self.notes, re.I)
+        if (self.code == 'NET_EXPENSE_RATIO' and 'waiver' in self.notes.lower()
+                and not no_waiver and not self.waiver_end_date):
             if not re.search(r'unknown|not (?:disclosed|verified|available)|could not|unverified',
                              self.notes, re.I):
                 raise ValueError('undisclosed waiver expiry requires an explicit limitation')
@@ -228,6 +233,18 @@ class FundDiligenceInput(StrictModel):
             raise ValueError('limitations must be distinct')
         if self.scope.coverage_status != 'COMPLETE_WITHIN_DECLARED_SCOPE' and not self.limitations:
             raise ValueError('partial/blocked research requires limitations')
+        codes = {metric.code for metric in self.metrics}
+        missing_components = (
+            self.holdings_snapshot.coverage != 'FULL'
+            or not {'GROSS_EXPENSE_RATIO', 'NET_EXPENSE_RATIO', 'PORTFOLIO_TURNOVER'} <= codes
+            or not codes & DISTRIBUTION_CODES
+            or (self.fund.fund_type == 'ETF' and not codes & ETF_CODES)
+            or (self.fund.strategy_type == 'INDEX' and any(
+                getattr(self.methodology, key) is None for key in
+                ('selection_rules', 'weighting_method', 'rebalance_policy', 'reconstitution_policy')))
+        )
+        if missing_components and not self.limitations:
+            raise ValueError('unavailable important disclosures require explicit limitations')
         records = self.sources + self.holdings + self.metrics + self.findings
         if len({record.id for record in records}) != len(records):
             raise ValueError('all in-run record IDs must be unique')
@@ -246,7 +263,12 @@ class FundDiligenceInput(StrictModel):
                     and source.series_id == self.fund.series_id
                     and source.class_id == self.fund.class_id):
                 path = urlsplit(source.url).path.lower()
-                identity_proven |= bool(source.accession_number or 'series' in path or 'browse' in path)
+                archive = re.fullmatch(r'/archives/edgar/data/\d+/\d{18}/[^/]+', path)
+                series_record = path in {'/cgi-bin/browse-edgar', '/cgi-bin/series', '/edgar/browse/'}
+                explicit_record = (self.fund.series_id in source.source_locator
+                                   and self.fund.class_id in source.source_locator)
+                identity_proven |= bool((archive and source.accession_number)
+                                        or (series_record and explicit_record))
         if not identity_proven:
             raise ValueError('original SEC evidence must prove registrant, series and exact class identity')
 
