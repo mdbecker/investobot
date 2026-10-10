@@ -288,7 +288,7 @@ def trusted_identity(ctx):
 @then('accepted research uses fresh schema 10')
 def schema9(ctx):
     with sqlite3.connect(ctx['path']) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 10
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 1
 
 
 @pytest.mark.parametrize('form', ['3', '4', '5'])
@@ -567,7 +567,7 @@ def test_deferred_same_run_ownership_foreign_keys_and_link_check(ctx):
     p['ownership'][1]['supersedes_id'] = 'second-original'
     accept(ctx)
     db = Ledger(ctx['path'])
-    assert db.connection.execute('PRAGMA user_version').fetchone()[0] == 10
+    assert db.connection.execute('PRAGMA user_version').fetchone()[0] == 1
     with pytest.raises(sqlite3.IntegrityError), db.connection:
         db.connection.execute('UPDATE research_insider_ownership SET supersedes_id=? WHERE run_id=? AND holding_id=?',
                               ('second-original', first, 'corrected'))

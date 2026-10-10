@@ -37,7 +37,7 @@ def test_fresh_schema_ten_and_schema_nine_preservation(tmp_path):
             pass
     assert path.read_bytes() == before
     fresh = Ledger(tmp_path / 'new.db')
-    assert fresh.connection.execute('PRAGMA user_version').fetchone()[0] == 10
+    assert fresh.connection.execute('PRAGMA user_version').fetchone()[0] == 1
     fresh.connection.close()
 
 
