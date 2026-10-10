@@ -3,6 +3,7 @@ import hashlib
 import json
 import sqlite3
 import tarfile
+import threading
 
 import pytest
 from pytest_bdd import given, scenarios, then, when
@@ -37,7 +38,9 @@ def accepted(recovery):
     ledger.apply({"account": {"id": "fictional", "name": "Fictional IRA",
                               "tax_status": "TAX_FREE"},
                   "positions": [{"security": "DEMO", "quantity": "10",
-                                 "price": "100", "market_value": "1000"}],
+                                 "price": "100", "market_value": "1000",
+                                 "displayed_price_precision": 2,
+                                 "displayed_market_value_precision": 2}],
                   "cash": "100", "cash_known": True,
                   "source_timestamp": "2026-10-09", "source_hash": "fictional",
                   "data_environment": "SYNTHETIC"})
@@ -49,10 +52,42 @@ def accepted(recovery):
 @when("an online recovery archive is created")
 def backup(recovery):
     reader = sqlite3.connect(recovery["path"])
+    # B01 tests backup consistency; the separate first-install scenario tests
+    # writer configuration. Prepare WAL so the old reader cannot block setup.
+    reader.execute("PRAGMA journal_mode=WAL")
     reader.execute("BEGIN")
     reader.execute("SELECT count(*) FROM accounts").fetchone()
-    recovery["backup"] = invoke(recovery, "db", "backup", "--output", str(recovery["archive"]))
-    reader.close()
+    started = threading.Event()
+    stop = threading.Event()
+    errors = []
+
+    def write_deposits():
+        writer = Ledger(recovery["path"])
+        try:
+            for number in range(20):
+                writer.record_activity({"activity_id": f"concurrent-{number}",
+                    "account_id": "fictional", "type": "CASH_DEPOSIT",
+                    "amount": "1", "date": "2026-10-10"}, yes=True)
+                started.set()
+                if stop.is_set():
+                    break
+        except Exception as error:
+            errors.append(error)
+            started.set()
+        finally:
+            writer.connection.close()
+
+    thread = threading.Thread(target=write_deposits)
+    thread.start()
+    try:
+        assert started.wait(5), "Synthetic writer did not start within bounded timeout"
+        recovery["backup"] = invoke(recovery, "db", "backup", "--output", str(recovery["archive"]))
+    finally:
+        stop.set()
+        thread.join(5)
+        reader.close()
+    assert not thread.is_alive()
+    assert not errors, errors
 
 
 @then("the archive verifies and restores the complete accepted state")
@@ -62,7 +97,11 @@ def roundtrip(recovery):
     assert successful(invoke(recovery, "db", "verify", str(recovery["archive"])))["status"] == "AVAILABLE"
     successful(invoke(recovery, "db", "restore", str(recovery["archive"]), "--confirm"))
     ledger = Ledger(recovery["path"])
-    assert ledger.state() == recovery["state"]
+    state = ledger.state()
+    deposits = [event for event in state["activities"] if event["type"] == "CASH_DEPOSIT"]
+    assert 1 <= len(deposits) <= 20
+    assert state["cash_balances"][0]["amount"] == str(100 + len(deposits))
+    assert state["positions"] == recovery["state"]["positions"]
     ledger.connection.close()
 
 

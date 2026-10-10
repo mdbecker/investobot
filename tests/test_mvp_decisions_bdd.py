@@ -31,10 +31,13 @@ def household(decision, case):
         'account': {'id': 'ira', 'name': 'Fictional IRA', 'tax_status': 'TAX_FREE',
                     'currency': 'USD', 'history_complete': True},
         'positions': [{'security': 'WRAP', 'asset_type': 'ETF', 'quantity': quantity,
-                       'price': '100', 'market_value': value, 'as_of': observed}],
+                       'price': '100', 'market_value': value, 'as_of': observed,
+                       'displayed_price_precision': 2, 'displayed_market_value_precision': 2}],
         'lots': [{'id': 'fictional-wrap-lot', 'security': 'WRAP', 'quantity': quantity,
                   'remaining_quantity': quantity, 'cost_basis': str(Decimal(quantity) * 50),
-                  'acquisition_date': '2024-01-01'}],
+                  'acquisition_date': '2024-01-01', 'source_lot_id': 'fictional-wrap-lot',
+                  'identity_status': 'VERIFIED',
+                  'identity_source': 'Fictional reviewed immutable broker lot reference'}],
         'cash': cash, 'source_hash': 'fictional-decisions',
         'source_timestamp': observed,
         'data_environment': 'REAL' if case == 'B17' else 'SYNTHETIC',
@@ -101,14 +104,15 @@ def evaluate(decision):
                                      policy=decision['policy'], mode=mode, as_of=as_of,
                                      prices=prices)
         if case == 'B37':
-            from invest.plan_storage import load_plan, summaries
+            from invest.plan_storage import load_plan
+            from invest.plans import list_plans
 
             decision['saved_actions'] = copy.deepcopy(decision['result']['proposed_actions'])
             decision['ledger'].record_activity({
                 'activity_id': 'fictional-deposit-2', 'account_id': 'ira',
                 'type': 'CASH_DEPOSIT', 'date': '2026-10-11', 'amount': '100'}, yes=True)
             decision['loaded'] = load_plan(decision['ledger'], decision['result']['id'])
-            decision['listed'] = summaries(decision['ledger'])
+            decision['listed'] = list_plans(decision['ledger'])['plans']
     elif case <= 'B44' or case == 'B47':
         from invest.lookthrough import exposure, research_universe
 
@@ -244,7 +248,7 @@ def acceptance(decision, case):
         assert result['mode'] == 'HYPOTHETICAL_CURRENT_ALLOCATION'
         assert result['assumptions']['cash_return'] == '0'
         assert result['assumptions']['modeled_taxes'] is False
-        assert Decimal(result['total_return']) == Decimal('-0.01')
+        assert Decimal(result['total_return']) == Decimal('-0.008')
     if case != 'B37':
         assert decision['ledger'].state() == decision['before']
         assert decision['ledger'].rows('market_data_cache') == []
@@ -255,8 +259,6 @@ def extended_evaluate(decision):
     case = decision['case']
     ledger = decision['ledger']
     if case.startswith('P_'):
-        from invest.planning import propose
-
         if case == 'P_CONFIRMED_CADENCE':
             ledger.record_activity({
                 'activity_id': 'fictional-confirmed-buy', 'account_id': 'ira',
@@ -271,15 +273,37 @@ def extended_evaluate(decision):
             row['asset_type'] = 'BOND'
             ledger.put('securities', row['id'], row)
         if case == 'P_LOSS_BUDGET':
+            ledger.apply({
+                'account': {'id': 'taxable', 'name': 'Fictional taxable account',
+                            'tax_status': 'TAXABLE', 'history_complete': True},
+                'positions': [{'security': 'WRAP', 'asset_type': 'ETF', 'quantity': '2',
+                               'price': '100', 'market_value': '200', 'cost_basis': '100',
+                               'as_of': '2026-10-01'}],
+                'lots': [{'id': 'tax-lot', 'security': 'WRAP', 'quantity': '2',
+                          'remaining_quantity': '2', 'cost_basis': '100',
+                          'acquisition_date': '2024-01-01'}],
+                'cash': '0', 'source_hash': 'fictional-tax-budget',
+                'source_timestamp': '2026-10-01', 'positions_complete': True,
+                'lots_complete': True, 'data_environment': 'SYNTHETIC'})
+            for identifier, price, day in [('gain', '200', '2026-10-02'),
+                                            ('loss', '25', '2026-10-03')]:
+                ledger.record_activity({
+                    'activity_id': 'fictional-' + identifier, 'account_id': 'taxable',
+                    'type': 'SELL', 'date': day, 'security': 'WRAP', 'quantity': '1',
+                    'price': price, 'fee': '0',
+                    'lot_allocations': [{'lot_id': 'tax-lot', 'quantity': '1'}]}, yes=True)
             decision['policy']['annual_tax_budget'] = {
-                'year': 2026, 'allowed_estimated_tax': '100',
-                'confirmed_positive_tax_consumption': '100',
-                'confirmed_realized_losses': '5000', 'coverage_complete': True,
-                'short_term_rate': '0.3', 'long_term_rate': '0.15', 'currency': 'USD'}
+                'year': 2026, 'annual_allowance': '30', 'taxable_history_complete': True,
+                'short_term_rate': '0.4', 'long_term_rate': '0.2', 'currency': 'USD',
+                'data_environment': 'SYNTHETIC',
+                'source': 'Fictional complete account history attestation',
+                'as_of': '2026-10-10T12:00:00Z'}
         decision['before'] = copy.deepcopy(ledger.state())
         options = dict(policy=decision['policy'], mode='contributions-only',
                        as_of='2026-10-10',
                        prices={decision['wrap']: '100', decision['child']: '100'})
+        from invest.planning import propose
+
         decision['result'] = propose(ledger, decision['target'], **options)
         if case == 'P_UNCONFIRMED_CADENCE':
             decision['repeat'] = propose(ledger, decision['target'], **options)
@@ -374,7 +398,8 @@ def extended_acceptance(decision, case):
         assert any(issue['code'] == 'INDIVIDUAL_BOND_REQUIRES_SCENARIO'
                    for issue in result['issues'])
     elif case == 'P_LOSS_BUDGET':
-        assert Decimal(result['tax_budget']['remaining_headroom']) == 0
+        assert Decimal(result['tax_budget']['remaining_allowance']) == 0
+        assert Decimal(result['tax_budget']['year_to_date_consumption']) == 30
         assert not any(action['type'] == 'SELL' for action in actions)
     elif case == 'L_DEPTH_BOUND':
         assert Decimal(result['unknown_exposure_value']) == 8000
@@ -401,6 +426,6 @@ def extended_acceptance(decision, case):
                    for issue in decision['comparison']['issues'])
     elif case == 'H_PINNED_READ':
         assert decision['comparison']['status'] == 'COMPARABLE'
-        assert all(Decimal(row['total_return']) == Decimal('-0.01')
+        assert all(Decimal(row['total_return']) == Decimal('-0.008')
                    for row in decision['comparison']['runs'])
     assert decision['ledger'].state() == decision['before']

@@ -1,0 +1,878 @@
+{
+  "baseline_commit": "5120897e9e5a314ad50fb242ad1496d976549a92",
+  "specification_pinned_baseline": {
+    "commit": "d31316c8fbda0c2a5aa27a989c1341bcd1d57a31",
+    "tests_passed": 752,
+    "ruff": "PASSED"
+  },
+  "data_environment": "SYNTHETIC",
+  "execution": "offline Docker",
+  "baseline_tests_passed": 862,
+  "red_scenarios": [
+    {
+      "scenario": "test_b06_reject_a_contradictory_position_value_atomically",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Missing typed blocking issue INCONSISTENT_POSITION_VALUE\nassert 'INCONSISTENT_POSITION_VALUE' in set()\n +  where set() = issue_codes({'account_id': 'taxable', 'changes': [{'kind': 'market_value', 'security': 'FICTION', 'before': '1000', 'after': '100'...'kind': 'cost_basis', 'security': 'FICTION', 'before': '900', 'after': '900', ...}], 'classification_reviews': [], ...})\n +    where {'account_id': 'taxable', 'changes': [{'kind': 'market_value', 'security': 'FICTION', 'before': '1000', 'after': '100'...'kind': 'cost_basis', 'security': 'FICTION', 'before': '900', 'after': '900', ...}], 'classification_reviews': [], ...} = <built-in method get of dict object at 0xffff5cae0780>('result', {})\n +      where <built-in method get of dict object at 0xffff5cae0780> = {'ledger': <invest.ledger.Ledger object at 0xffff641abef0>, 'directory': PosixPath('<temporary-fixture>'), 'runner': <typer.testing.CliRunner object at 0xffff5cc2f4a0>, 'case': 'B06', ...}.get"
+    },
+    {
+      "scenario": "test_b07_preserve_confirmed_purchases_after_an_older_observation",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert Decimal('10') == 11\n +  where Decimal('10') = Decimal('10')"
+    },
+    {
+      "scenario": "test_b08_block_ambiguous_dateonly_event_ordering",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Missing typed blocking issue AMBIGUOUS_SOURCE_ORDER\nassert 'AMBIGUOUS_SOURCE_ORDER' in set()\n +  where set() = issue_codes({'account_id': 'taxable', 'changes': [{'kind': 'quantity', 'security': 'FICTION', 'before': '11', 'after': '10', ...},...': [{'kind': 'price', 'security': 'FICTION', 'before': '100', 'after': '100', ...}], 'classification_reviews': [], ...})\n +    where {'account_id': 'taxable', 'changes': [{'kind': 'quantity', 'security': 'FICTION', 'before': '11', 'after': '10', ...},...': [{'kind': 'price', 'security': 'FICTION', 'before': '100', 'after': '100', ...}], 'classification_reviews': [], ...} = <built-in method get of dict object at 0xffff5c7e20c0>('result', {})\n +      where <built-in method get of dict object at 0xffff5c7e20c0> = {'ledger': <invest.ledger.Ledger object at 0xffff5cc2fdd0>, 'directory': PosixPath('<temporary-fixture>'), 'runner': <typer.testing.CliRunner object at 0xffff5cc2f440>, 'case': 'B08', ...}.get"
+    },
+    {
+      "scenario": "test_b09_retain_omitted_inventory_and_unknown_cash",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Unknown cash must never serialize as zero\nassert '0' is None"
+    },
+    {
+      "scenario": "test_b10_preserve_broker_lot_identity_and_adjusted_remaining_basis",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Source-backed adjusted remaining basis must be accepted\nassert 'error' not in {'ledger': <invest.ledger.Ledger object at 0xffff5d4e1550>, 'directory': PosixPath('<temporary-fixture>'), 'runner': <typer.testing.CliRunner object at 0xffff63d8c890>, 'case': 'B10', ...}"
+    },
+    {
+      "scenario": "test_b11_confirmed_activity_retries_are_idempotent_and_conflicts_atomic",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Conflicts require a machine-readable issue\nassert 'ACTIVITY_ID_CONFLICT' in set()\n +  where set() = issue_codes({})\n +    where {} = getattr(DomainError('Activity ID already exists with different content'), 'result', {})"
+    },
+    {
+      "scenario": "test_b12_a_purchase_does_not_invent_a_valuation_mark",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None == 'PARTIAL'\n +  where None = <built-in method get of dict object at 0xffff5c834640>('status')\n +    where <built-in method get of dict object at 0xffff5c834640> = {'currency': 'USD', 'total_value': '1980', 'cash': '980', 'by_account': {'taxable': '1980'}, ...}.get"
+    },
+    {
+      "scenario": "test_b13_corporate_actions_and_reinvestment_have_distinct_economic_meanings",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: 1 validation error for Activity\n  type\n    Input should be 'BUY', 'SELL', 'TRANSFER_IN', 'TRANSFER_OUT', 'DIVIDEND', 'INTEREST', 'FEE', 'CASH_DEPOSIT' or 'CASH_WITHDRAWAL' [type=literal_error, input_value='DIVIDEND_REINVESTMENT', input_type=str]\n      For further information visit https://errors.pydantic.dev/2.14/v/literal_error\nassert 'event_error' not in {'ledger': <invest.ledger.Ledger object at 0xffff63cc9040>, 'directory': PosixPath('<temporary-fixture>'), 'runner': <typer.testing.CliRunner object at 0xffff63d8cb30>, 'case': 'B13', ...}"
+    },
+    {
+      "scenario": "test_b14_strong_identity_conflicts_cannot_merge_common_ticker_aliases",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Missing typed blocking issue SECURITY_IDENTITY_CONFLICT\nassert 'SECURITY_IDENTITY_CONFLICT' in set()\n +  where set() = issue_codes({})\n +    where {} = <built-in method get of dict object at 0xffff5c810740>('result', {})\n +      where <built-in method get of dict object at 0xffff5c810740> = {'ledger': <invest.ledger.Ledger object at 0xffff5cb351c0>, 'directory': PosixPath('<temporary-fixture>'), 'runner': <typer.testing.CliRunner object at 0xffff5d4e66f0>, 'case': 'B14', ...}.get"
+    },
+    {
+      "scenario": "test_b15_summary_tables_are_not_extra_holdings",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert ['FICTION', 'TOTAL'] == ['FICTION']\n  \n  Left contains one more item: 'TOTAL'\n  Use -v to get more diff"
+    },
+    {
+      "scenario": "test_b20_exact_flowboundary_twr_is_21_percent",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required public command unavailable: ['portfolio', 'performance', '--from', '2025-10-10', '--to', '2026-10-10']; stderr={\"error\": \"No such command 'performance'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b21_xirr_uses_actual_days_and_is_money_weighted",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required public command unavailable: ['portfolio', 'performance', '--from', '2025-10-10', '--to', '2026-10-10']; stderr={\"error\": \"No such command 'performance'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b22_paired_household_transfers_are_not_investor_contributions",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_b23_reinvestment_is_not_an_investor_deposit",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required public command unavailable: ['portfolio', 'performance', '--from', '2025-10-10', '--to', '2026-10-10']; stderr={\"error\": \"No such command 'performance'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b24_missing_depositboundary_valuation_makes_twr_unavailable",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required public command unavailable: ['portfolio', 'performance', '--from', '2025-10-10', '--to', '2026-10-10']; stderr={\"error\": \"No such command 'performance'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b25_currentweight_historical_risk_is_hypothetical",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None == 'HYPOTHETICAL_CURRENT_ALLOCATION'\n +  where None = <built-in method get of dict object at 0xffff5cab4b00>('mode')\n +    where <built-in method get of dict object at 0xffff5cab4b00> = {'position_concentration': {'largest_weight': 0.5, 'hhi': 0.25, 'effective_positions': 4.0}, 'provenance': {'FICTION':... weights rebalanced each observation; cash return assumed zero; no fees/taxes; not realized account performance'], ...}.get"
+    },
+    {
+      "scenario": "test_b26_confirmed_gains_consume_annual_positivetax_headroom",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_b27_saved_proposals_do_not_consume_annual_allowance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_b28_household_ira_acquisitions_trigger_losssale_review",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Household harvest review capability with explicit policy is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_b29_missing_outsideaccount_history_cannot_establish_legal_safety",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Household harvest review capability with explicit policy is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_b30_specificlot_sale_conserves_remaining_adjusted_basis",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert Decimal('360') == 270\n +  where Decimal('360') = Decimal('360')"
+    },
+    {
+      "scenario": "test_ac01_source_displayed_precision_determines_rounding_tolerance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Reconciliation omits source-precision value diagnostics\nassert None\n +  where None = <built-in method get of dict object at 0xffff5caf2340>('value_checks')\n +    where <built-in method get of dict object at 0xffff5caf2340> = {'account_id': 'taxable', 'changes': [{'kind': 'quantity', 'security': 'FICTION', 'before': '10', 'after': '1000', ...... 'before': '900', 'after': None, ...}, {'kind': 'lots', 'status': 'UNKNOWN_VALUE'}], 'classification_reviews': [], ...}.get"
+    },
+    {
+      "scenario": "test_ac02_unknown_displayed_price_precision_blocks_acceptance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert 'UNKNOWN_PRICE_PRECISION' in set()\n +  where set() = issue_codes({'account_id': 'taxable', 'changes': [], 'observations': [{'kind': 'quantity', 'security': 'FICTION', 'before': '10', ...'kind': 'cost_basis', 'security': 'FICTION', 'before': '900', 'after': '900', ...}], 'classification_reviews': [], ...})"
+    },
+    {
+      "scenario": "test_ac03_invalid_source_timestamps_are_rejected_before_persistence",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "assert False\n +  where False = any(<generator object strict_model.<locals>.<genexpr> at 0xffff5c9243c0>)"
+    },
+    {
+      "scenario": "test_ac04_unknown_observation_fields_do_not_disappear_silently",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "assert False\n +  where False = any(<generator object strict_model.<locals>.<genexpr> at 0xffff5c925e00>)"
+    },
+    {
+      "scenario": "test_ac05_domain_provenance_does_not_borrow_freshness_from_another_balance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None == {'positions': {'source_timestamp': '2026-10-10', 'coverage': 'COMPLETE'}, 'lots': {'source_timestamp': '2026-07-01', 'coverage': 'PARTIAL'}, 'cash': {'source_timestamp': None, 'coverage': 'UNKNOWN'}}\n +  where None = <built-in method get of dict object at 0xffff5cb82140>('provenance')\n +    where <built-in method get of dict object at 0xffff5cb82140> = {'account': {'id': 'taxable', 'name': 'Fictional taxable', 'institution': 'manual', 'account_type': 'brokerage', ...},...ble-broker-lot', 'security': 'FICTION', 'acquisition_date': '2024-01-01', 'quantity': '10', ...}], 'cash': '1000', ...}.get"
+    },
+    {
+      "scenario": "test_ac06_unvalidated_institution_adapters_require_human_review",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None == 'PROVISIONAL'\n +  where None = <built-in method get of dict object at 0xffff66ce7200>('institution_status')\n +    where <built-in method get of dict object at 0xffff66ce7200> = {'account': {'id': 'fictional', 'name': 'fictional', 'institution': 'vanguard', 'account_type': 'brokerage', ...}, 'po...-c6acab8d4356ea5f', 'security': 'FICTION', 'acquisition_date': '2024-01-01', 'quantity': '10', ...}], 'cash': '0', ...}.get"
+    },
+    {
+      "scenario": "test_ac07_parser_preserves_cell_provenance_without_storing_raw_pages",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None\n +  where None = <built-in method get of dict object at 0xffff5d4fa440>('quantity')\n +    where <built-in method get of dict object at 0xffff5d4fa440> = {}.get\n +      where {} = <built-in method get of dict object at 0xffff64466d00>('cell_provenance', {})\n +        where <built-in method get of dict object at 0xffff64466d00> = {'security': 'FICTION', 'name': '', 'asset_type': 'OTHER', 'quantity': '10', ...}.get"
+    },
+    {
+      "scenario": "test_ac08_mutable_rows_cannot_become_automatically_saleable_tax_lots",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert None == 'UNRESOLVED'\n +  where None = <built-in method get of dict object at 0xffff5c71ce80>('identity_status')\n +    where <built-in method get of dict object at 0xffff5c71ce80> = {'id': 'fictional-FICTION-c6acab8d4356ea5f', 'security': 'FICTION', 'acquisition_date': '2024-01-01', 'quantity': '10', ...}.get"
+    },
+    {
+      "scenario": "test_ac09_later_full_snapshots_cannot_silently_overwrite_event_discrepancies",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert 'CONFIRMED_EVENT_DISCREPANCY' in set()\n +  where set() = issue_codes({'account_id': 'taxable', 'changes': [{'kind': 'quantity', 'security': 'FICTION', 'before': '11', 'after': '10', ...},...': [{'kind': 'price', 'security': 'FICTION', 'before': '100', 'after': '100', ...}], 'classification_reviews': [], ...})"
+    },
+    {
+      "scenario": "test_ac10_preflight_is_typed_and_read_only",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required public command unavailable: ['portfolio', 'check', '--as-of', '2026-10-10']; stderr={\"error\": \"No such command 'check'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_ac11_final_specific_lot_sale_removes_exact_adjusted_basis_residue",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert Decimal('0.01') == 0\n +  where Decimal('0.01') = Decimal('0.01')"
+    },
+    {
+      "scenario": "test_ap01_partial_valuation_invalidates_its_actual_return_interval",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_ap02_missing_cash_flow_coverage_cannot_fabricate_actual_returns",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_ap03_multiple_xirr_roots_are_unavailable_rather_than_a_selected_favorable_root",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_ap04_xirr_without_a_cash_flow_sign_change_is_unavailable",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_ap05_actual_cagr_uses_supported_duration_and_linked_twr",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_ap06_total_actual_loss_annualizes_to_minus_one",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public actual-performance calculation capability is absent"
+    },
+    {
+      "scenario": "test_at01_two_monthly_confirmed_sales_share_one_annual_allowance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at02_realized_losses_cannot_replenish_conservative_tax_allowance",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at03_positive_short_and_long_term_gains_use_separate_marginal_rates",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at04_unknown_marginal_rates_block_gain_realization_without_blocking_cash_purchases",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at05_non_usd_tax_units_cannot_enter_household_allowance_math",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Annual positive-tax-dollar budget calculation is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at06_exactly_thirty_days_before_a_loss_sale_remains_in_the_wash_window",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Household harvest review capability with explicit policy is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_at07_thirty_one_days_before_is_outside_the_inspected_window",
+      "file": "tests.test_mvp_accounting_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Household harvest review capability with explicit policy is absent\nassert False\n +  where False = callable(None)"
+    },
+    {
+      "scenario": "test_b16_missing_dividend_adjustment_is_unavailable",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert 'DATA_UNAVAILABLE' == 'UNAVAILABLE'\n  \n  - UNAVAILABLE\n  + DATA_UNAVAILABLE\n  ? +++++"
+    },
+    {
+      "scenario": "test_b18_historical_holdings_select_an_eligible_vintage",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Pinned immutable analytical dataset reader is required"
+    },
+    {
+      "scenario": "test_b19_pinned_analytical_reads_are_reproducible_and_read_only",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Pinned immutable analytical dataset reader is required"
+    },
+    {
+      "scenario": "test_b65_native_inspection_refuses_public_exposure",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "assert None is not None"
+    },
+    {
+      "scenario": "test_b66_fresh_quickstart_discovers_all_portable_workflows",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "assert 'investobot-portfolio-sync' in '{\"skills\": [{\"name\": \"investobot-competitive\", \"skill_version\": \"1.0.0\", \"description\": \"Research company operating c... contributions and permitted source evidence.\", \"research_command\": \"research.political\", \"schema_version\": \"1.0\"}]}\\n'"
+    },
+    {
+      "scenario": "test_offline_analytics_loads_pinned_analytical_extensions_without_downloads",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Pinned immutable analytical dataset reader is required"
+    },
+    {
+      "scenario": "test_manifest_verification_detects_damaged_immutable_evidence",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Pinned immutable analytical dataset reader is required"
+    },
+    {
+      "scenario": "test_published_source_dates_cannot_be_replaced_by_retrieval_freshness",
+      "file": "tests.test_mvp_datasets_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: assert 'AVAILABLE' == 'REVIEW_REQUIRED'\n  \n  - REVIEW_REQUIRED\n  + AVAILABLE"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B17]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B31]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B32]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B33]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B34]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B35]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B36]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B37]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B38]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B31_UNKNOWN_FEE]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B31_UNCONFIRMED_CASH]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_contributionfirst_plan_safeguards[B31_UNKNOWN_POLICY]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B39]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B40]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B41]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B42]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B43]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_recursive_exposure_preserves_unknown_coverage[B44]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_historical_strategy_comparisons_do_not_imply_actual_performance[B45]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_historical_strategy_comparisons_do_not_imply_actual_performance[B46]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_historical_strategy_comparisons_do_not_imply_actual_performance[B47]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_historical_strategy_comparisons_do_not_imply_actual_performance[B48]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_CONFIRMED_CADENCE]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_UNCONFIRMED_CADENCE]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_CASH_FLOOR]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_MINIMUM_NOTIONAL]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_INDIVIDUAL_BOND]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[P_LOSS_BUDGET]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.planning'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[L_DEPTH_BOUND]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[L_UNKNOWN_ISSUER]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[L_MINIMUM_TIES]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[L_PUBLICATION_CUTOFF]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.lookthrough'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[H_SESSION_GAP]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[H_FEE_MISMATCH]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[H_CASH_SCHEDULE_MISMATCH]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_full_planning_exposure_and_historical_safeguards[H_PINNED_READ]",
+      "file": "tests.test_mvp_decisions_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "ModuleNotFoundError: No module named 'invest.backtest'"
+    },
+    {
+      "scenario": "test_b01_online_backup_preserves_complete_committed_state",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b02_tampered_artifacts_cannot_be_restored",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b03_development_schemas_are_preserved_byte_for_byte",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 3\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b04_restore_preview_preserves_the_current_ledger",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b05_corrupt_sqlite_cannot_receive_an_ok_verification",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_recovery_refuses_traversal_members",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_first_install_exposes_normalized_durable_storage",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_missing_verified_backup_blocks_destructive_future_migration",
+      "file": "tests.test_mvp_recovery_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Required recovery command failed: {\"error\": \"No such command 'db'.\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b49_partial_issuer_research_preserves_exposure_coverage",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b50_syndicated_evidence_is_one_development",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b51_political_categories_remain_distinct",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b52_human_approval_cannot_override_contributor_permissions",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B53-sync]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-sync must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B54-performance]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-performance must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B55-monthly]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-monthly-investing must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B56-harvest]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-tax-loss-harvesting must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B57-screening]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-investment-screening must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B58-research]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-research must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_id_installed_workflow_drives_discoverable_real_commands[B59-strategy]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-strategy must be distributed and installable\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_b60_tool_descriptors_match_executable_flags_and_schema",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: Command ['tools', 'describe', 'portfolio.performance'] must succeed: {\"error\": \"Unknown tool: portfolio.performance\"}\n  \nassert 1 == 0\n +  where 1 = <Result SystemExit(1)>.exit_code"
+    },
+    {
+      "scenario": "test_b61_offline_keyword_retrieval_returns_cited_permitted_text",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b62_semantic_retrieval_rejects_incompatible_model_dimensions",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b63_derived_vector_rebuild_preserves_canonical_data",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_b64_permissions_filter_both_retrieval_methods",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_r01_research_previews_and_accepted_repeats_preserve_actual_financial_state",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "sqlite3.OperationalError: no such table: research_artifacts"
+    },
+    {
+      "scenario": "test_r02_invalid_research_batch_acceptance_is_atomic",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "sqlite3.OperationalError: no such table: research_artifacts"
+    },
+    {
+      "scenario": "test_r03_unverified_pac_relationship_remains_excluded",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_r04_research_aggregate_retains_disputed_and_missing_events",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s01_chunk_content_and_embedding_model_revisions_are_immutable",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s02_invalid_vectors_are_rejected_atomically[zero]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s02_invalid_vectors_are_rejected_atomically[nonfinite]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s02_invalid_vectors_are_rejected_atomically[nonunit]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s02_invalid_vectors_are_rejected_atomically[empty]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s03_text_filters_and_hybrid_scores_are_reproducible",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s04_missing_vector_index_preserves_offline_text_access",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s05_embedding_generation_requires_explicit_user_authorization",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_s06_personal_contribution_and_brokerage_documents_are_not_implicitly_indexed",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.search capability is absent; substantive assertions follow"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[sync-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-sync must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[sync-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-sync must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[performance-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-performance must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[performance-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-performance must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[monthly-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-monthly-investing must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[monthly-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-monthly-investing must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[harvest-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-tax-loss-harvesting must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[harvest-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-tax-loss-harvesting must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[screening-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-investment-screening must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[screening-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-investment-screening must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[research-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-research must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[research-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-research must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[strategy-success]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-strategy must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_w01_full_portable_workflow_walkthrough_in_mode_state[strategy-blocked]",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "AssertionError: investobot-portfolio-strategy must be installable for codex\nassert False\n +  where False = is_file()\n +    where is_file = PosixPath('<temporary-fixture>').is_file"
+    },
+    {
+      "scenario": "test_r05_frozen_research_universe_preserves_household_denominator_and_source_coverage",
+      "file": "tests.test_mvp_research_workflows_bdd",
+      "outcome": "FAILED",
+      "diagnostic": "Failed: Required public invest.research_portfolio capability is absent; substantive assertions follow"
+    }
+  ],
+  "counts": {
+    "FAILED": 141,
+    "ERROR": 0,
+    "PASSED": 0
+  },
+  "files": {
+    "tests/features/mvp/accounting.feature": "2d126ad23ef2cf8679b138a4039e37dba55f557b942db7e47f0e25fba51cd900",
+    "tests/features/mvp/datasets.feature": "0d45dc1f551e3f48eeff6c45d4b6576b34f4fd690e2f58c834811f5cde8959b1",
+    "tests/features/mvp/decisions.feature": "90d82fb8c475964b8c22775bbe110afd34e1f2de32dcee00d3b64342a4d49bdd",
+    "tests/features/mvp/recovery.feature": "6d4bfd0210211a9f317c4fb280b75780966865f0fbd37c52c87d46437dd64b90",
+    "tests/features/mvp/research_workflows.feature": "763a8c582ce23cb64ed34e65b99b16e740c4dc24d6a4e26b1986d56a9e0a0f67",
+    "tests/fixtures/mvp-history.parquet": "216ee8eab8865d5e9e6e05e28d26ca4f04c9fc321f14ddf1f8ce457ea45b9209",
+    "tests/fixtures/mvp-provenance.md": "70ed7bc2bf1a6164649fd4ea01dd6df02fe563e68979bd3820e842135029abdd",
+    "tests/test_mvp_accounting_bdd.py": "dea83d1933c194149076783008130cd1b16a88a0eba53b814797eabe77c0ce37",
+    "tests/test_mvp_datasets_bdd.py": "c343de9a6ac00ceb23d0d718b0f4004ae3f1b9002ddc27891d134d766d315913",
+    "tests/test_mvp_decisions_bdd.py": "8f50b1b0d56d59243e408f3b55830b68d55b123f527a1b67ec64f8f017256f02",
+    "tests/test_mvp_recovery_bdd.py": "abf71405c17c308c9ba7d84e2ee86ea6e83fec6e256fdd24d7ec00a4a7028ab7",
+    "tests/test_mvp_research_workflows_bdd.py": "1c366af6ccd747f4de3bc27e4f8880489d4e8dfa7964b525b511533d018f5b59"
+  }
+}
