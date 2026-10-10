@@ -270,6 +270,16 @@ def _disputed_changes(old, new, before, after, result):
             changed = True
             prior_sources = _links(old, [a['source_id']]) if a else []
             current_sources = _links(new, [b['source_id']]) if b else []
+            evidence_status = None
+            if kind == 'DISPUTED_TO_VERIFIED':
+                cited = lambda sources, fact: {
+                    (source['url'], _text(fact['source_locator']), source['published_at'])
+                    for source in sources}
+                citation_changed = cited(prior_sources, a) != cited(current_sources, b)
+                evidence_status = 'CHANGED_CITATION_REVIEW_REQUIRED' if citation_changed else 'UNCHANGED_CITATION_REVIEW_REQUIRED'
+                if not citation_changed:
+                    result['warnings'].append(
+                        f"Fresh supporting evidence unavailable for {key}; verification label changed with unchanged citation. Human review required.")
             result['disputed_claim_changes'].append({
                 'event_key': (after or before)['event_key'], 'fact_key': key,
                 'change_type': kind, 'before': a, 'after': b,
@@ -278,6 +288,7 @@ def _disputed_changes(old, new, before, after, result):
                 'before_sources': prior_sources, 'after_sources': current_sources,
                 'sources': prior_sources + current_sources,
                 'source_ids': sorted({s['source_id'] for s in prior_sources + current_sources}),
+                'supporting_evidence_status': evidence_status,
                 'warning': 'DISPUTED is not a verified company fact. Missing or withdrawn verification does not establish that a claim was disproven or resolved.'})
     return changed
 
@@ -330,6 +341,10 @@ def _compare_events(old, new, result, historical=None):
                                           'different stable keys remain distinct.')
             continue
         facts_a, facts_b = _fact_map(a), _fact_map(b)
+        for claim in result['disputed_claim_changes']:
+            if (claim['event_key'] == key and
+                    claim['supporting_evidence_status'] == 'UNCHANGED_CITATION_REVIEW_REQUIRED'):
+                facts_b.pop(claim['fact_key'], None)
         added = [facts_b[key] for key in sorted(set(facts_b) - set(facts_a))]
         removed = [facts_a[key] for key in sorted(set(facts_a) - set(facts_b))]
         revised = [{'before': facts_a[key], 'after': facts_b[key]}
@@ -483,7 +498,7 @@ def changes(ledger, ticker):
     runs = _runs(ledger, ticker=ticker)
     if runs:
         newest = runs[0]
-        compatible = [run for run in runs[1:] if same_research_company(run, newest)]
+        compatible = [run for run in _history(ledger, newest) if run['id'] != newest['id']]
         if compatible:
             return {'baseline_available': True, **compare(ledger, compatible[0]['id'], newest['id'])}
     return {'baseline_available': False, 'ticker': ticker,

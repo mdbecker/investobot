@@ -601,8 +601,7 @@ def news_validate(file: str):
 
     def run():
         model = NewsResearchInput.model_validate(read_json(file))
-        data = model.model_dump(mode='json')
-        _, _, run_id, _ = canonical_package(model)
+        data, _, run_id, _ = canonical_package(model)
         with read_ledger(database_path()) as db:
             verify_company(db, data['company'])
             _verify_event_ownership(db, data, run_id)

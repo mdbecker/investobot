@@ -210,3 +210,9 @@ Active schema 6 rejects existing older databases without deleting them; evaluate
 with a fresh disposable ledger and preserve private data before any manual reset.
 Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
 skill discovery passed in Docker. Work remains local; remote CI is unverified.
+
+The [V2.7 continuity addendum](docs/PRD-v2.7-Addendum-Research-Continuity.md)
+keeps unresolved historical context across omitted runs, distinguishes
+reobservations from discoveries, and exposes cited disputed-claim changes.
+Inherited records carry last-observed provenance; unchanged citations cannot
+establish fresh verification. Schema 6 and existing accepted research stay intact.

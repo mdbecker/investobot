@@ -1,5 +1,11 @@
 # Review changes conservatively
 
+A DISPUTED_TO_VERIFIED label change with unchanged supporting citations requires
+manual review. `supporting_evidence_status` distinguishes unchanged versus changed
+citations; neither proves factual support. A renamed local source ID or a later
+retrieval date cannot establish new evidence. Consult the cited source and provide
+an exact updated fact locator before describing independent confirmation.
+
 Choose an exact prior run and current run with `compare`, or inspect the selected
 latest-two result from `changes`. Check returned baseline IDs and deterministic
 ordering, including ties in research dates. Comparable company identity matters;

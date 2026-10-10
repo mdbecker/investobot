@@ -14,6 +14,15 @@ remain separately attributed. Schema 6 and JSON input 1.0 remain unchanged.
 News skill 1.0.1 leaves both other skills unchanged; old accepted hashes/version
 provenance survive identical imports without loading historical packages.
 
+Independent review red commit `bd8a2a1` observes unchanged-citation verification
+promotion, prior-ticker baseline loss and noncanonical old-skill validation; the
+same-day chronology cutoff already passes. Corrections visibly flag unsupported
+label promotion, exclude it from fresh verified-fact updates, recover compatible
+prior ticker history and validate canonical accepted inputs. The full frozen
+offline mounted-source Docker suite passes 540 tests and Ruff. Updated news skill
+1.0.1 passes format validation in Docker. No host dependency installation, private
+ledger reset or financial-state change occurred; remote CI remains unverified.
+
 ## V2.7 implementation evidence
 
 Red commits `8f29ee0`, `8697468`, `e6f589e` and `8193a1e` capture missing skill,

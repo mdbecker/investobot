@@ -1,5 +1,13 @@
 # Company news, catalysts and thesis changes
 
+The [V2.7 continuity addendum](PRD-v2.7-Addendum-Research-Continuity.md) preserves
+schema 6 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
+a changed public URL, fact locator or publication date, the delta records the
+label change with `UNCHANGED_CITATION_REVIEW_REQUIRED` and a supporting-evidence
+warning; it is excluded from newly verified fact updates. Source-ID relabeling
+or a newer access date alone is insufficient. Changed citations still require
+human inspection; a schema or comparison cannot verify source truth.
+
 The `investobot-news` skill guides an external agent through source research.
 The deterministic `invest research news` commands validate supplied JSON, retain
 immutable observations and compare them. Investobot does not fetch news or execute
