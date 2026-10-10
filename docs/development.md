@@ -28,6 +28,14 @@ suite passes 520 tests and Ruff; the news skill passes the official format
 validator with its YAML dependency confined to a disposable Docker container.
 Existing earnings and political skill directories are byte-for-byte unchanged.
 
+Final V2.7 CI verification: a fresh `investobot-v27-ci` image passes
+`uv sync --locked`, `uv run --locked pytest` (520 tests) and explicit-config
+Ruff in offline containers with no source bind mounts or private ledger volumes.
+An offline wheel build contains all three skills; wheel-only discovery outside
+the repository succeeds. No host packages were installed and no changes were
+pushed. GitHub Actions and manually reviewed live sources remain external,
+unverified acceptance gates.
+
 ## Deliberate schema reset
 
 SQLite schema 6 initializes only a fresh database and rejects incompatible older

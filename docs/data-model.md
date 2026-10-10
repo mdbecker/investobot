@@ -214,3 +214,13 @@ sources retain CIK, acceptance time and amendment/restatement references. Guidan
 retains unknown issue dates and prior-guidance references without inventing facts.
 Composite foreign keys scope financial observations and evidence to their run.
 Research inserts use one transaction and never enter household/planning state.
+
+V2.7 schema 6 adds nullable source publication dates and exact locators to the
+shared source table without changing earnings semantics. Five news tables retain
+window/coverage, events, facts, catalysts and research hypotheses. Event arrays
+are validated before insertion; facts and explicit resolution citations have
+same-run foreign keys. Internal material fingerprints exclude titles and source
+metadata while retaining verified claims, lifecycle, dates, segments and declared
+implications. Compact context reads omit facts and implications; only `show`
+loads a full package. Observations and comparisons never modify portfolio theses,
+financial inputs, caches or saved-plan freshness. See [news research](news-research.md).
