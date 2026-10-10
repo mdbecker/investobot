@@ -206,3 +206,39 @@ def corroboration_delta(ledger):
 def corroboration_assertion(delta):
     assert delta['new_events'] == delta['updated_events'] == []
     assert delta['new_evidence_only'][0]['sources'][0]['url'].startswith('https://example.invalid/')
+
+
+def test_partial_strong_identity_cannot_fall_back_to_ticker(ledger):
+    save(ledger, 'old', cik=None)
+    save(ledger, 'new', '2026-10-03')
+    with pytest.raises(DomainError):
+        queries.compare(ledger, 'old', 'new')
+
+
+def test_context_uses_focused_projections_not_full_event_facts(ledger):
+    save(ledger, 'old')
+    trace = []
+    ledger.connection.set_trace_callback(trace.append)
+    result = queries.context(ledger, 'FAKE')
+    assert result['baseline_available']
+    assert not any('research_news_facts' in sql.lower() for sql in trace)
+    assert not any('implications_json' in sql.lower() for sql in trace)
+    assert 'sources' not in result
+
+
+def test_missing_records_keep_prior_source_links(ledger):
+    save(ledger, 'old')
+    save(ledger, 'new', '2026-10-03', event=False)
+    result = queries.compare(ledger, 'old', 'new')
+    for item in result['not_reobserved']:
+        assert item['sources'][0]['url'] == 'https://example.invalid/s1'
+        assert item['before'] is not None and item['after'] is None
+
+
+def test_relabeling_same_source_is_not_new_corroboration(ledger):
+    save(ledger, 'old', sources=('s1',))
+    save(ledger, 'new', '2026-10-03', sources=('renamed',))
+    ledger.connection.execute('UPDATE research_sources SET url=? WHERE run_id=?',
+                              ('https://example.invalid/s1', 'new'))
+    result = queries.compare(ledger, 'old', 'new')
+    assert result['updated_events'] == result['new_evidence_only'] == []
