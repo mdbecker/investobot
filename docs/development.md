@@ -23,6 +23,14 @@ offline mounted-source Docker suite passes 540 tests and Ruff. Updated news skil
 1.0.1 passes format validation in Docker. No host dependency installation, private
 ledger reset or financial-state change occurred; remote CI remains unverified.
 
+Fresh-image addendum verification: `investobot-v27-continuity-ci` passes locked
+dependency sync, 540 tests and explicit-config Ruff without network, host-source
+mounts or private ledger volumes. An offline wheel build exposes news skill 1.0.1
+with its continuity guidance and both other skills at 1.0.0 outside the repository.
+The schema initializer, input model and both unrelated skill directories are
+unchanged from `aeead0f`. No changes were pushed; GitHub Actions remains a separate
+unverified gate.
+
 ## V2.7 implementation evidence
 
 Red commits `8f29ee0`, `8697468`, `e6f589e` and `8193a1e` capture missing skill,

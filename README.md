@@ -216,3 +216,5 @@ keeps unresolved historical context across omitted runs, distinguishes
 reobservations from discoveries, and exposes cited disputed-claim changes.
 Inherited records carry last-observed provenance; unchanged citations cannot
 establish fresh verification. Schema 6 and existing accepted research stay intact.
+Addendum verification: 540 tests, Ruff, skill format validation and wheel-only
+discovery pass in Docker. No host installs or pushes; remote CI remains unverified.
