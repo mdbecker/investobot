@@ -255,7 +255,7 @@ def account_update(account_id: str, file: str = typer.Option(...), yes: bool = F
     emit(result)
 
 
-def client():
+def client(selected=None):
     import os
 
     from invest.config import load_config
@@ -263,7 +263,7 @@ def client():
 
     config = load_config()
     return MarketClient(
-        ledger(),
+        selected if selected is not None else ledger(),
         api_key=os.environ.get("FMP_API_KEY") or config.get("fmp", {}).get("api_key"),
         fixture_path=os.environ.get("INVEST_FIXTURES"),
     )
@@ -275,7 +275,7 @@ def tax_lots(as_of: str = typer.Option(None)):
 
     from invest.tax import lots
 
-    emit(lambda: lots(ledger().state(), as_of or date.today().isoformat()))
+    emit(lambda: read_selected(lambda selected: lots(selected.state(), as_of or date.today().isoformat())))
 
 
 @tax.command("analyze")
@@ -293,8 +293,8 @@ def tax_analyze(
     from invest.tax import analyze
 
     emit(
-        lambda: analyze(
-            ledger().state(),
+        lambda: read_selected(lambda selected: analyze(
+            selected.state(),
             account,
             security,
             quantity,
@@ -304,7 +304,7 @@ def tax_analyze(
             lot_ids=lot_ids.split(",") if lot_ids else None,
             rates=load_config().get("tax"),
             fee=fee,
-        )
+        ))
     )
 
 
@@ -314,7 +314,7 @@ def harvest(as_of: str = typer.Option(None)):
 
     from invest.tax import harvest_candidates
 
-    emit(lambda: harvest_candidates(ledger().state(), as_of or date.today().isoformat()))
+    emit(lambda: read_selected(lambda selected: harvest_candidates(selected.state(), as_of or date.today().isoformat())))
 
 
 @fund.command("holdings")
@@ -381,9 +381,9 @@ def portfolio_simulate(file: str):
     from invest.scenarios import simulate
 
     emit(
-        lambda: simulate(
-            ledger().state(), client(), read_json(file), rates=load_config().get("tax")
-        )
+        lambda: read_selected(lambda selected: simulate(
+            selected.state(), client(selected), read_json(file), rates=load_config().get("tax")
+        ))
     )
 
 
@@ -391,7 +391,7 @@ def portfolio_simulate(file: str):
 def portfolio_risk(refresh: bool = False):
     from invest.analytics import risk
 
-    emit(lambda: risk(ledger().state(), client(), refresh))
+    emit(lambda: read_selected(lambda selected: risk(selected.state(), client(selected), refresh)))
 
 
 @security.command("screen")
@@ -541,7 +541,7 @@ def plan_show(plan_id: str):
 def plan_compare(plan_ids: list[str] = typer.Argument(...)):
     from invest.plans import compare
 
-    emit(lambda: compare(ledger(), *plan_ids))
+    emit(lambda: read_selected(lambda selected: compare(selected, *plan_ids)))
 
 
 @report.command("export")
@@ -549,7 +549,7 @@ def report_export(plan_id: str, output: str = typer.Option(...), format: str = "
     from invest.plans import persisted
     from invest.reports import export
 
-    emit(lambda: export(persisted(ledger(), plan_id), output, format=format))
+    emit(lambda: read_selected(lambda selected: export(persisted(selected, plan_id), output, format=format)))
 
 
 prompt = typer.Typer()
@@ -588,7 +588,7 @@ def prompt_delete(prompt_id: str):
 def portfolio_overview():
     from invest.web import overview
 
-    emit(lambda: overview(ledger()))
+    emit(lambda: read_selected(overview))
 
 
 research = typer.Typer()

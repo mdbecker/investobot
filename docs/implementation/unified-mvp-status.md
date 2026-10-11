@@ -38,9 +38,13 @@ with locked dependencies, no network and no mounted source. The subsequent
 typed unapproved-scenario policy gates passed the full mounted-source Docker
 suite: **1,202 tests in 41.36 seconds**, with Ruff passing, committed `a331d55`.
 
-Remaining software work is the explicit accepted-observation provenance gate
-and its fixture verification, final current documentation and exact-release
-image/package checks. The standalone recovery demonstration already passes.
+Explicit accepted-observation provenance now passes the full offline Docker
+suite: **1,212 tests in 41.68 seconds**, with Ruff passing. No missing source
+environment is inferred; conflicting rows/accounts are rejected atomically.
+
+Remaining software work includes the audited read-only CLI paths, conditional
+harvest proposals under a saved approved policy, final current documentation and
+exact-release image/package checks. The standalone recovery demonstration passes.
 The remaining audit may identify additional cases; no package is declared
 complete solely because its minimum B01–B66 scenarios pass.
 

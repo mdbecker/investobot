@@ -123,15 +123,15 @@ path is not automatically a container path.
 Generic HTML validation rejects ambiguous repeated cash labels and duplicate
 recognized financial columns. Malformed cash stays unknown and blocks claiming
 complete coverage. Complete tax-lot coverage requires parseable acquisition
-dates and known basis for position rows. Without broker lot IDs, generated lot
-identity uses normalized source facts and excludes price/market value so
-valuation-only updates remain stable. Changes to other source fields can still
-change identity; review matching manually for partial tax-lot pages rather than
-assuming a renamed/generated lot replaced historical inventory.
+dates and known basis for position rows. Without a reviewed broker lot ID or
+immutable sourced acquisition reference, a generated lot remains unresolved
+and unsaleable. A hash of mutable quantity/basis cannot establish lot identity.
+Review matching manually for partial pages; do not replace confirmed inventory
+with newly generated identifiers.
 
 Offline tests use synthetic fixtures and mock provider boundaries. They do not
 establish live endpoint entitlement, full fund coverage or actual institution
-support. Two release checks remain uncompleted:
+support. Human release checks remain:
 
 1. **Real institution HTML:** provide representative anonymized holdings, lots,
    restricted retirement funds, mutual funds, bank/cash tables and partial pages
@@ -149,6 +149,12 @@ support. Two release checks remain uncompleted:
    official vendor data. Keep credentials/private diagnostics outside Git.
    Unexpected shapes need anonymized regression fixtures and fixes before
    claiming live compatibility.
+3. **Source rights:** independently review original-source reuse permissions and
+   local political-contribution rights policies. Agent assertions cannot authorize
+   restricted named records or embedding broker/personal data.
+4. **External agent skills:** exercise installed skills with the chosen agent,
+   verify command discovery and explicit confirmations, and review cited sources.
+   Offline scripted walkthroughs do not establish actual agent compliance.
 
 Manual validation must not place trades, supply broker credentials or overwrite
 canonical portfolio marks. Public quote refresh is cache-only. Automated tests
