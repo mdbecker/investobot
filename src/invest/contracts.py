@@ -109,6 +109,8 @@ PURPOSES = {
     "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
+    'portfolio.performance': 'read',
+    'portfolio.check': 'read',
     "research.funds.import": "research",
     "research.skills.install": "project_skill_files",
     "research.political.import": "research",
@@ -209,9 +211,11 @@ def _describe(name, command):
         "options": options,
         "input_schema": {"type": "object", "properties": properties, "required": required},
         "output_contract": OUTPUT_CONTRACT,
-        "mutates_persistent_state": scope != "none",
+        "mutates_persistent_state": scope not in {"none", "read"},
         "mutation_scope": scope,
         "examples": [example],
+        'parameters': options,
+        'json_input_schema': {'type': 'object', 'properties': {}, 'additionalProperties': False},
     }
     if name in {"plan.generate", "plan.list", "plan.compare"}:
         from invest.plans import SUMMARY_FIELDS

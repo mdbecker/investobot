@@ -4,14 +4,13 @@ services:
     ports: ["127.0.0.1:8765:8765"]
     volumes:
       - .:/app
-      - runtime_dependencies:/opt/venv
       - ledger:/data
     environment:
       INVEST_DB: /data/portfolio.db
       INVEST_PROMPTS: /data/prompts
       INVEST_BIND: 0.0.0.0
+      INVEST_DOCKER_INTERNAL: '1'
       FMP_API_KEY: ${FMP_API_KEY:-}
-    command: ["sh", "-c", "uv sync --locked --reinstall-package investobot && python -m invest.web"]
+    command: ["uv", "run", "--no-sync", "python", "-m", "invest.web"]
 volumes:
-  runtime_dependencies:
   ledger:

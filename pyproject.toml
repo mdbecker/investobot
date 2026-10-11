@@ -2,7 +2,20 @@
 name = "investobot"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["typer>=0.12", "pydantic>=2", "platformdirs>=4", "beautifulsoup4>=4", "lxml>=5", "pandas>=2", "numpy>=2", "scipy>=1.14", "QuantLib>=1.35", "httpx>=0.27"]
+dependencies = [
+    "typer>=0.12",
+    "pydantic>=2",
+    "platformdirs>=4",
+    "beautifulsoup4>=4",
+    "lxml>=5",
+    "pandas>=2",
+    "numpy>=2",
+    "scipy>=1.14",
+    "QuantLib>=1.35",
+    "httpx>=0.27",
+    "duckdb==1.4.1",
+    "sqlite-vec==0.1.6",
+]
 [project.scripts]
 invest = "invest.cli:app"
 [build-system]

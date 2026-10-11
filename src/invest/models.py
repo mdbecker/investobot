@@ -63,7 +63,7 @@ class Position(BaseModel):
     market_value: Decimal = Field(ge=0)
     price: Decimal | None = Field(default=None, ge=0)
     cost_basis: Decimal | None = Field(default=None, ge=0)
-    as_of: date = Field(default_factory=date.today)
+    as_of: date | None = None
 
 
 class Lot(BaseModel):
@@ -73,7 +73,7 @@ class Lot(BaseModel):
     acquisition_date: date
     quantity: Decimal = Field(gt=0)
     remaining_quantity: Decimal = Field(ge=0)
-    cost_basis: Decimal = Field(ge=0)
+    cost_basis: Decimal | None = Field(default=None, ge=0)
 
 
 class Snapshot(BaseModel):
@@ -192,6 +192,7 @@ class Activity(BaseModel):
     account_id: str = Field(min_length=1)
     type: Literal["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "INTEREST", "FEE", "CASH_DEPOSIT", "CASH_WITHDRAWAL"]
     date: date
+    event_timestamp: str | None = None
     security: str | None = None
     quantity: Positive | None = None
     price: Nonnegative | None = None
@@ -203,8 +204,15 @@ class Activity(BaseModel):
     from_account: str | None = None
     classification: str | None = None
 
+    @field_validator('event_timestamp')
+    @classmethod
+    def timestamp(cls, value):
+        return Snapshot.valid_source_timestamp(value)
+
     @model_validator(mode="after")
     def required_values(self):
+        if self.event_timestamp and self.event_timestamp[:10] != self.date.isoformat():
+            raise ValueError('Event timestamp must match the confirmed activity date')
         if self.type in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
             if not self.security or self.quantity is None or self.price is None:
                 raise ValueError("Trade activities require security, quantity and price")

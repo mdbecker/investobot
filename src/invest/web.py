@@ -174,7 +174,10 @@ def _planning_post(ledger, path, payload):
     raise DomainError("Route not found")
 
 
-def create_server(db_path, host="127.0.0.1", port=8765):
+def create_server(db_path, host="127.0.0.1", port=8765, *, docker_internal=False):
+    if host not in {'127.0.0.1', 'localhost', '::1'}:
+        if not (docker_internal and host == '0.0.0.0' and Path('/.dockerenv').is_file()):
+            raise DomainError('Native dashboard must bind to loopback', 3)
     """Create a single-request-at-a-time local server; Docker publishes to loopback only."""
 
     class Handler(BaseHTTPRequestHandler):
@@ -330,7 +333,8 @@ def main():
     from invest.config import database_path
 
     path = os.environ.get("INVEST_DB") or database_path()
-    server = create_server(path, host=os.environ.get("INVEST_BIND", "127.0.0.1"))
+    server = create_server(path, host=os.environ.get("INVEST_BIND", "127.0.0.1"),
+                           docker_internal=os.environ.get('INVEST_DOCKER_INTERNAL') == '1')
     print(json.dumps({"status": "RUNNING", "url": "http://localhost:8765"}), flush=True)
     try:
         server.serve_forever()

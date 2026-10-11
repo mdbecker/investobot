@@ -2,6 +2,18 @@
 
 ## Verified implementation lessons
 
+- Printed financial precision is source evidence: provide it explicitly in
+  synthetic fixtures; never infer it from normalized decimal storage. Keep
+  quantity, price and value coherent except in deliberate rejection cases.
+- Native analytical extensions must actually load during Docker builds. The
+  pinned sqlite-vec ARM64 wheel is unsuitable here; compile the checksum-pinned
+  official amalgamation in the Docker builder, then verify the runtime binary.
+- Research completeness requires all requested specialty tasks. Filter compact
+  issuer metadata before loading immutable packages; unrelated evidence must
+  not break a selected report. Historical coverage is not current coverage.
+
+## Verified implementation lessons
+
 - Schema 1 identity includes the foundation migration checksum, not just SQLite
   user_version. Legacy schema 1 must remain byte-preserved and rejected.
 - All application database connections hold the shared restore lock until close;

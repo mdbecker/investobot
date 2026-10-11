@@ -5,7 +5,7 @@ import hashlib
 import json
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -41,6 +41,11 @@ ACCOUNT_SETTINGS = ("account_type", "tax_status", "history_complete", "currency"
 def snapshot_fingerprint(snap):
     return hashlib.sha256(json.dumps({k: v for k, v in snap.items()
         if k not in {"imported_at", "status", "warnings"}}, sort_keys=True).encode()).hexdigest()
+
+
+def _issue(code, message, **fields):
+    return dict(code=code, message=message, blocks_calculation=True,
+                blocks_proposals=True, blocks_execution_review=True, **fields)
 
 
 class Ledger:
@@ -91,15 +96,15 @@ class Ledger:
             for row in state[table]:
                 row.pop(field, None)
         query = """SELECT id, account_id, imported_at, source_timestamp, source_hash,
-                          positions_complete, lots_complete FROM (
+                          positions_complete, lots_complete,cash_known,data_environment FROM (
             SELECT id,account_id,imported_at,source_timestamp,source_hash,
-                positions_complete,lots_complete,
+                positions_complete,lots_complete,cash_known,data_environment,
                 ROW_NUMBER() OVER (PARTITION BY account_id
                     ORDER BY imported_at DESC,id DESC) AS ordinal
-            FROM snapshot_observations) WHERE ordinal=1 ORDER BY account_id"""
+            FROM snapshot_observations WHERE status!='EVIDENCE_ONLY') WHERE ordinal=1 ORDER BY account_id"""
         state['snapshots'] = [dict(id=r[0], account={'id': r[1]}, imported_at=r[2],
             source_timestamp=r[3], source_hash=r[4], positions_complete=bool(r[5]),
-            lots_complete=bool(r[6])) for r in self.connection.execute(query)]
+            lots_complete=bool(r[6]),cash_known=bool(r[7]),data_environment=r[8]) for r in self.connection.execute(query)]
         return state
 
     def resolve(self, alias):
@@ -200,6 +205,30 @@ class Ledger:
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
+        issues = []
+        value_checks = []
+        for position in snap['positions']:
+            precisions = [position.get(name) for name in
+                          ('displayed_price_precision', 'displayed_market_value_precision')]
+            if any(type(value) is not int or not 0 <= value <= 100 for value in precisions):
+                issues.append(_issue('UNKNOWN_PRICE_PRECISION',
+                    'Verify original displayed price and value precision', security=position['security']))
+                continue
+            quantity, price, value = [decimal(position[name]) for name in
+                                      ('quantity', 'price', 'market_value')]
+            with localcontext() as context:
+                context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
+                                           for number in (quantity, price, value)) + 110)
+                discrepancy = abs(quantity * price - value)
+                tolerance = max(Decimal('0.01'), abs(quantity) * Decimal('0.5') *
+                                Decimal(10) ** -precisions[0] +
+                                Decimal('0.5') * Decimal(10) ** -precisions[1])
+                value_checks.append(dict(security=position['security'],
+                    observed_discrepancy=format(discrepancy, 'f'),
+                    rounding_tolerance=format(tolerance, 'f'), within_tolerance=discrepancy <= tolerance))
+                if discrepancy > tolerance:
+                    issues.append(_issue('INCONSISTENT_POSITION_VALUE',
+                        'Reported value exceeds source rounding tolerance', security=position['security']))
         old = {p["security"]: p for p in self.rows("positions") if p["account_id"] == account_id}
         incoming = {p["security"]: p for p in snap["positions"]}
         changes, observations = [], []
@@ -267,7 +296,11 @@ class Ledger:
             warnings.append("Account configuration is preserved by snapshot application; use invest account update for reviewed corrections")
         classification_reviews = []
         for position in snap["positions"]:
-            security, _ = self._snapshot_security(position, account_id)
+            try:
+                security, _ = self._snapshot_security(position, account_id)
+            except DomainError as error:
+                issues.append(_issue('SECURITY_IDENTITY_CONFLICT', str(error), security=position['security']))
+                continue
             if (security and security.get("asset_type", "OTHER") == "OTHER"
                     and position["asset_type"] != "OTHER"):
                 classification_reviews.append(dict(security_id=security["id"],
@@ -278,7 +311,28 @@ class Ledger:
                     f"invest security classify {security['id']} --asset-type {position['asset_type']} "
                     '--source "VERIFIED_SOURCE" --confirm for an explicit audited correction')
         known = {s["ticker"] for s in self.rows("securities")}
+        events = [row for row in self.rows('activities') if row['account_id'] == account_id]
+        if events:
+            source = snap['source_timestamp']
+            latest_event = max((row.get('event_timestamp') or row['date'] for row in events), key=source_time)
+            if source is None or source[:10] < latest_event[:10]:
+                issues.append(_issue('OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY',
+                    'Observation is evidence only; confirmed activity remains authoritative'))
+            elif source[:10] == latest_event[:10] and (len(source) == 10 or len(latest_event) == 10):
+                issues.append(_issue('AMBIGUOUS_SOURCE_ORDER',
+                    'Verify source and event ordering with dated original evidence'))
+            elif source_time(source) < source_time(latest_event):
+                issues.append(_issue('OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY',
+                    'Dated observation precedes the confirmed activity'))
+            else:
+                for symbol, position in incoming.items():
+                    prior_position = old.get(symbol)
+                    if prior_position and decimal(position['quantity']) != decimal(prior_position['quantity']):
+                        issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
+                            'Observation quantity contradicts confirmed activity', security=symbol))
         return dict(account_id=account_id, changes=changes, observations=observations,
+                    value_checks=value_checks,
+                    status='REVIEW_REQUIRED' if issues else 'AVAILABLE', issues=issues,
                     classification_reviews=classification_reviews,
                     account_metadata_discrepancies=discrepancies,
                     source_date_status=source_status, latest_known_source_date=latest_known,
@@ -296,6 +350,17 @@ class Ledger:
         if identical:
             return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id, warnings=snap["warnings"])
         reconciliation = self.reconcile(snap)
+        if reconciliation['issues']:
+            if {row['code'] for row in reconciliation['issues']} == {'OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY'}:
+                audit_id = str(uuid.uuid4())
+                with self.connection:
+                    self.put('snapshots', audit_id, dict(snap, id=audit_id,
+                        fingerprint=fingerprint, status='EVIDENCE_ONLY'))
+                return dict(status='REVIEW_REQUIRED', committed=False, snapshot_id=audit_id,
+                            issues=reconciliation['issues'])
+            error = DomainError('Observation cannot replace confirmed activity', 3)
+            error.result = reconciliation
+            raise error
         if allow_older and (not justification or not justification.strip()):
             raise DomainError("Snapshot override requires a justification")
         if reconciliation["override_required"] and (not allow_older or not justification or not justification.strip()):
@@ -314,7 +379,8 @@ class Ledger:
             remaining = sum((decimal(l["remaining_quantity"]) for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
             if (pos is not None and snap["lots_complete"] and remaining == decimal(pos["quantity"])
                     and pos.get("cost_basis") is not None):
-                basis = sum((decimal(l["cost_basis"]) * decimal(l["remaining_quantity"]) / decimal(l["quantity"])
+                basis = sum((decimal(l['remaining_adjusted_basis']) if l.get('remaining_adjusted_basis') is not None else
+                             decimal(l["cost_basis"]) * decimal(l["remaining_quantity"]) / decimal(l["quantity"])
                              for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
                 if abs(basis - decimal(pos["cost_basis"])) > Decimal("0.01"):
                     raise DomainError("Position basis contradicts complete lot inventory", 3)
@@ -401,7 +467,9 @@ class Ledger:
                 original['lot_allocations'] = [{k: row[k] for k in ('lot_id', 'quantity')}
                                               for row in original['lot_allocations']]
             if original != content:
-                raise DomainError("Activity ID already exists with different content", 3)
+                error = DomainError("Activity ID already exists with different content", 3)
+                error.result = {'status': 'BLOCKED', 'issues': [_issue('ACTIVITY_ID_CONFLICT', str(error))]}
+                raise error
             return dict(status="UNCHANGED", activity_id=aid, committed=False)
         state = self.state()
         changed, result = activity_change(state, activity)
@@ -428,15 +496,20 @@ def household_currency(state):
 
 def summarize(state):
     currency = household_currency(state)
+    missing_cash = [row['id'] for row in state['accounts'] if not any(
+        cash['account_id'] == row['id'] for cash in state['cash_balances'])]
+    unmarked = [row for row in state['positions'] if row.get('market_value') is None]
+    issues = [_issue('UNKNOWN_CASH_COVERAGE', 'Confirm cash coverage', account_id=identity) for identity in missing_cash]
+    issues.extend(_issue('MISSING_VALUATION_MARK', 'Confirm an independent valuation mark', security_id=row['security_id']) for row in unmarked)
     cash = sum((decimal(c["amount"]) for c in state["cash_balances"]), Decimal("0"))
-    value = sum((decimal(p["market_value"]) for p in state["positions"]), cash)
+    value = sum((decimal(p["market_value"]) for p in state["positions"] if p.get('market_value') is not None), cash)
     accounts, taxes, allocation = {}, {}, {"CASH": str(cash)}
     warnings = []
     for a in state["accounts"]:
         if not any(c["account_id"] == a["id"] for c in state["cash_balances"]):
             warnings.append(f"{a['id']}: cash balance unavailable; total excludes unknown cash")
         total = sum(
-            (decimal(p["market_value"]) for p in state["positions"] if p["account_id"] == a["id"]),
+            (decimal(p["market_value"]) for p in state["positions"] if p["account_id"] == a["id"] and p.get('market_value') is not None),
             Decimal("0"),
         )
         total += sum(
@@ -448,6 +521,8 @@ def summarize(state):
     unrealized = Decimal("0")
     for p in state["positions"]:
         asset = p.get("asset_type", "OTHER")
+        if p.get('market_value') is None:
+            continue
         allocation[asset] = str(decimal(allocation.get(asset, "0")) + decimal(p["market_value"]))
         if p.get("cost_basis") is None:
             warnings.append(f"{p['security']}: basis unavailable")
@@ -455,13 +530,15 @@ def summarize(state):
             unrealized += decimal(p["market_value"]) - decimal(p["cost_basis"])
     return {
         "currency": currency,
-        "total_value": str(value),
-        "cash": str(cash),
+        'status': 'PARTIAL' if issues else 'AVAILABLE', 'issues': issues,
+        "total_value": None if unmarked or missing_cash else str(value),
+        'known_value_subtotal': str(value),
+        "cash": None if missing_cash else str(cash),
         "by_account": accounts,
         "by_tax_status": taxes,
         "allocation": allocation,
         "largest_positions": sorted(
-            state["positions"], key=lambda p: decimal(p["market_value"]), reverse=True
+            state["positions"], key=lambda p: (p.get('market_value') is not None, decimal(p['market_value']) if p.get('market_value') is not None else Decimal(0)), reverse=True
         )[:10],
         "unrealized_gain_loss_known_basis": str(unrealized),
         "snapshot_dates": sorted({p["as_of"] for p in state["positions"]}),
@@ -550,7 +627,7 @@ def activity_change_inplace(state, activity):
         if market_price is not None:
             p["market_value"] = str(decimal(p["quantity"]) * market_price)
         else:
-            p["market_value"] = "0"
+            p["market_value"] = None
             p["valuation_state"] = "UNRESOLVED"
         # Execution price belongs to the activity, not the remaining portfolio mark.
         if kind == "BUY":

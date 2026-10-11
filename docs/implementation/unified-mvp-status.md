@@ -106,6 +106,33 @@ verification, recovery roundtrip, synthetic CLI demonstration, performance
 measurements and current operations docs are outstanding. No new-design ledger
 is claimed release-ready yet. No existing ledger has been reset or migrated.
 
+## Current integrated domain checkpoint
+
+Docker checks now pass all 862 preserved regressions (21.39 seconds), eight
+recovery cases, and 112 implemented MVP domain cases (2.37 seconds). The latter
+run deselects 24 pending scenarios; it is explicitly not full-suite green.
+Ruff passes with the repository configuration. Actual historical performance,
+source rounding diagnostics, chronology protection, immutable dataset readers,
+approved policy proposal engine, strict research envelopes, native vector search
+and five-specialty research coverage are implemented. Research reports select
+issuer evidence before loading packages and distinguish historical coverage.
+The command surface includes dataset pin/list/verify and portfolio research
+plan/report; other workflow commands and seven portable skills are being integrated.
+
+Docker builds bake hash-verified DuckDB SQLite and native sqlite-vec binaries.
+The sqlite-vec ARM64 wheel could not load, so the build compiles the pinned
+official amalgamation inside a disposable build stage and load-tests the result.
+Runtime loading verifies the baked manifest; offline operation downloads nothing.
+Missing printed precision prevents observation acceptance. Known subtotals remain
+separate from unknown household totals, and reported values are never rewritten
+to match a rounded printed price.
+
+Pending acceptance includes corporate actions/reinvestment, hypothetical risk
+labels, full portable workflow success/blocked paths and complete command
+integration. Fresh locked image acceptance and reproducible benchmark evidence
+remain outstanding. This checkpoint does not establish live institution/provider
+support, source permissions, or financial actionability.
+
 Vanguard, Fidelity NetBenefits and PNC require reviewed redacted original HTML;
 synthetic pages cannot establish institution support. FMP entitlement/endpoints
 require the user's manually reviewed live-provider gate. Real-company source

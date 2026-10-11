@@ -2,6 +2,7 @@
 
 import json
 import sys
+from contextlib import closing
 from pathlib import Path
 
 import typer
@@ -38,7 +39,7 @@ def emit(call):
         result = call()
         print(json.dumps(result, default=str))
     except DomainError as exc:
-        print(json.dumps({"error": str(exc)}), file=sys.stderr)
+        print(json.dumps(dict(getattr(exc, 'result', {}), error=str(exc), code=exc.code), default=str), file=sys.stderr)
         raise typer.Exit(exc.code)
     except (ValueError, KeyError, OSError, ValidationError) as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stderr)
@@ -92,6 +93,33 @@ def apply(file: str, allow_older: bool = False, justification: str = typer.Optio
 @portfolio.command()
 def summary():
     emit(lambda: ledger().summary())
+
+
+@portfolio.command('check')
+def portfolio_check(as_of: str = typer.Option(...)):
+    from invest.db import rows
+    from invest.readiness import check
+    from invest.research_identity import read_ledger
+
+    def result():
+        with read_ledger(database_path()) as selected:
+            state = {table: rows(selected.connection, table) for table in
+                     ('accounts', 'positions', 'lots', 'cash_balances', 'activities', 'securities')}
+            return check(state, as_of=as_of)
+    emit(result)
+
+
+@portfolio.command('performance')
+def portfolio_performance(from_date: str = typer.Option(None, '--from'),
+                          to_date: str = typer.Option(None, '--to'),
+                          as_of: str = typer.Option(None)):
+    from invest.performance_ledger import report
+    from invest.research_identity import read_ledger
+
+    def result():
+        with read_ledger(database_path()) as selected:
+            return report(selected.connection, from_date=from_date, to_date=to_date, as_of=as_of)
+    emit(result)
 
 
 @portfolio.command("record-activity")
@@ -905,3 +933,68 @@ def database_restore(file: str, dry_run: bool = False, confirm: bool = False):
 def database_migrate():
     from invest.migrations import migrate
     emit(lambda: migrate(database_path()))
+
+
+data = typer.Typer()
+app.add_typer(data, name='data')
+portfolio_research = typer.Typer()
+research.add_typer(portfolio_research, name='portfolio')
+
+
+@data.command('snapshot')
+def data_snapshot(file: str = typer.Option(...)):
+    from invest.analytics_store import snapshot
+
+    def result():
+        payload = read_json(file)
+        if 'issuers' in payload:
+            payload = {'id': payload.get('manifest_id'),
+                       'as_of': payload.get('as_of'),
+                       'data_environment': payload.get('data_environment'),
+                       'purpose': 'RESEARCH_UNIVERSE', 'metadata': {'universe': payload}}
+        selected = ledger()
+        with closing(selected.connection):
+            return snapshot(selected, payload, confirm=True)
+    emit(result)
+
+
+@data.command('list')
+def data_list():
+    from invest.analytics_store import list_snapshots
+    from invest.research_identity import read_ledger
+    def result():
+        with read_ledger(database_path()) as selected:
+            return list_snapshots(selected)
+    emit(result)
+
+
+@data.command('verify')
+def data_verify(file: str = typer.Option(...)):
+    from invest.analytics_store import verify_snapshot
+    from invest.research_identity import read_ledger
+    def result():
+        with read_ledger(database_path()) as selected:
+            return verify_snapshot(selected, read_json(file))
+    emit(result)
+
+
+@portfolio_research.command('plan')
+def research_portfolio_plan(universe_manifest: str = typer.Option(...),
+                            window_start: str = typer.Option(None),
+                            window_end: str = typer.Option(None)):
+    from invest.research_portfolio import plan
+    def result():
+        selected = ledger()
+        with closing(selected.connection):
+            return plan(selected, universe_manifest, window_start=window_start, window_end=window_end)
+    emit(result)
+
+
+@portfolio_research.command('report')
+def research_portfolio_report(plan: str = typer.Option(...)):
+    from invest.research_identity import read_ledger
+    from invest.research_portfolio import report
+    def result():
+        with read_ledger(database_path()) as selected:
+            return report(selected, plan)
+    emit(result)
