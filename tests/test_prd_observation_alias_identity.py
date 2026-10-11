@@ -3,7 +3,7 @@
 import copy
 
 import pytest
-from test_prd_confirmed_accounting_audit import observation
+from test_prd_confirmed_accounting_audit import event, observation
 
 from invest.ledger import Ledger
 from invest.models import DomainError
@@ -69,3 +69,17 @@ def test_alias_with_conflicting_sourced_cusip_requires_atomic_review(ledger, com
     assert failure.value.code == 3
     assert getattr(failure.value, 'result', {}).get('issues'), 'Conflict must return typed review issues'
     assert ledger.state() == before
+
+
+def test_reviewed_alias_after_confirmed_sale_reconciles_canonical_inventory(ledger):
+    ledger.record_activity(event('SELL', security='FICT', quantity='2', price='100', fee='0',
+        lot_allocations=[{'lot_id': 'original-lot', 'quantity': '2'}]), yes=True)
+    before_activity = copy.deepcopy(ledger.rows('activities'))
+    candidate = later_observation(complete=True)
+    candidate['cash'] = '1200'
+    candidate['positions'][0].update(quantity='8', market_value='800', cost_basis='640')
+    candidate['lots'][0].update(remaining_quantity='8', remaining_adjusted_basis='640')
+    assert ledger.apply(candidate)['status'] == 'APPLIED'
+    assert ledger.rows('activities') == before_activity
+    assert len(ledger.rows('securities')) == 1
+    assert ledger.rows('lots')[0]['remaining_adjusted_basis'] == '640'
