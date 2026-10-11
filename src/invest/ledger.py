@@ -108,14 +108,9 @@ class Ledger:
         return state
 
     def resolve(self, alias):
-        matches = [
-            s
-            for s in self.rows("securities")
-            if alias in {s["id"], s.get("ticker"), s.get("cusip"), s.get("isin"), s.get("figi")}
-        ]
-        if len(matches) != 1:
-            raise DomainError("Security is unknown or ambiguous", 3)
-        return matches[0]
+        from invest.security_identity import resolve
+
+        return resolve(self.rows('securities'), alias)
 
     def register_security(self, payload):
         data = SecurityInput.model_validate(payload).model_dump(mode="json")
@@ -344,6 +339,12 @@ class Ledger:
                     issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
                         'Observation cash contradicts confirmed activity', account_id=account_id))
                 known_lots = {row['id']: row for row in old_lots}
+                if snap['lots_complete']:
+                    observed_lots = {row['id'] for row in snap['lots']}
+                    for identity in known_lots.keys() - observed_lots:
+                        if decimal(known_lots[identity]['remaining_quantity']) > 0:
+                            issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
+                                'Complete observation omits remaining confirmed lot inventory', lot_id=identity))
                 for candidate in snap['lots']:
                     previous = known_lots.get(candidate['id'])
                     if previous is not None and any(
@@ -441,11 +442,13 @@ class Ledger:
                         self.connection.execute("DELETE FROM position_balances WHERE id=?", (p["id"],))
                         for l in self.rows("lots"):
                             if l["account_id"] == account_id and l["security_id"] == p["security_id"]:
-                                self.connection.execute("DELETE FROM tax_lots WHERE id=?", (l["id"],))
+                                self.connection.execute("DELETE FROM tax_lots WHERE id=? AND NOT EXISTS "
+                                    "(SELECT 1 FROM activity_lot_allocations WHERE lot_id=tax_lots.id)", (l["id"],))
             if snap["lots_complete"]:
                 for lot in self.rows("lots"):
                     if lot["account_id"] == account_id:
-                        self.connection.execute("DELETE FROM tax_lots WHERE id=?", (lot["id"],))
+                        self.connection.execute("DELETE FROM tax_lots WHERE id=? AND NOT EXISTS "
+                            "(SELECT 1 FROM activity_lot_allocations WHERE lot_id=tax_lots.id)", (lot["id"],))
             for lot in snap["lots"]:
                 sid = self.resolve(lot["security"])["id"]
                 prior = next((l for l in self.rows("lots") if l["id"] == lot["id"]), None)
@@ -660,11 +663,9 @@ def _activity_change_inplace(state, activity):
         )
         if qty <= 0 or price < 0 or fee < 0:
             raise DomainError("Quantity must be positive; price and fee nonnegative")
-        security = next(
-            (s for s in state["securities"] if activity["security"] in {s["id"], s["ticker"]}), None
-        )
-        if not security:
-            raise DomainError("Security does not resolve")
+        from invest.security_identity import resolve
+
+        security = resolve(state['securities'], activity['security'])
         p = next(
             (
                 p
@@ -744,6 +745,12 @@ def _activity_change_inplace(state, activity):
                         raise DomainError("Executed lot allocation exceeds available lot shares", 3)
                     if lot.get('identity_status') == 'UNRESOLVED' or lot.get('saleable') is False:
                         raise DomainError('Executed lot needs verified saleable identity', 3)
+                    if account.get('data_environment') == 'REAL' and (
+                            lot.get('identity_status') != 'VERIFIED' or lot.get('saleable') is not True
+                            or not lot.get('source_lot_id') or not lot.get('identity_source')):
+                        error = DomainError('Real executed lot requires reviewed source identity and saleability', 3)
+                        error.result = {'status': 'BLOCKED', 'issues': [_issue('UNVERIFIED_LOT_IDENTITY', str(error))]}
+                        raise error
                     remaining = decimal(lot['remaining_quantity'])
                     available_basis = (decimal(lot['remaining_adjusted_basis'])
                                        if lot.get('remaining_adjusted_basis') is not None else

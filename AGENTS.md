@@ -20,6 +20,14 @@
   durable links rather than inferring transfers from balance differences.
 - Hybrid search filters canonical model/dimension/content compatibility before
   lexical ranking. Keyword-only retrieval remains the explicit fallback.
+- Exhausted lots referenced by confirmed allocations remain historical rows;
+  complete imports must not delete them. Missing positive remaining lots are
+  discrepancies, not permission to replace confirmed inventory.
+- REAL specific-lot sales require verified status, sourced broker lot identity,
+  identity review evidence and explicit saleability. Missing fields are unknown.
+- Financial lookups share security_identity.resolve for strong IDs and sourced
+  aliases; ambiguous matches fail. Dashboard GET uses read_ledger and closes
+  handles before responding, including missing/incompatible ledgers.
 
 ## Verified implementation lessons
 

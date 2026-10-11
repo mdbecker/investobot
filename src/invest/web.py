@@ -244,9 +244,11 @@ def create_server(db_path, host="127.0.0.1", port=8765, *, docker_internal=False
             parsed = urlsplit(self.path)
             path = unquote(parsed.path)
             if path.startswith("/api/"):
-                ledger = Ledger(db_path)
                 try:
-                    result = _get_api(ledger, path, parse_qs(parsed.query))
+                    from invest.research_identity import read_ledger
+
+                    with read_ledger(db_path) as ledger:
+                        result = _get_api(ledger, path, parse_qs(parsed.query))
                     if isinstance(result, tuple):
                         self.reply(200, result[0], result[1], download_name=result[2])
                     else:
@@ -258,8 +260,6 @@ def create_server(db_path, host="127.0.0.1", port=8765, *, docker_internal=False
                     self.reply(400, {"error": "Invalid request parameters", "code": 1})
                 except Exception:
                     self.reply(500, {"error": "Internal inspection error", "code": 4})
-                finally:
-                    ledger.connection.close()
                 return
             files = {
                 "/": ("index.html", "text/html; charset=utf-8"),

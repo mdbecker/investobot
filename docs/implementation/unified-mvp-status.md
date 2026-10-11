@@ -53,6 +53,15 @@ coverage and compatible semantic-search CLI access now pass **1,145 tests**,
 items above; remaining work is the verified-lot/identity lifecycle audit, runtime
 and documentation simplification, and final exact-commit release validation.
 
+Verified-lot/reimport and alias lifecycle gaps are now closed: full offline Docker
+verification passes **1,168 tests**, 37.33 seconds, with Ruff passing. Exhausted
+lots remain available to immutable sale allocations, complete later imports cannot
+drop remaining confirmed lots, REAL specific-lot sales require independently
+verified source identity/saleability, and financial primitives share reviewed
+alias lookup. Dashboard GET routes use read-only connections and never initialize
+the selected ledger. Missing and incompatible database HTTP cases are covered.
+The five previously missing canonical documentation pages are now present.
+
 ## October 11 full specification audit checkpoint
 
 The prior committed tree `d2028ef` was independently built as image

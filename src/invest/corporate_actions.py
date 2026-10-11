@@ -10,10 +10,11 @@ def apply(state, activity):
     from invest.ledger import activity_change_inplace
 
     account = next((row for row in state['accounts'] if row['id'] == activity['account_id']), None)
-    matches = [row for row in state['securities'] if activity['security'] in {row['id'], row['ticker']}]
-    if account is None or len(matches) != 1:
+    from invest.security_identity import resolve
+
+    if account is None:
         raise DomainError('Corporate action account/security does not resolve uniquely', 3)
-    security = matches[0]
+    security = resolve(state['securities'], activity['security'])
     position = next((row for row in state['positions']
                      if row['account_id'] == account['id'] and row['security_id'] == security['id']), None)
     cash = next((row for row in state['cash_balances'] if row['account_id'] == account['id']), None)

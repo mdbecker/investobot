@@ -43,12 +43,11 @@ def simulate(state, actions):
             for row in working['lots']:
                 if row['id'] not in before_lots:
                     row['id'] = f'hypothetical-{index}-{digest}'
-            matches = [row for row in working['securities']
-                       if action['security'] in {row['id'], row.get('ticker')}]
-            if len(matches) != 1:
-                raise DomainError('Hypothetical security must resolve uniquely', 3)
+            from invest.security_identity import resolve
+
+            security = resolve(working['securities'], action['security'])
             position = next(row for row in working['positions']
-                            if row['account_id'] == action['account_id'] and row['security_id'] == matches[0]['id'])
+                            if row['account_id'] == action['account_id'] and row['security_id'] == security['id'])
             position.update(price=str(action['price']), market_value=str(
                 decimal(position['quantity']) * decimal(action['price'])),
                 valuation_state='HYPOTHETICAL', as_of=action['date'])

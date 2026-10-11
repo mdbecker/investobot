@@ -53,5 +53,21 @@ Observed text p50/p95 was 0.904/0.986 ms; hybrid vector p50/p95 was
 2,056,086 bytes. Both searches returned ten cited hits. Initialization, import,
 reconcile, backup, 20-plan list/compare, pinned Parquet join and top-N selection
 completed; the financial-state and disposable-cleanup checks passed.
-These measurements describe that small run only. The 100,000-chunk measurement
-and identical-baseline regression comparison remain required release evidence.
+These measurements describe that small run only.
+
+## Full-corpus and paired regression evidence
+
+The actual [100,000-chunk report](implementation/benchmark-unified-100k-2026-10-11.json)
+records fixture SHA `f423cb8e33b31e6b74503ebfabde63db4e3b21f898017f5426ff53d3f52da926`,
+20 warm top-10 queries, the explicitly fictional two-dimensional model, hardware
+and native versions. Corpus construction took 215.018 seconds; total artifact
+size was 218,568,542 bytes. Text p50/p95 was 312.044/314.745 ms; hybrid p50/p95
+was 548.308/558.056 ms. Financial invariants and disposable cleanup passed.
+These measurements apply to that recorded implementation. Model compatibility
+filter changes after the measurement require remeasurement before claiming
+current-release search latency.
+
+The [same-hardware paired 20-plan measurement](implementation/benchmark-plan-comparison.md)
+passed the ≤2× gate against the original local baseline: list 0.572×,
+compare 0.588×, database growth 0.822×. Exact images, financial fixture hashes,
+raw measurements and the single-pair limitations are retained in the report.

@@ -70,14 +70,9 @@ def _remaining_basis(lot):
 
 
 def _security(state, alias):
-    matches = [
-        s
-        for s in state["securities"]
-        if alias in {s["id"], s.get("ticker"), s.get("cusip"), s.get("isin"), s.get("figi")}
-    ]
-    if len(matches) != 1:
-        raise DomainError("Security is unknown or ambiguous", 3)
-    return matches[0]
+    from invest.security_identity import resolve
+
+    return resolve(state['securities'], alias)
 
 
 def _matches(item, security):
