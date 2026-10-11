@@ -145,10 +145,13 @@ def prepare_analysis_case(ctx):
                 ctx['ledger'].apply(after)
             closing = snapshot(date='2026-10-10', cash='320')
         elif case == 'B23':
-            ctx['ledger'].record_activity(activity('DIVIDEND', 'retained-dividend', amount='50'), yes=True)
+            ctx['ledger'].record_activity(activity('DIVIDEND', 'retained-dividend', amount='50',
+                event_timestamp='2026-10-10T10:00:00Z'), yes=True)
             ctx['ledger'].record_activity(activity('BUY', 'dividend-buy', security='FICTION',
-                quantity='0.5', price='100', fee='0'), yes=True)
+                quantity='0.5', price='100', fee='0',
+                event_timestamp='2026-10-10T11:00:00Z'), yes=True)
             closing = snapshot(date='2026-10-10', quantity='10.5', basis='950', cash='0')
+            closing['source_timestamp'] = '2026-10-10T12:00:00Z'
         else:
             closing = snapshot(date='2026-10-10', cash='100' if case == 'B21' else '0')
         if case == 'B22':
