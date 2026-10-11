@@ -57,6 +57,20 @@ def test_partial_lot_reimport_retains_stable_identity_basis_and_confirmed_alloca
     assert ledger.connection.execute('PRAGMA foreign_key_check').fetchall() == []
 
 
+def test_complete_reimport_cannot_drop_remaining_confirmed_lot(ledger):
+    ledger.apply(observation())
+    executed_sale(ledger, '2')
+    candidate = observation(day='2026-03-03', cash='1200', quantity='8', basis='640')
+    candidate['lots'] = []
+    before = copy.deepcopy(ledger.state())
+    with pytest.raises(DomainError) as failure:
+        ledger.apply(candidate)
+    assert failure.value.code == 3
+    assert any(issue['code'] == 'CONFIRMED_EVENT_DISCREPANCY'
+               for issue in failure.value.result['issues'])
+    assert ledger.state() == before
+
+
 @pytest.mark.parametrize('missing', ['all', 'source_lot_id', 'identity_source', 'identity_status', 'saleable'])
 def test_real_specific_sale_needs_verified_source_identity_and_saleability(ledger, missing):
     candidate = observation(environment='REAL')
