@@ -25,9 +25,9 @@ def household(ctx):
         "account": {"id": "ira", "name": "IRA", "tax_status": "TAX_DEFERRED"},
         "positions": [
             {"security": "AAA", "asset_type": "ETF", "quantity": "6", "price": "100",
-             "market_value": "600", "as_of": "2026-10-08"},
+             "market_value": "600", "as_of": "2026-10-08", 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
             {"security": "BBB", "asset_type": "ETF", "quantity": "3", "price": "100",
-             "market_value": "300", "as_of": "2026-10-08"},
+             "market_value": "300", "as_of": "2026-10-08", 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
         ],
         "cash": "100", "cash_known": True, "source_hash": "synthetic-target-household",
         "source_timestamp": "2026-10-08", "positions_complete": True,

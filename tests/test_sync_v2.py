@@ -14,9 +14,9 @@ def snapshot():
         'account': {'id': 'sync', 'name': 'Synthetic', 'tax_status': 'TAXABLE'},
         'positions': [
             {'security': 'AAA', 'cusip': 'C1', 'quantity': '10', 'price': '100',
-             'market_value': '1000', 'cost_basis': '800', 'as_of': '2026-10-08'},
+             'market_value': '1000', 'cost_basis': '800', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
             {'security': 'BBB', 'isin': 'I2', 'quantity': '5', 'price': '100',
-             'market_value': '500', 'as_of': '2026-10-08'},
+             'market_value': '500', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
         ],
         'lots': [{'id': 'sync-lot', 'security': 'AAA', 'quantity': '10',
                   'remaining_quantity': '10', 'cost_basis': '800',

@@ -35,9 +35,9 @@ def mixed_household(planning):
             'positions': [
                 {'security': 'AAA', 'asset_type': 'STOCK', 'quantity': quantity,
                  'price': '100', 'market_value': str(Decimal(quantity) * 100),
-                 'cost_basis': basis, 'as_of': '2026-10-08'},
+                 'cost_basis': basis, 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
                 {'security': 'BBB', 'asset_type': 'MUTUAL_FUND', 'quantity': '0',
-                 'price': '100', 'market_value': '0', 'as_of': '2026-10-08'},
+                 'price': '100', 'market_value': '0', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
             ],
             'lots': [{'id': lid, 'security': 'AAA', 'quantity': qty,
                       'remaining_quantity': qty, 'cost_basis': cost,

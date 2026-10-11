@@ -101,9 +101,9 @@ def household(ctx):
                     "history_complete": True},
         "positions": [
             {"security": "AAA", "asset_type": "STOCK", "quantity": "10", "price": "100",
-             "market_value": "1000", "cost_basis": "500", "as_of": "2026-10-08"},
+             "market_value": "1000", "cost_basis": "500", "as_of": "2026-10-08", 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
             {"security": "BBB", "asset_type": "STOCK", "quantity": "0", "price": "100",
-             "market_value": "0", "as_of": "2026-10-08"},
+             "market_value": "0", "as_of": "2026-10-08", 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
         ],
         "lots": [{"id": "ira-old", "security": "AAA", "quantity": "10",
                   "remaining_quantity": "10", "cost_basis": "500",

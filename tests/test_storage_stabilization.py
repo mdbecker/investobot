@@ -27,7 +27,7 @@ def snapshot(quantity, source_hash, source_date):
         "account": {"id": "ira", "name": "Synthetic IRA", "tax_status": "TAX_FREE"},
         "positions": [{"security": "SYN", "asset_type": "STOCK", "quantity": str(quantity),
                        "price": "100", "market_value": str(quantity * 100),
-                       "cost_basis": str(quantity * 50), "as_of": source_date}],
+                       "cost_basis": str(quantity * 50), "as_of": source_date, 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         "lots": [{"id": "synthetic-lot", "security": "SYN", "quantity": str(quantity),
                   "remaining_quantity": str(quantity), "cost_basis": str(quantity * 50),
                   "acquisition_date": "2024-01-01"}],

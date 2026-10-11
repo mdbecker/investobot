@@ -30,7 +30,7 @@ def snapshot(account='a', source='2026-10-08'):
                        'history_complete': True, 'currency': 'USD', 'active': True},
             'positions': [{'security': 'VTI', 'asset_type': 'OTHER', 'quantity': '10',
                            'market_value': '1000', 'price': '100', 'cost_basis': '800',
-                           'cusip': 'SYNTH-C1', 'isin': 'SYNTH-I1', 'as_of': '2026-10-08'}],
+                           'cusip': 'SYNTH-C1', 'isin': 'SYNTH-I1', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
             'lots': [{'id': f'{account}-lot', 'security': 'VTI', 'quantity': '10',
                       'remaining_quantity': '10', 'cost_basis': '800',
                       'acquisition_date': '2024-01-01'}],

@@ -36,9 +36,9 @@ def ctx(tmp_path, monkeypatch):
 def taxable(ctx):
     ctx['snap'] = {'account': {'id': 'tax', 'name': 'Synthetic', 'tax_status': 'TAXABLE', 'history_complete': True},
         'positions': [{'security': 'AAA', 'cusip': 'SYNTH-C1', 'asset_type': 'STOCK', 'quantity': '10',
-                       'price': '100', 'market_value': '1000', 'cost_basis': '800', 'as_of': '2026-10-08'},
+                       'price': '100', 'market_value': '1000', 'cost_basis': '800', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
                       {'security': 'BBB', 'asset_type': 'STOCK', 'quantity': '0', 'price': '100',
-                       'market_value': '0', 'as_of': '2026-10-08'}],
+                       'market_value': '0', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'lots': [{'id': 'known-lot', 'security': 'AAA', 'quantity': '10', 'remaining_quantity': '10',
                   'cost_basis': '800', 'acquisition_date': '2024-01-01'}],
         'cash': '500', 'source_hash': 'synthetic-final', 'source_timestamp': '2026-10-08',

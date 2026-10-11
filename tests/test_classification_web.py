@@ -38,7 +38,7 @@ def request(ctx, path, payload=None):
 def portfolio(ctx):
     snapshot = {'account': {'id': 'ira', 'name': 'Synthetic IRA', 'tax_status': 'TAX_FREE'},
         'positions': [{'security': 'VTI', 'asset_type': 'OTHER', 'quantity': '10',
-                       'market_value': '1000', 'price': '100', 'as_of': '2026-10-08'}],
+                       'market_value': '1000', 'price': '100', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'cash': '0', 'source_timestamp': '2026-10-08', 'source_hash': 'unknown-type'}
     ctx['ledger'].apply(snapshot)
     ctx['security_id'] = ctx['ledger'].resolve('VTI')['id']

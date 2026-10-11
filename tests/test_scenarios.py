@@ -38,6 +38,8 @@ def setup(ctx, tax_status):
                 "price": "100",
                 "as_of": "2026-10-08",
                 "cost_basis": "1200",
+                'displayed_price_precision': 0,
+                'displayed_market_value_precision': 0,
             }
         ],
         "lots": [
@@ -71,6 +73,8 @@ def setup(ctx, tax_status):
                     "market_value": "0",
                     "price": "100",
                     "as_of": "2026-10-08",
+                    'displayed_price_precision': 0,
+                    'displayed_market_value_precision': 0,
                 }
             ],
             "cash": "0",

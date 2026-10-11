@@ -19,7 +19,7 @@ def accepted(ctx):
     ctx['ledger'].apply({
         'account': {'id': 'a', 'name': 'Synthetic'},
         'positions': [{'security': 'AAA', 'quantity': '10', 'market_value': '1000',
-                       'price': '100', 'cost_basis': '800', 'as_of': '2026-10-08'}],
+                       'price': '100', 'cost_basis': '800', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'lots': [{'id': name, 'security': 'AAA', 'quantity': '5', 'remaining_quantity': '5',
                   'cost_basis': basis, 'acquisition_date': acquired}
                  for name, basis, acquired in [('old', '300', '2024-01-01'),

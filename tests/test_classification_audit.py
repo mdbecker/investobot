@@ -26,7 +26,7 @@ def snapshot(account='a', asset='OTHER', quantity='10', basis='800', date='2026-
         'positions': [{'security': 'VTI', 'asset_type': asset, 'quantity': quantity,
                        'price': '100', 'market_value': str(int(quantity) * 100),
                        'cost_basis': basis, 'as_of': date, 'cusip': 'SYN-C',
-                       'isin': 'SYN-I', 'figi': 'SYN-F'}],
+                       'isin': 'SYN-I', 'figi': 'SYN-F', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'lots': [{'id': account + '-lot', 'security': 'VTI', 'quantity': quantity,
                   'remaining_quantity': quantity, 'cost_basis': basis,
                   'acquisition_date': '2024-01-01'}],
@@ -121,7 +121,7 @@ def contradictory(ctx, identity=None):
         incoming['positions'][0][identity] = 'CONFLICTING-IDENTITY'
     incoming['positions'].insert(0, {'security': 'NEW', 'asset_type': 'STOCK',
         'quantity': '1', 'price': '50', 'market_value': '50', 'cost_basis': '40',
-        'as_of': '2026-10-09'})
+        'as_of': '2026-10-09', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0})
     incoming['lots'].append({'id': 'new-lot', 'security': 'NEW', 'quantity': '1',
         'remaining_quantity': '1', 'cost_basis': '40', 'acquisition_date': '2024-01-01'})
     try:

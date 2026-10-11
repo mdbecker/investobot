@@ -52,9 +52,9 @@ def setup(ctx):
     ctx['ledger'].apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE',
                                    'history_complete': True},
         'positions': [{'security': 'AAA', 'asset_type': 'STOCK', 'quantity': '10', 'price': '100',
-                       'market_value': '1000', 'as_of': '2026-10-08'},
+                       'market_value': '1000', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
                       {'security': 'BBB', 'asset_type': 'STOCK', 'quantity': '0', 'price': '100',
-                       'market_value': '0', 'as_of': '2026-10-08'}],
+                       'market_value': '0', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'cash': '0', 'source_timestamp': '2026-10-08', 'source_hash': 'synthetic-web'})
     aaa, bbb = [ctx['ledger'].resolve(t)['id'] for t in ['AAA', 'BBB']]
     ctx['target_input'] = {'name': 'Web target', 'target_allocations': {aaa: '0', bbb: '1', 'CASH': '0'},

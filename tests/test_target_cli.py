@@ -22,7 +22,7 @@ def ctx(tmp_path, monkeypatch):
 def investment(ctx):
     ctx['ledger'].apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE'},
                          'positions': [{'security': 'AAA', 'asset_type': 'ETF', 'quantity': '10',
-                                        'market_value': '1000', 'price': '100'}],
+                                        'market_value': '1000', 'price': '100', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
                          'cash': '100', 'source_hash': 'synthetic', 'source_timestamp': '2026-10-08'})
     sid = ctx['ledger'].resolve('AAA')['id']
     ctx['input'] = {'name': 'Balanced', 'target_allocations': {sid: '0.9', 'CASH': '0.1'},

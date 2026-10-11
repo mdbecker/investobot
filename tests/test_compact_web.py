@@ -28,7 +28,7 @@ def portfolio(ctx):
     ledger = ctx['ledger']
     ledger.apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE'},
         'positions': [{'security': 'AAA', 'asset_type': 'STOCK', 'quantity': '10',
-                       'price': '100', 'market_value': '1000', 'as_of': '2026-10-08'}],
+                       'price': '100', 'market_value': '1000', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'cash': '0', 'source_timestamp': '2026-10-08', 'source_hash': 'compact-web'})
     security_id = ledger.resolve('AAA')['id']
     ctx['target'] = targets.save(ledger, {'name': 'Hold synthetic shares',

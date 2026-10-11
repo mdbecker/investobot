@@ -174,7 +174,7 @@ def target(ctx):
     ledger = ctx['ledger']
     ledger.apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE'},
         'positions': [{'security': 'SYN', 'asset_type': 'STOCK', 'quantity': '10',
-                       'price': '100', 'market_value': '1000', 'as_of': '2026-10-08'}],
+                       'price': '100', 'market_value': '1000', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'cash': '100', 'source_hash': 'synthetic', 'source_timestamp': '2026-10-08'})
     sid = ledger.resolve('SYN')['id']
     ctx['target'] = save(ledger, {'name': 'Synthetic target',
