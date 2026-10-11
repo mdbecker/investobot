@@ -1,0 +1,36 @@
+{
+  "baseline_commit": "d2028ef",
+  "baseline_image_id": "fdc7149a3ac8",
+  "baseline_verification": {
+    "execution": "disposable Docker image; network disabled; no source or ledger mounts",
+    "pytest": {"passed": 1036, "seconds": 24.32},
+    "ruff": "passed with explicit pyproject.toml configuration",
+    "wheel": "built offline, installed inside disposable container, CLI import and 13 bundled skills verified"
+  },
+  "red_checkpoints": [
+    {
+      "commit": "ca15369",
+      "file": "tests/test_prd_runtime_audit.py",
+      "failed": 4,
+      "passed": 1,
+      "diagnostics": ["QuantLib remains a default dependency", "unsupported callable, convertible and structured inputs return calculated metrics"]
+    },
+    {
+      "commit": "44567d8",
+      "files": ["tests/test_prd_accounting_audit.py", "tests/test_prd_analytics_audit.py", "tests/test_prd_storage_audit.py"],
+      "failed": 17,
+      "diagnostics": [
+        "tax queries ignore remaining adjusted basis",
+        "household performance aggregates currencies and cannot select an account",
+        "planning ignores cash freshness and position coverage",
+        "trade priority follows identifiers rather than retirement account and underweight priority",
+        "risk silently intersects incomplete historical series",
+        "backtest CLI ignores nonzero cash-return assumptions and dated contributions",
+        "mixed-environment pure look-through lacks typed gate",
+        "historical universe ignores accepted immutable vintage",
+        "saved plans lack storage schema manifest identity"
+      ]
+    }
+  ],
+  "scope": "Audit expands coverage beyond B01-B66; passing baseline is not full PRD completion. No skipped cases, host installs or remote Git operations."
+}
