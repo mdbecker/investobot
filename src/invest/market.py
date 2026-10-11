@@ -43,6 +43,11 @@ def _alias(value):
     return str(value).strip().upper() if value not in (None, "") else None
 
 
+def _issue(code, message):
+    return {'code': code, 'message': message, 'blocks_calculation': True,
+            'blocks_proposals': True, 'blocks_execution_review': True}
+
+
 class MarketClient:
     """Public market data only: never accepts account or brokerage credentials."""
 
@@ -91,7 +96,7 @@ class MarketClient:
             try:
                 age = (now - datetime.fromisoformat(cached["retrieved_at"])).total_seconds()
                 if 0 <= age < ttl:
-                    return dict(cached, cached=True)
+                    return self._provenance(dict(cached, cached=True), kind)
             except (ValueError, KeyError, TypeError):
                 pass
         rows = self._fetch(kind, ticker)
@@ -104,6 +109,12 @@ class MarketClient:
         ]
         # Oldest constituent update bounds a dataset's freshness conservatively.
         as_of = (max(dates) if kind == "history" else min(dates)) if dates else None
+        if kind == 'history':
+            as_of = max((price['date'] for price in result.get('prices', [])), default=None)
+        if kind == 'holdings' and any(not any(row.get(field) for field in (
+                'date', 'asOfDate', 'updated', 'updatedAt')) for row in rows):
+            result.setdefault('issues', []).append(_issue('PARTIAL_SOURCE_DATE_COVERAGE',
+                'One or more constituents lack source dates'))
         if kind == "quote" and rows and rows[0].get("timestamp") is not None:
             try:
                 as_of = datetime.fromtimestamp(float(rows[0]["timestamp"]), UTC).isoformat()
@@ -118,8 +129,45 @@ class MarketClient:
             cached=False,
             cache_ttl_seconds=ttl,
         )
+        result = self._provenance(result, kind)
         with self.ledger.connection:
             self.ledger.put(table, key, result)
+        return result
+
+    def _provenance(self, result, kind):
+        result.setdefault('issues', [])
+        result['data_environment'] = 'SYNTHETIC' if self.fixture_path else 'REAL'
+        result['source_timestamp'] = result.get('data_as_of')
+        result['retrieval_timestamp'] = result.get('retrieved_at')
+        source = result.get('data_as_of')
+        result['source_date_status'] = 'KNOWN' if source else 'UNKNOWN'
+        result['source_age_seconds'] = None
+        if source:
+            try:
+                observed = datetime.fromisoformat(source.replace('Z', '+00:00'))
+                observed = observed.replace(tzinfo=UTC) if observed.tzinfo is None else observed
+                result['source_age_seconds'] = (datetime.now(UTC) - observed).total_seconds()
+                if result['source_age_seconds'] < 0:
+                    result['source_date_status'] = 'FUTURE'
+                    result['issues'].append(_issue('FUTURE_SOURCE_DATE', 'Source observation is future dated'))
+                elif kind == 'holdings' and result['source_age_seconds'] > 120 * 86400:
+                    result['source_date_status'] = 'STALE'
+                    result['issues'].append(_issue('STALE_HOLDINGS', 'Constituent observation exceeds 120 days'))
+                elif kind == 'quote' and result['source_age_seconds'] > 900:
+                    result['source_date_status'] = 'STALE'
+                    result['issues'].append(_issue('STALE_QUOTE', 'Source quote exceeds the 900-second decision freshness limit'))
+            except (ValueError, TypeError):
+                result['source_date_status'] = 'UNKNOWN'
+                result['issues'].append(_issue('INVALID_SOURCE_DATE', 'Provider source date is invalid'))
+        elif result.get('status') == 'AVAILABLE':
+            result['issues'].append(_issue('UNKNOWN_SOURCE_DATE', 'Retrieval time does not establish source freshness'))
+            if kind == 'quote':
+                result['status'] = 'REVIEW_REQUIRED'
+        result['issues'] = list({issue['code']: issue for issue in result['issues']}.values())
+        result['coverage'] = {'source_date_known': result['source_date_status'] in {'KNOWN', 'STALE', 'FUTURE'},
+                              'decision_freshness_complete': result['source_date_status'] == 'KNOWN'
+                                  and not any(issue['code'] == 'PARTIAL_SOURCE_DATE_COVERAGE'
+                                              for issue in result['issues'])}
         return result
 
     def quote(self, ticker, refresh=False):
@@ -185,6 +233,7 @@ class MarketClient:
                         else None,
                         "sector": row.get("sector"),
                         "asset_type": row.get("assetType"),
+                        'source_as_of': row.get('asOfDate') or row.get('updated') or row.get('updatedAt'),
                     }
                 )
             coverage = sum(
@@ -211,11 +260,13 @@ class MarketClient:
 
     def history(self, ticker, refresh=False):
         def normalize(rows):
-            prices, warnings = [], []
+            prices, warnings, issues = [], [], []
             for row in rows:
                 adjusted = row.get("adjClose", row.get("adjustedClose"))
                 if adjusted is None:
                     warnings.append("Adjusted close unavailable; unadjusted price was excluded")
+                    issues.append(_issue('MISSING_DIVIDEND_ADJUSTED_PRICE',
+                                         'Unadjusted close cannot establish total return'))
                     continue
                 try:
                     day = date.fromisoformat(str(row["date"]))
@@ -238,13 +289,19 @@ class MarketClient:
                     warnings.append(
                         f"Possible missing sessions between {start} and {end}; holiday calendar not applied"
                     )
+                    issues.append(_issue('UNVERIFIED_HISTORY_SESSION_COVERAGE',
+                                         'Observed dates have gaps; a verified session calendar is required'))
+            if not prices and not issues:
+                issues.append(_issue('HISTORY_UNAVAILABLE', 'No adjusted historical observations supplied'))
             return {
-                "status": "AVAILABLE" if prices else "DATA_UNAVAILABLE",
+                "status": "AVAILABLE" if prices and not issues else 'PARTIAL' if prices else 'UNAVAILABLE',
                 "prices": prices,
                 "usable_period": {"start": prices[0]["date"], "end": prices[-1]["date"]}
                 if prices
                 else None,
                 "warnings": warnings,
+                'issues': issues,
+                'return_basis': 'DIVIDEND_ADJUSTED_PROVIDER_CLOSE',
             }
 
         return self._cached("history", ticker, refresh, normalize)
