@@ -49,3 +49,21 @@ Hypothetical prices revalue only a disposable scenario baseline; accepted quanti
 and marks remain unchanged. The authoritative simulator checks cash and household
 value before persistence. Plan list/show calculate current staleness separately;
 historical actions and reports remain immutable. No proposal places a trade.
+
+Conditional harvesting uses `invest tax harvest-plan --policy-version POLICY_ID
+--as-of YYYY-MM-DD`. Approve a policy containing `harvest_review` with the loss
+security/date, household acquisition coverage, sourced replacement comparison and
+`price_observations` keyed by canonical security IDs. Each price supplies exact
+`price`, `currency`, `data_environment`, `as_of` and `source`. The replacement
+supplies `security`, reviewed `source`/`source_locator`, explicit
+`approved_for_purchase` and `substantially_identical` booleans. Permission alone
+does not certify substantial identity or legal safety.
+
+Both trades require saved independent permissions/increments, known fees, current
+verified lots/cash, complete annual tax coverage and a reasoned approved harvest
+exception. The report pins policy/hash and financial source state, calculates
+signed conditional tax effect, and validates disposable sale/replacement balances.
+Losses never replenish annual headroom. Known household conflicts or missing facts
+suppress actions; complete facts still return `REVIEW_REQUIRED` with conditional
+actions and mandatory human wash-sale review. `--file` remains an unsaved read-only
+review, with no authorized trades. No report guarantees tax savings or executes.

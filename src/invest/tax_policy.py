@@ -215,10 +215,15 @@ class HarvestReviewPolicy(BaseModel):
     data_environment: str = Field(pattern='^(REAL|SYNTHETIC)$')
     replacement: dict | None = None
     scheduled_acquisitions: list[dict] = Field(default_factory=list)
+    price_observations: dict[str, dict] = Field(default_factory=dict)
 
 
 def harvest_plan(state, policy, as_of):
     """Inspect known household acquisitions; legal outcomes remain human review."""
+    if isinstance(policy, dict) and 'harvest_review' in policy:
+        from invest.harvest_proposals import conditional_harvest
+
+        return conditional_harvest(state, policy, as_of)
     policy = HarvestReviewPolicy.model_validate(policy)
     observed = _day(as_of)
     sale = policy.loss_sale_date

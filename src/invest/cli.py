@@ -1199,11 +1199,19 @@ def plan_propose(file: str = typer.Option(...), policy: str = typer.Option(...),
 
 
 @tax.command('harvest-plan')
-def tax_harvest_plan(file: str = typer.Option(None), as_of: str = typer.Option(...)):
+def tax_harvest_plan(file: str = typer.Option(None), as_of: str = typer.Option(...),
+                     policy_version: str = typer.Option(None)):
     from invest.ledger import _issue
     from invest.research_identity import read_ledger
     from invest.tax import harvest_plan
     def result():
+        if file is not None and policy_version is not None:
+            raise DomainError('Choose an approved policy version or an unsaved review file')
+        if policy_version is not None:
+            from invest.planning import get_policy
+
+            with read_ledger(database_path()) as selected:
+                return harvest_plan(selected.state(), get_policy(selected, policy_version), as_of)
         if file is None:
             return {'status': 'REVIEW_REQUIRED', 'as_of': as_of,
                     'issues': [_issue('MISSING_HARVEST_REVIEW_SCOPE',

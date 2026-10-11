@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictBool
 
-from invest.tax_policy import AnnualTaxPolicy
+from invest.tax_policy import AnnualTaxPolicy, HarvestReviewPolicy
 
 Text = Annotated[str, Field(strict=True, min_length=1, max_length=4000, pattern=r'\S')]
 PlainDecimal = Annotated[str, Field(strict=True, pattern=r'^\d+(?:\.\d+)?$')]
@@ -36,6 +36,29 @@ class TradingPermission(BaseModel):
     can_sell: StrictBool
     can_hold: StrictBool
     share_increment: PositiveDecimal | None = None
+
+
+class HarvestPriceInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    price: PlainDecimal | None = None
+    currency: Text | None = None
+    data_environment: Environment | None = None
+    as_of: Text | None = None
+    source: Text | None = None
+
+
+class HarvestReplacementInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    security: Text
+    substantially_identical: StrictBool | None = None
+    approved_for_purchase: StrictBool | None = None
+    source: Text | None = None
+    source_locator: Text | None = None
+
+
+class SavedHarvestReview(HarvestReviewPolicy):
+    price_observations: dict[Text, HarvestPriceInput] = Field(default_factory=dict)
+    replacement: HarvestReplacementInput | None = None
 
 
 class PolicyTaxBudget(AnnualTaxPolicy):
@@ -80,3 +103,4 @@ class TradingPolicyInput(BaseModel):
     exception_reason: Text | None = None
     baseline_environment: Environment | None = None
     price_environment: Environment | None = None
+    harvest_review: SavedHarvestReview | None = None

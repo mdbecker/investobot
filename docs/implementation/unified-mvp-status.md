@@ -6,7 +6,7 @@ Historical PRDs retain their original contents.
 
 ## Current completion assessment — October 11
 
-Estimated **95% of offline MVP delivery** is complete. This is a qualitative
+Estimated **98% of offline MVP delivery** is complete. This is a qualitative
 full-specification assessment, not a test-count-derived completion measure.
 Entries below this section are historical checkpoints and retain their original
 pending-work statements; this section supersedes those statements.
@@ -42,9 +42,15 @@ Explicit accepted-observation provenance now passes the full offline Docker
 suite: **1,212 tests in 41.68 seconds**, with Ruff passing. No missing source
 environment is inferred; conflicting rows/accounts are rejected atomically.
 
-Remaining software work includes the audited read-only CLI paths, conditional
-harvest proposals under a saved approved policy, final current documentation and
-exact-release image/package checks. The standalone recovery demonstration passes.
+All audited read-only CLI paths pass **1,220 tests in 41.39 seconds**, with Ruff
+passing, committed `f3bfc97`. Conditional harvest proposals now pass 28 focused
+cases and the full **1,248-test** suite (42.84 seconds). They require saved policy
+identity/hash, verified lots, explicit fees/rates, sourced prices, independent
+permissions, execution increments and cash floors. Changed prices/policy payloads
+cannot bypass review. Mandatory wash-sale review remains on every proposal.
+
+Remaining release work is frozen-tree verification and exact-release image,
+installed-wheel and skill checks. The standalone recovery demonstration passes.
 The remaining audit may identify additional cases; no package is declared
 complete solely because its minimum B01–B66 scenarios pass.
 

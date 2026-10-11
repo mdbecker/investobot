@@ -52,9 +52,14 @@ Batch one taxable account and at most 20 lots; review the whole household window
    coverage and scheduled purchases. Ask the human for missing outside activity.
 3. `invest fund replacements ORIGINAL APPROVED_CANDIDATE` and inspect sourced
    comparison coverage, substantial identity uncertainty and permissions.
-4. `invest tax harvest-plan --file harvest.json --as-of DATE`; inspect typed issues
-   and `invest tax budget --year YEAR --as-of DATE`. Present a review artifact for
-   human approval, never execute a sale or guarantee tax savings.
+4. Use `invest tax harvest-plan --file harvest.json --as-of DATE` for unsaved
+   review. For conditional trades, preview `invest policy approve --file
+   reviewed-policy.json`, obtain explicit human approval, then save with
+   `--confirm`. The policy needs a sourced `harvest_review`, prices, independent
+   permissions, fees, increments, tax coverage and a reasoned harvest exception.
+   Run `invest tax harvest-plan --policy-version POLICY_ID --as-of DATE`.
+   Preserve policy/source hashes, conditional actions and signed tax estimate.
+   Mandatory wash-sale review remains; never execute or guarantee savings.
 
 Success walkthrough: sourced verified loss lots and complete household coverage
 allow a tool-produced candidate loss estimate and replacement comparison. Report

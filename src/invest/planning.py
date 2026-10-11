@@ -81,12 +81,20 @@ def save_policy(ledger, policy, *, confirm=False):
     return dict(policy, status='APPROVED', committed=True)
 
 
+class ApprovedPolicy(dict):
+    """A saved policy identity resolved locally, preserving its exact JSON payload."""
+
+    def __init__(self, payload, digest):
+        super().__init__(payload)
+        self.policy_hash = digest
+
+
 def get_policy(ledger, policy_id):
-    row = ledger.connection.execute('SELECT payload_json FROM trading_policy_versions WHERE id=?',
+    row = ledger.connection.execute('SELECT payload_json,policy_hash FROM trading_policy_versions WHERE id=?',
                                     (policy_id,)).fetchone()
     if not row:
         raise DomainError('Approved trading policy does not exist', 3)
-    return json.loads(row[0])
+    return ApprovedPolicy(json.loads(row[0]), row[1])
 
 
 def list_policies(ledger):

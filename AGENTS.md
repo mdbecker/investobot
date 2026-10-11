@@ -44,6 +44,9 @@
 - Legacy unapproved scenarios carry typed policy review issues; REAL inputs
   cannot use scenario generation to bypass approved trading policies. Gate on
   issue fields, never on warning wording.
+- Harvest estimates use immutable approved policy identity, verified loss lots
+  and sourced current replacement prices. Simulate both cash legs, preserve
+  exact fee residue, and keep mandatory human wash review on conditional actions.
 
 - Printed financial precision is source evidence: provide it explicitly in
   synthetic fixtures; never infer it from normalized decimal storage. Keep
