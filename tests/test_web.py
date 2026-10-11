@@ -91,7 +91,10 @@ def apply(context):
 
 @then("the portfolio summary reflects the accepted snapshot")
 def applied(context):
-    assert request(context, "/api/summary")[1]["total_value"] == "1000"
+    summary = request(context, "/api/summary")[1]
+    assert summary['total_value'] is None
+    assert summary['known_value_subtotal'] == '1000'
+    assert summary['status'] == 'PARTIAL'
 
 
 @then("the raw page has not been stored")
