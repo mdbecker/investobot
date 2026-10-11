@@ -89,7 +89,7 @@ def migrated(ctx):
     import pytest
 
     from invest.models import DomainError
-    with pytest.raises(DomainError, match='reset'):
+    with pytest.raises(DomainError, match='UNSUPPORTED_DEVELOPMENT_SCHEMA'):
         Ledger(ctx['legacy_path'])
 
 

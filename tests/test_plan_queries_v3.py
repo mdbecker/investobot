@@ -60,7 +60,7 @@ def guarded_queries(ctx, monkeypatch):
 
     def authorize(action, table, column, database, trigger):
         if action == sqlite3.SQLITE_READ and (
-            (table == 'plans' and column == 'details_json') or
+            (table == 'plan_runs' and column == 'details_json') or
             (table == 'plan_baselines' and column == 'state_json')
         ):
             return sqlite3.SQLITE_DENY
@@ -95,13 +95,13 @@ def summaries(ctx):
 @then('list ordering and selected lookup use SQLite indexes')
 def indexed(ctx):
     connection = ctx['ledger'].connection
-    listing = connection.execute('EXPLAIN QUERY PLAN SELECT summary_json FROM plans '
+    listing = connection.execute('EXPLAIN QUERY PLAN SELECT summary_json FROM plan_runs '
                                  'ORDER BY created_at DESC, id DESC').fetchall()
-    lookup = connection.execute('EXPLAIN QUERY PLAN SELECT details_json FROM plans '
+    lookup = connection.execute('EXPLAIN QUERY PLAN SELECT details_json FROM plan_runs '
                                 'WHERE id=?', ('first',)).fetchall()
     assert any('plans_created_idx' in row[3] for row in listing)
     assert not any('TEMP B-TREE' in row[3] for row in listing)
-    assert any('SEARCH plans USING INDEX' in row[3] for row in lookup)
+    assert any('SEARCH plan_runs USING INDEX' in row[3] for row in lookup)
 
 
 @when('the first saved plan is retrieved after current cash changes')
@@ -113,7 +113,7 @@ def retrieve(ctx):
         cash['amount'] = '101'
         ledger.put('cash_balances', cash['id'], cash)
         # An unrelated corrupt detail must never be decoded by selected retrieval.
-        ledger.connection.execute("UPDATE plans SET details_json='invalid-json' WHERE id='second'")
+        ledger.connection.execute("UPDATE plan_runs SET details_json='invalid-json' WHERE id='second'")
     ctx['retrieved'] = load_plan(ledger, 'first')
     ctx['shown'] = plans.show(ledger, 'first')
 
@@ -132,6 +132,8 @@ def old_history(ctx, monkeypatch):
     with ledger.connection:
         ledger.put('snapshots', 'old', {'id': 'old', 'account': {'id': '00123'},
             'imported_at': '2020-01-01', 'source_timestamp': '2020-01-01',
+            'source_hash': 'fictional-old-history', 'fingerprint': 'fictional-old-history',
+            'data_environment': 'SYNTHETIC',
             'positions': [{'irrelevant': 'x' * 100000}]})
     original = ledger.rows
 
@@ -187,7 +189,7 @@ def concurrent(ctx):
 def shared_baseline(ctx):
     connection = ctx['ledger'].connection
     assert connection.execute('SELECT count(*) FROM plan_baselines').fetchone()[0] == 1
-    assert connection.execute('SELECT count(*) FROM plans').fetchone()[0] == 4
+    assert connection.execute('SELECT count(*) FROM plan_runs').fetchone()[0] == 4
     assert connection.execute('PRAGMA foreign_key_check').fetchall() == []
     for identity in ('first', 'second', 'third', 'fourth'):
         assert load_plan(ctx['ledger'], identity) == alternative(identity, ctx['state'])

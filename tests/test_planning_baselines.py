@@ -26,6 +26,8 @@ def household(ctx):
     with ledger.connection:
         ledger.put('snapshots', 'old', {'id': 'old', 'account': {'id': 'ira'},
             'imported_at': '2020-01-01', 'source_timestamp': '2020-01-01',
+            'source_hash': 'fictional-old-history', 'fingerprint': 'fictional-old-history',
+            'data_environment': 'SYNTHETIC',
             'positions': [{'payload': 'x' * 100000}]})
 
 
@@ -61,7 +63,7 @@ def alternatives(ctx):
 def shared(ctx):
     connection = ctx['ledger'].connection
     assert connection.execute('SELECT count(*) FROM plan_baselines').fetchone()[0] == 1
-    rows = connection.execute('SELECT details_json FROM plans').fetchall()
+    rows = connection.execute('SELECT details_json FROM plan_runs').fetchall()
     assert len(rows) == 2
     assert all('source_state"' not in row[0] and 'snapshots"' not in row[0] for row in rows)
 
@@ -95,7 +97,7 @@ def opened(ctx):
 @then('reset instructions are reported without destroying data')
 def rejected(ctx):
     assert ctx['error'].code == 3
-    assert 'reset' in str(ctx['error']).lower()
+    assert 'UNSUPPORTED_DEVELOPMENT_SCHEMA' in str(ctx['error'])
     with sqlite3.connect(ctx['path']) as connection:
         assert connection.execute('PRAGMA user_version').fetchone()[0] == 2
         connection.execute('SELECT * FROM preserved')

@@ -145,4 +145,4 @@ def inconsistent_rejected(planning):
     assert 'error' in planning, 'An inconsistent simulation was accepted'
     assert planning['error'].code == 3
     assert 'inconsistent' in str(planning['error']).lower()
-    assert planning['ledger'].connection.execute('SELECT count(*) FROM plans').fetchone()[0] == 0
+    assert planning['ledger'].connection.execute('SELECT count(*) FROM plan_runs').fetchone()[0] == 0

@@ -155,7 +155,7 @@ def incompatible(ctx, assumption):
         value['source_state']['activities'] = [{'id': 'different-baseline'}]
         value['source_snapshot_ids'] = ['snapshot-2']
     with ctx['ledger'].connection:
-        ctx['ledger'].connection.execute('DELETE FROM plans WHERE id=?', (value['id'],))
+        ctx['ledger'].connection.execute('DELETE FROM plan_runs WHERE id=?', (value['id'],))
         save_plan(ctx['ledger'], value)
 
 
@@ -244,7 +244,7 @@ def legacy(ctx):
              'source_state_hash': plans.state_hash(ctx['ledger'].planning_state()),
              'source_state': ctx['ledger'].planning_state(), 'created_at': '2026-10-08', 'as_of': '2026-10-08'}
     with ctx['ledger'].connection:
-        ctx['ledger'].connection.execute('DELETE FROM plans WHERE id=?', (value['id'],))
+        ctx['ledger'].connection.execute('DELETE FROM plan_runs WHERE id=?', (value['id'],))
         save_plan(ctx['ledger'], value)
 
 
