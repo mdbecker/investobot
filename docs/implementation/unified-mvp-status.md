@@ -6,7 +6,7 @@ Historical PRDs retain their original contents.
 
 ## Current completion assessment — October 11
 
-Estimated **98% of offline MVP delivery** is complete. This is a qualitative
+Estimated **98% of overall PRD delivery** is complete. This is a qualitative
 full-specification assessment, not a test-count-derived completion measure.
 Entries below this section are historical checkpoints and retain their original
 pending-work statements; this section supersedes those statements.
@@ -49,8 +49,20 @@ identity/hash, verified lots, explicit fees/rates, sourced prices, independent
 permissions, execution increments and cash floors. Changed prices/policy payloads
 cannot bypass review. Mandatory wash-sale review remains on every proposal.
 
-Remaining release work is frozen-tree verification and exact-release image,
-installed-wheel and skill checks. The standalone recovery demonstration passes.
+The committed implementation `914a703`, image `c5b10fe4a4d3`, passed the
+locked offline **1,248-test** suite in **43.50 seconds**, Ruff, offline wheel
+build/installation and installed CLI discovery of all **13 skills**. Its standalone
+synthetic CLI demonstration passed ingestion, accounting, policy, research,
+backtests, text/vector retrieval, immutable export and verified restoration with
+matching financial fingerprints and removed disposable workspace.
+
+A final export check found modern saved-policy/algorithm/observation pins were
+present in JSON but omitted from Markdown. Their rendering has been corrected
+without fetching fresh data; final exact-tree validation includes that change.
+The integrated export fix passes **1,249 tests in 42.20 seconds**, with Ruff.
+All tests and packaging checks run in Docker; nothing was installed on the host.
+Implementation ships as a development preview. Remaining delivery gates require
+human-supplied real input evidence and independent review, as listed below.
 The remaining audit may identify additional cases; no package is declared
 complete solely because its minimum B01–B66 scenarios pass.
 

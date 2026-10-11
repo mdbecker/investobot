@@ -51,6 +51,10 @@ def render(plan, format="markdown"):
 
     assumptions = plan.get("assumptions", {})
     tax = plan.get("tax_analysis", {})
+    snapshots = state.get('snapshots', [])
+    snapshot_ids = plan.get('source_snapshot_ids', [row['id'] for row in snapshots])
+    snapshot_dates = plan.get('source_snapshot_dates', {
+        row['account']['id']: row.get('source_timestamp') for row in snapshots})
     lines = [
         f"# {_text(plan.get('name'))}",
         "",
@@ -64,12 +68,17 @@ def render(plan, format="markdown"):
         "",
         f"Target: {_text(target.get('name'))} · Version: {_text(target.get('version'))} · Version ID: {_text(plan.get('target_version_id'))}",
         f"Rationale: {_text(target.get('description'))}",
-        f"Source snapshots: {_text(plan.get('source_snapshot_ids'))}",
+        f"Source snapshots: {_text(snapshot_ids)}",
         f"Source state hash: {_text(plan.get('source_state_hash'))}",
+        f"Data environment: {_text(plan.get('data_environment'))}",
+        f"Policy: {_text(plan.get('policy_id'))} · Version: {_text(plan.get('policy', {}).get('version'))}",
+        f"Policy source: {_text(plan.get('policy', {}).get('source'))}",
+        f"Immutable manifests: {_text(plan.get('manifest_ids'))}",
+        f"Observation source hashes: {_text({row['id']: row.get('source_hash') for row in snapshots})}",
         "",
         _table(
             ["Account", "Source snapshot date"],
-            sorted(plan.get("source_snapshot_dates", {}).items()),
+            sorted(snapshot_dates.items()),
         ),
         "",
         "## Market assumptions",
@@ -91,7 +100,7 @@ def render(plan, format="markdown"):
         f"Market data timestamps: {_text(plan.get('market_data_as_of'))}",
         f"Tax rates: {_text(assumptions.get('tax_rates'))}",
         f"Planning constraints: {_text(assumptions.get('planning_constraints'))}",
-        f"Algorithm: {_text(assumptions.get('algorithm'))}",
+        f"Algorithm: {_text(plan.get('algorithm_version', assumptions.get('algorithm')))}",
         "",
         "## Current versus proposed allocation",
         "",
@@ -231,6 +240,8 @@ def render(plan, format="markdown"):
         "",
     ]
     lines += [f"- {_text(warning)}" for warning in plan.get("warnings", [])]
+    lines += [f"- {_text(issue.get('code'))}: {_text(issue.get('message'))} · Gates: {_text({key: value for key, value in issue.items() if key.startswith('blocks_')})}"
+              for issue in plan.get('issues', [])]
     if not plan.get("warnings"):
         lines.append("No additional warnings were recorded. Human review is still required.")
     return "\n".join(lines) + "\n"
