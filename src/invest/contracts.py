@@ -109,6 +109,10 @@ PURPOSES = {
     "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
+    'policy.approve': 'policy',
+    'policy.list': 'read',
+    'policy.show': 'read',
+    'db.cleanup-artifacts': 'explicit_unreferenced_managed_artifact_staging',
     'research.search': 'read',
     'research.index': 'derived_index',
     'backtest.run': 'hypothetical_backtests',
@@ -298,6 +302,10 @@ def _describe(name, command):
         from invest.tax_policy import HarvestReviewPolicy
 
         result['json_input_schema'] = HarvestReviewPolicy.model_json_schema()
+    if name == 'policy.approve':
+        from invest.policy_models import TradingPolicyInput
+
+        result['json_input_schema'] = TradingPolicyInput.model_json_schema()
     if name in {'backtest.run', 'backtest.compare'}:
         from invest.backtest_models import BacktestInput
 

@@ -32,6 +32,48 @@ class JsonGroup(TyperGroup):
 app = typer.Typer(cls=JsonGroup, no_args_is_help=True, pretty_exceptions_enable=False)
 portfolio = typer.Typer()
 app.add_typer(portfolio, name="portfolio")
+policy = typer.Typer()
+app.add_typer(policy, name='policy')
+
+
+@policy.command('approve')
+def policy_approve(file: str = typer.Option(...), confirm: bool = False):
+    from invest.planning import save_policy
+    from invest.policy_models import TradingPolicyInput
+    from invest.research_identity import read_ledger
+
+    def result():
+        payload = TradingPolicyInput.model_validate(read_json(file)).model_dump(mode='json', exclude_unset=True)
+        with read_ledger(database_path()) as selected:
+            preview = save_policy(selected, payload)
+        if not confirm:
+            return preview
+        selected = ledger()
+        with closing(selected.connection):
+            return save_policy(selected, payload, confirm=True)
+    emit(result)
+
+
+@policy.command('list')
+def policy_list():
+    from invest.planning import list_policies
+    from invest.research_identity import read_ledger
+
+    def result():
+        with read_ledger(database_path()) as selected:
+            return list_policies(selected)
+    emit(result)
+
+
+@policy.command('show')
+def policy_show(policy_id: str):
+    from invest.planning import get_policy
+    from invest.research_identity import read_ledger
+
+    def result():
+        with read_ledger(database_path()) as selected:
+            return get_policy(selected, policy_id)
+    emit(result)
 
 
 def emit(call):
@@ -985,6 +1027,18 @@ def database_restore(file: str, dry_run: bool = False, confirm: bool = False):
 def database_migrate():
     from invest.migrations import migrate
     emit(lambda: migrate(database_path()))
+
+
+@database.command('cleanup-artifacts')
+def database_cleanup_artifacts(artifact_root: str = typer.Option(...), confirm: bool = False):
+    """Preview or explicitly remove abandoned managed artifact staging files."""
+    from invest.artifact_cleanup import cleanup
+    from invest.research_identity import read_ledger
+
+    def result():
+        with read_ledger(database_path()) as selected:
+            return cleanup(selected, artifact_root, confirm=confirm)
+    emit(result)
 
 
 data = typer.Typer()

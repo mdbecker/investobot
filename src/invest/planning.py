@@ -98,6 +98,14 @@ def list_policies(ledger):
 def propose(ledger, target_id, *, policy, mode, as_of, prices):
     """Direct dictionaries are synthetic domain previews; production uses approved IDs."""
     baseline = ledger.planning_state()
+    missing_marks = [row for row in baseline['positions'] if row.get('market_value') is None]
+    if missing_marks:
+        show(ledger, target_id)
+        return {'status': 'BLOCKED', 'as_of': as_of, 'proposed_actions': [], 'executed': False,
+                'issues': [{'code': 'MISSING_VALUATION_MARK', 'security_id': row['security_id'],
+                    'message': 'Confirm independent valuation evidence before whole-household planning',
+                    'blocks_calculation': True, 'blocks_proposals': True,
+                    'blocks_execution_review': True} for row in missing_marks]}
     with localcontext() as context:
         amounts = [decimal(row['market_value']) for row in baseline['positions']]
         amounts.extend(decimal(row['amount']) for row in baseline['cash_balances'])
@@ -141,6 +149,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                     if row.get('data_environment')}
     environment = policy.get('data_environment') or next(iter(environments), None)
     price_environment = policy.get('price_environment', environment)
+    if target.get('data_environment') is not None and target['data_environment'] != environment:
+        issue('MIXED_DATA_ENVIRONMENT', 'Target and accepted planning inputs have different environments')
     if (policy.get('baseline_environment', environment) != price_environment or
             environments - {environment} or environment not in {'REAL', 'SYNTHETIC'}):
         issue('MIXED_DATA_ENVIRONMENT', 'Planning inputs need one explicit source environment')
@@ -180,6 +190,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
             raise DomainError('Prices require canonical registered securities')
         if isinstance(observation, dict):
             price = decimal(observation['price'])
+            if not preview and (observation.get('data_environment') is None or observation.get('currency') is None):
+                issue('UNKNOWN_PRICE_PROVENANCE', 'Approved prices require explicit source currency and environment')
             if (observation.get('data_environment', environment) != environment or
                     observation.get('currency', currency) != currency):
                 issue('MIXED_DATA_ENVIRONMENT', 'Price currency or environment differs')

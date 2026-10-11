@@ -110,6 +110,23 @@ def _get_api(ledger, path, query):
 
     if path == "/api/overview":
         return overview(ledger)
+    if path == '/api/check':
+        from invest.readiness import check
+
+        return check(ledger.planning_state(), as_of=query['as_of'][0])
+    if path == '/api/performance':
+        from invest.performance_ledger import report
+
+        return report(ledger.connection, from_date=query.get('from', [None])[0],
+                      to_date=query.get('to', [None])[0], as_of=query.get('as_of', [None])[0],
+                      account_id=query.get('account', [None])[0])
+    if path == '/api/search':
+        from invest.search import search
+
+        return search(ledger.path, query=query.get('query', [''])[0],
+                      issuer_id=query.get('issuer', [None])[0],
+                      date_from=query.get('from', [None])[0], date_to=query.get('to', [None])[0],
+                      top_k=int(query.get('top_k', ['10'])[0]))
     if path == "/api/summary":
         return ledger.summary()
     if path == "/api/state":

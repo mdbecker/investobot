@@ -143,7 +143,11 @@ def prepare_analysis_case(ctx):
                 after = snapshot(date='2026-04-10', cash='200')
                 after['source_timestamp'] = '2026-04-10T12:01:00Z'
                 ctx['ledger'].apply(after)
-            closing = snapshot(date='2026-10-10', cash='320')
+            closing = snapshot(date='2026-10-10', cash='200' if case == 'B20' else '100')
+            # Return is independently observed asset appreciation; an unrecorded
+            # cash adjustment cannot erase the confirmed deposit projection.
+            closing['positions'][0].update(price='112' if case == 'B20' else '122',
+                                            market_value='1120' if case == 'B20' else '1220')
         elif case == 'B23':
             ctx['ledger'].record_activity(activity('DIVIDEND', 'retained-dividend', amount='50',
                 event_timestamp='2026-10-10T10:00:00Z'), yes=True)
@@ -151,6 +155,9 @@ def prepare_analysis_case(ctx):
                 quantity='0.5', price='100', fee='0',
                 event_timestamp='2026-10-10T11:00:00Z'), yes=True)
             closing = snapshot(date='2026-10-10', quantity='10.5', basis='950', cash='0')
+            closing['lots'] = [{key: value for key, value in lot.items()
+                                if key not in {'account_id', 'security_id'}}
+                               for lot in ctx['ledger'].rows('lots')]
             closing['source_timestamp'] = '2026-10-10T12:00:00Z'
         else:
             closing = snapshot(date='2026-10-10', cash='100' if case == 'B21' else '0')

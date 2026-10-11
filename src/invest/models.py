@@ -264,4 +264,12 @@ class Activity(BaseModel):
                 raise ValueError("Trade activities require security, quantity and price")
         elif self.amount is None:
             raise ValueError("Cash activities require amount")
+        if self.type in {'STOCK_SPLIT', 'RETURN_OF_CAPITAL'} and self.fee != 0:
+            raise ValueError('Corporate action fees require a separate confirmed fee event')
+        cash_types = {'CASH_DEPOSIT', 'CASH_WITHDRAWAL', 'DIVIDEND', 'INTEREST', 'FEE'}
+        if self.type in cash_types and any(value is not None for value in (
+                self.quantity, self.price, self.lot_allocations, self.split_ratio)):
+            raise ValueError('Cash activities cannot include trade quantities, prices or allocations')
+        if self.type in {'CASH_DEPOSIT', 'CASH_WITHDRAWAL', 'FEE'} and self.security is not None:
+            raise ValueError('External cash or fee events cannot include a security')
         return self

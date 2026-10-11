@@ -18,6 +18,11 @@ async function refresh() {
   const overview = await api('overview');
   const {summary, state} = overview;
   householdState = state;
+  const accountChoice = $('performance-account');
+  const chosenAccount = accountChoice.value;
+  accountChoice.replaceChildren(new Option('Whole household', ''));
+  for (const account of state.accounts) accountChoice.add(new Option(account.name, account.id));
+  accountChoice.value = chosenAccount;
   displayCurrency = summary.currency || 'USD';
   $('total').textContent = money(summary.total_value); $('cash').textContent = money(summary.cash);
   $('gain').textContent = money(summary.unrealized_gain_loss_known_basis); $('summary-json').textContent = pretty(summary);
@@ -62,6 +67,23 @@ function updateSnapshotAcceptance() {
 function clearPreview() { snapshot = null; snapshotReconciliation = null; $('preview-area').hidden = true; $('reconcile-area').hidden = true; $('accept-confirm').checked = false; $('older-confirm').checked = false; $('older-justification').value = ''; $('apply').disabled = true; }
 async function run(action) { try { await action(); } catch(error) { notice(error.message, true); } }
 $('refresh').addEventListener('click',()=>run(refresh));
+$('review-check').addEventListener('click',()=>run(async()=>{
+  if (!$('review-date').value) throw new Error('Choose a review date.');
+  const result = await api('check?' + new URLSearchParams({as_of:$('review-date').value}));
+  $('review-check-result').textContent = pretty(result); $('review-check-result').hidden = false;
+}));
+$('performance-run').addEventListener('click',()=>run(async()=>{
+  if (!$('performance-from').value || !$('performance-to').value) throw new Error('Choose the performance interval.');
+  const query = new URLSearchParams({from:$('performance-from').value, to:$('performance-to').value});
+  if ($('performance-account').value) query.set('account', $('performance-account').value);
+  const result = await api('performance?' + query);
+  $('performance-result').textContent = pretty(result); $('performance-result').hidden = false;
+}));
+$('research-search').addEventListener('click',()=>run(async()=>{
+  if (!$('research-query').value.trim()) throw new Error('Enter search terms.');
+  const result = await api('search?' + new URLSearchParams({query:$('research-query').value}));
+  $('research-search-result').textContent = pretty(result); $('research-search-result').hidden = false;
+}));
 $('import-form').addEventListener('input',clearPreview);
 $('html-file').addEventListener('change',()=>run(async()=>{
   const file = $('html-file').files[0]; if (!file) return;

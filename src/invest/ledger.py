@@ -335,6 +335,23 @@ class Ledger:
                     if prior_position and decimal(position['quantity']) != decimal(prior_position['quantity']):
                         issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
                             'Observation quantity contradicts confirmed activity', security=symbol))
+                if snap['positions_complete']:
+                    for symbol in old.keys() - incoming.keys():
+                        if decimal(old[symbol]['quantity']) > 0:
+                            issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
+                                'Complete observation omits confirmed inventory', security=symbol))
+                if snap['cash_known'] and current_cash and decimal(snap['cash']) != decimal(current_cash['amount']):
+                    issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
+                        'Observation cash contradicts confirmed activity', account_id=account_id))
+                known_lots = {row['id']: row for row in old_lots}
+                for candidate in snap['lots']:
+                    previous = known_lots.get(candidate['id'])
+                    if previous is not None and any(
+                            candidate.get(field) is not None and previous.get(field) is not None and
+                            decimal(candidate[field]) != decimal(previous[field])
+                            for field in ('remaining_quantity', 'remaining_adjusted_basis')):
+                        issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
+                            'Observation lot contradicts confirmed adjusted inventory', lot_id=candidate['id']))
         return dict(account_id=account_id, changes=changes, observations=observations,
                     value_checks=value_checks,
                     status='REVIEW_REQUIRED' if issues else 'AVAILABLE', issues=issues,
@@ -467,12 +484,18 @@ class Ledger:
         account = next((row for row in self.rows('accounts') if row['id'] == activity['account_id']), None)
         if account and account.get('data_environment'):
             content['data_environment'] = account['data_environment']
+        if (account and account.get('data_environment') == 'REAL' and
+                activity['type'] in {'BUY', 'SELL', 'DIVIDEND_REINVESTMENT'} and 'fee' not in activity):
+            error = DomainError('Executed fee is unknown; explicitly review the original confirmation', 3)
+            error.result = {'status': 'BLOCKED', 'issues': [_issue('UNKNOWN_EXECUTION_FEE', str(error))]}
+            raise error
+        content = activity_content(content)
         if prior:
             original = {k: v for k, v in prior.items() if k not in {"id", "recorded_at"}}
             if original.get('lot_allocations'):
                 original['lot_allocations'] = [{k: row[k] for k in ('lot_id', 'quantity')}
                                               for row in original['lot_allocations']]
-            if original != content:
+            if activity_content(original) != content:
                 error = DomainError("Activity ID already exists with different content", 3)
                 error.result = {'status': 'BLOCKED', 'issues': [_issue('ACTIVITY_ID_CONFLICT', str(error))]}
                 raise error
@@ -557,7 +580,48 @@ def activity_change(state, activity):
     return activity_change_inplace(copy.deepcopy(state), activity)
 
 
+def activity_content(value):
+    """Normalize monetary lexemes only; identity and source evidence stay literal."""
+    from invest.db import DECIMAL_FIELDS, text_decimal
+
+    def normalize(item):
+        if isinstance(item, dict):
+            return {key: text_decimal(child) if key in DECIMAL_FIELDS else normalize(child)
+                    for key, child in item.items()}
+        if isinstance(item, list):
+            return [normalize(child) for child in item]
+        return item
+
+    result = normalize(value)
+    result.setdefault('fee', '0')
+    return result
+
+
 def activity_change_inplace(state, activity):
+    from invest.db import DECIMAL_FIELDS
+
+    numbers = []
+
+    def collect(value):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in DECIMAL_FIELDS and isinstance(child, (str, int, float, Decimal)) and not isinstance(child, bool):
+                    numbers.append(decimal(child))
+                elif isinstance(child, (dict, list)):
+                    collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(state)
+    collect(activity)
+    with localcontext() as context:
+        context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
+                                   for number in numbers) + 64)
+        return _activity_change_inplace(state, activity)
+
+
+def _activity_change_inplace(state, activity):
     """Shared accounting for disposable working states; discard state on failure."""
     account_id, kind = activity["account_id"], activity["type"].upper()
     if kind in {'DIVIDEND_REINVESTMENT', 'STOCK_SPLIT', 'RETURN_OF_CAPITAL'}:
@@ -671,12 +735,15 @@ def activity_change_inplace(state, activity):
                 if sum((decimal(a["quantity"]) for a in allocations), Decimal("0")) != qty:
                     raise DomainError("Executed lot allocations must equal sold quantity", 3)
                 basis_removed = Decimal("0")
+                fee_remaining = fee
                 for allocation in allocations:
                     lot = next((l for l in state["lots"] if l["id"] == allocation["lot_id"]
                         and l["account_id"] == account_id and l["security_id"] == security["id"]), None)
                     used = decimal(allocation["quantity"])
                     if lot is None or used <= 0 or used > decimal(lot["remaining_quantity"]):
                         raise DomainError("Executed lot allocation exceeds available lot shares", 3)
+                    if lot.get('identity_status') == 'UNRESOLVED' or lot.get('saleable') is False:
+                        raise DomainError('Executed lot needs verified saleable identity', 3)
                     remaining = decimal(lot['remaining_quantity'])
                     available_basis = (decimal(lot['remaining_adjusted_basis'])
                                        if lot.get('remaining_adjusted_basis') is not None else
@@ -688,7 +755,8 @@ def activity_change_inplace(state, activity):
                     acquired = date.fromisoformat(lot['acquisition_date'])
                     sold = date.fromisoformat(activity['date'])
                     anniversary = acquired.replace(year=acquired.year + 1, day=min(acquired.day, 28)) if acquired.month == 2 and acquired.day == 29 else acquired.replace(year=acquired.year + 1)
-                    allocated_fee = fee * used / qty
+                    allocated_fee = fee_remaining if allocation is allocations[-1] else fee * used / qty
+                    fee_remaining -= allocated_fee
                     confirmed_allocations.append(dict(lot_id=lot['id'], quantity=str(used),
                         basis_removed=str(removed), term='LONG_TERM' if sold > anniversary else 'SHORT_TERM',
                         realized_gain=str(used * price - allocated_fee - removed), fee_allocated=str(allocated_fee)))

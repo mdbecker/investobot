@@ -7,6 +7,16 @@ allowance and trading calendar. Approval previews write nothing; explicit policy
 confirmation saves a version. A conflicting repeat ID fails rather than replacing
 an approved policy. Production proposals resolve a saved policy ID.
 
+Use `invest policy approve --file reviewed-policy.json` to preview, then repeat
+with `--confirm` after human review. `invest policy list` returns compact saved
+versions; `invest policy show POLICY_ID` retrieves the exact approved payload.
+Run these commands through the Docker CLI described in the quickstart.
+The JSON requires `version`, `source`, `data_environment` and `permissions`.
+Each canonical account/security permission requires independent JSON booleans
+`can_buy`, `can_sell`, `can_hold` and an exact positive string `share_increment`.
+Financial amounts use decimal strings, never floating-point JSON numbers.
+Unknown accounts/securities are rejected; approval cannot create identities.
+
 Direct dictionary policies are supported only for synthetic domain previews and
 are clearly marked for review. They never become evidence of human approval.
 Permissions require JSON booleans. Missing cash, execution precision, position

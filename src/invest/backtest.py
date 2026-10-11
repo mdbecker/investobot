@@ -36,6 +36,13 @@ def _issue(code, message):
 
 def run(ledger, *, portfolio, start, end, policy, manifest):
     """Save reproducible hypothetical results; never mutate actual financial inputs."""
+    from invest.db import SCHEMA_VERSION
+
+    foundation = ledger.connection.execute(
+        "SELECT checksum FROM schema_migrations WHERE id='001'").fetchone()
+    if foundation is None:
+        raise DomainError('Backtest requires verified foundation schema identity', 3)
+    storage_identity = {'schema_version': SCHEMA_VERSION, 'manifest_hash': foundation[0]}
     try:
         first, last = date.fromisoformat(start), date.fromisoformat(end)
     except ValueError:
@@ -173,11 +180,13 @@ def run(ledger, *, portfolio, start, end, policy, manifest):
                   'algorithm': ALGORITHM, 'state': state if portfolio == 'current' else None}
         comparison = {'start': start, 'end': end, 'sessions': sessions, 'assumptions': assumptions,
                       'manifest_id': manifest.get('id'), 'manifest_hash': _hash(manifest),
-                      'security_universe': sorted(series), 'algorithm': ALGORITHM}
+                      'security_universe': sorted(series), 'algorithm': ALGORITHM,
+                      'storage_identity': storage_identity}
         result = {'id': str(uuid.uuid4()), 'created_at': datetime.now(timezone.utc).isoformat(),
                   'mode': mode, 'status': 'UNAVAILABLE' if issues else 'AVAILABLE',
                   'start': start, 'end': end, 'assumptions': assumptions, 'issues': issues,
                   'manifest_id': manifest.get('id'), 'source_hash': _hash(inputs),
+                  'storage_identity': storage_identity,
                   'algorithm_version': ALGORITHM, 'total_return': None, 'annualized_return': None,
                   'volatility': None, 'max_drawdown': None, 'final_allocation': None,
                   'turnover': None, 'tracking_dates': sessions, 'statistics_method': 'FLOAT64_DAILY_252',

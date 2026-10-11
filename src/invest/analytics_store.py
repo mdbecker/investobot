@@ -525,6 +525,15 @@ def list_snapshots(ledger):
 
 
 def publish_artifact(ledger, source, payload, *, confirm=False, artifact_root=None):
+    from invest.artifact_cleanup import publication_lock
+
+    if not confirm:
+        return _publish_artifact(ledger, source, payload, confirm=False, artifact_root=artifact_root)
+    with publication_lock(_root(ledger, artifact_root)):
+        return _publish_artifact(ledger, source, payload, confirm=True, artifact_root=artifact_root)
+
+
+def _publish_artifact(ledger, source, payload, *, confirm=False, artifact_root=None):
     """Publish one verified batch before pinning it; never replace immutable bytes."""
     manifest = _model(payload)
     if len(manifest['artifacts']) != 1:

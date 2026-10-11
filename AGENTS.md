@@ -1,5 +1,20 @@
 # Investobot project rules
 
+## Additional verified lifecycle lessons
+
+- Confirmed cash and adjusted lot effects must reconcile independently from
+  position quantities. Later fixtures must preserve actual recorded lot IDs and
+  cash, rather than inventing balancing changes to produce a desired return.
+- Retry identity normalizes only financial decimal fields; identifiers and
+  source strings stay exact. Precision collectors must distinguish financial
+  scalar values from similarly named provenance structures.
+- Artifact publication and managed-staging cleanup share a filesystem lock.
+  Preview never creates a cleanup lock or removes files; ordinary user files,
+  referenced artifacts and symlink paths are never cleanup candidates.
+- Policy approval previews validate existing canonical references before opening
+  a writer. Nested permissions use strict independent booleans and exact decimal
+  strings; immutable versions retain only explicitly submitted fields.
+
 ## Verified implementation lessons
 
 - Printed financial precision is source evidence: provide it explicitly in

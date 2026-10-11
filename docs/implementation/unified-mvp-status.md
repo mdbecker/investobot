@@ -4,6 +4,46 @@ Specification: [preserved October 10 PRD](../PRD-unified-mvp-2026-10-10.md).
 This is an implementation record, not a claim that the rebuild is delivered.
 Historical PRDs retain their original contents.
 
+## Current completion assessment — October 11
+
+Estimated **85% of offline MVP delivery** is complete. This is a qualitative
+full-specification assessment, not a test-count-derived completion measure.
+Entries below this section are historical checkpoints and retain their original
+pending-work statements; this section supersedes those statements.
+
+- Exact committed image `89798cf` passed all **1,085 tests**, 26.14 seconds,
+  with locked dependencies and no network or private ledger volume.
+- Storage/recovery, deterministic financial engines, immutable datasets,
+  specialist research, text/vector retrieval and all seven portable portfolio
+  workflows have integrated acceptance coverage. Passing coverage does not
+  establish every requirement in the PRD.
+- The actual 100,000-chunk search measurement completed. Its reproducible report
+  is `benchmark-unified-100k-2026-10-11.json`; vectors are explicitly fictional
+  two-dimensional fixtures, not a production embedding throughput claim.
+- The identical-fixture, same-hardware 20-plan comparison passed the ≤2× gate;
+  see [paired measurement](benchmark-plan-comparison.md). Measurements apply
+  to the recorded images, not arbitrary subsequent changes.
+- Dashboard readiness/performance/search parity, safe managed-staging cleanup,
+  exact activity retries, reconciliation of confirmed cash/lot effects and
+  additional provenance gates and public immutable policy approval now pass
+  the integrated mounted-source offline Docker suite: **1,122 tests**, 30.18
+  seconds, with Ruff passing. Their observed-red checkpoints precede production
+  implementation. Fresh exact-commit image verification remains a release gate.
+
+Remaining software work includes the accepted linked
+household cash-transfer lifecycle, further verified-lot/identity lifecycle
+checks, consolidated political reporting, compatible semantic-search filtering
+and public CLI access, and final documentation,
+packaging, recovery demonstrations and exact-release-commit verification.
+The remaining audit may identify additional cases; no package is declared
+complete solely because its minimum B01–B66 scenarios pass.
+
+Real institution support remains **PROVISIONAL** until reviewed anonymized
+Vanguard, Fidelity NetBenefits and PNC HTML is supplied. Entitled live FMP
+support remains **UNVERIFIED** until human acceptance. Source rights and actual
+external-agent compliance are independent manual gates. No secrets are needed
+for offline MVP acceptance; no remote CI result or push is claimed.
+
 ## October 11 full specification audit checkpoint
 
 The prior committed tree `d2028ef` was independently built as image

@@ -1,273 +1,101 @@
 # Investobot
 
-The [October 10 unified MVP rebuild specification](docs/PRD-unified-mvp-2026-10-10.md)
-is preserved in this repository. The rebuild has passed its global red gate;
-storage/recovery and selected domain capabilities are implemented. Integration
-and remaining acceptance cases are still in progress. See
-[implementation evidence and remaining gates](docs/implementation/unified-mvp-status.md).
-Treat the current app as a development preview, with provisional institution
-adapters and an unverified live-provider gate.
+Local portfolio accounting, source-backed research and hypothetical planning.
+Humans review evidence, accept facts and execute decisions manually. Investobot
+never takes brokerage credentials or places trades.
 
-Before changing a real ledger, create and verify an owner-only archive with
-`docker compose run --rm -T app invest db backup --output /data/backups/reviewed.tar`
-and `docker compose run --rm -T app invest db verify /data/backups/reviewed.tar`.
-Restore stages and validates first and requires explicit confirmation. See
-[local recovery instructions](docs/operations.md); never reset a private ledger.
+The [active unified PRD](docs/PRD-unified-mvp-2026-10-10.md) is preserved here.
+This is a **development preview** until the software and human gates in the
+[implementation record](docs/implementation/unified-mvp-status.md) are complete.
+Vanguard, Fidelity NetBenefits and PNC adapters remain **PROVISIONAL**. Live FMP
+entitlement and response contracts remain **UNVERIFIED**.
 
-Local financial tools for a browser-equipped coding agent: accepted portfolio
-facts, tax/exposure analysis, hypothetical targets, proposed manual trades and
-reproducible reports. The agent researches and explains; the human decides and
-executes. Investobot never accepts brokerage credentials or places trades.
+## Start with Docker
 
-## Agent-first workflow
-
-Run from this checkout with Docker. Discover contracts before supplying private
-financial inputs:
+Docker is the only required runtime. Install no project packages on the host.
 
 ```sh
 docker compose build
+docker compose up -d
 docker compose run --rm -T app invest tools list
-docker compose run --rm -T app invest tools describe portfolio.simulate
-docker compose run --rm -T app invest portfolio summary
+docker compose run --rm -T app invest tools describe portfolio.check
 ```
 
-1. Import supplied HTML, inspect normalized facts and reconcile changes.
-2. Explicitly apply an accepted snapshot; unknown basis/dates stay unknown.
-3. Use the CLI for financial calculations and Chrome for current public research.
-4. Save multiple security-based targets with explicit account restrictions.
-5. Generate and compare hypothetical plans; export reports for human review.
-6. After manual execution, explicitly record confirmed activity or accept a later
-   snapshot. Target/plan creation never changes actual holdings.
+Open [the local dashboard](http://localhost:8765). Compose publishes only to
+`127.0.0.1`; keep this single-user interface local. Its domain results and
+confirmation boundaries match the CLI. `docker compose down` stops it.
+Do not delete a private data volume to fix an incompatible schema.
 
-Plan generation, listing and comparison return compact summaries with saved
-metrics, current stale status and a short warning preview. `plan show PLAN_ID`
-retrieves full details and may return large JSON; prefer Markdown report export
-for human review. Saved financial inputs and report contents remain unchanged.
-Alternatives reuse one immutable planning baseline containing current financial
-facts and observation provenance. Historical snapshots stay in the ledger;
-listing/comparison read summaries, while full retrieval loads one selected plan.
+SQLite at `/data/portfolio.db` owns accepted financial facts. Prompts live at
+`/data/prompts`; dependencies are baked into `/opt/venv` in the image.
+`INVEST_DB`, `INVEST_CONFIG` and `INVEST_PROMPTS` select explicit paths.
+Fresh normalized ledgers use checksum-identified schema 1. Old development
+schemas are rejected unchanged; future migrations require verified backups.
 
-[Complete working examples](docs/workflows.md) cover synchronization, tax-loss
-harvesting, fund comparisons, three alternative targets, plan comparison,
-reports and exact executed lots. [Agent instructions](docs/agent-usage.md) explain
-freshness, unknown data and mutation boundaries.
+## Safe first use
 
-Existing account configuration survives holdings imports. Correct an imported
-`OTHER` security with `security classify SECURITY_ID --asset-type ETF --source
-"Verified issuer reference"` (preview), then `--confirm` to accept. Use
-`account update ACCOUNT_ID --file /app/local-data/changes.json` (preview), then
-`--yes` for account configuration changes. See the
-[correction workflow](docs/workflows.md#correct-classification-and-account-configuration).
-Undated snapshots replacing dated state require `--allow-older` and a nonempty
-`--justification`; that override never establishes source freshness.
-
-An import can establish a new security's initial classification. For an existing
-`OTHER` security, a known observed type appears in reconciliation's
-`classification_reviews`; accepting holdings preserves `OTHER`. Verify the
-suggestion and use the preview/confirmed classification workflow above. Known
-type contradictions reject snapshot acceptance atomically.
+1. Start with a separate disposable ledger and labelled synthetic fixtures.
+2. Preview supplied HTML and reconcile normalized values. Keep private files
+   outside Git; raw account HTML is never stored in the ledger.
+3. Review source dates, displayed precision, canonical identity and independent
+   position, lot and cash coverage before explicitly accepting facts.
+4. Run preflight before proposals. Unknown amounts, fees, permissions, provenance
+   and tax history remain issues. Approved policies and targets are separate.
+5. Save hypothetical alternatives and compare their preserved inputs. Plans show
+   staleness after actual changes; saving a plan never trades.
+6. After manual execution, record the exact confirmed activity and executed lots.
 
 ```sh
-# HTML stays outside Git; create the ignored local-data directory first.
-docker compose run --rm -T app invest portfolio import - \
-  --account taxable --institution vanguard --tax-status TAXABLE \
-  --as-of 2026-10-08 < local-data/account.html > local-data/snapshot.json
-docker compose run --rm -T app invest portfolio reconcile - < local-data/snapshot.json
-# Explicit acceptance only after reviewing reconciliation and warnings:
-docker compose run --rm -T app invest portfolio apply - < local-data/snapshot.json
-
-docker compose run --rm -T app invest tax harvest-candidates --as-of 2026-10-08
-docker compose run --rm -T app invest fund compare VTI ITOT
-docker compose run --rm -T app invest target save - < local-data/target.json
-docker compose run --rm -T app invest target diff TARGET_ID
-docker compose run --rm -T app invest plan generate --target TARGET_ID --as-of 2026-10-08
-docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C
-docker compose run --rm -T app invest report export PLAN_A \
-  --format markdown --output /app/local-data/report.md
+docker compose run --rm -T app invest portfolio check --as-of 2026-10-10
+docker compose run --rm -T app invest portfolio performance --from 2025-10-10 --to 2026-10-10
+docker compose run --rm -T app invest plan list
+docker compose run --rm -T app invest research search --query "issuer disclosure"
 ```
 
-Replace dates with known source/planning dates and IDs with values returned by the
-CLI. Source dates cannot be inferred from import time. Completeness defaults
-false; use `--positions-complete` / `--lots-complete` only after confirming full
-coverage. Fund tickers above illustrate tool usage, not investment choices.
-Unknown eligibility, stale prices or unresolved tax lots can leave a plan
-`REVIEW_REQUIRED`. Every plan still requires human review and manual execution.
+Replace dates with your source/reporting dates. Discover current flags and JSON
+schemas with `tools describe`. Success is JSON stdout; financial decimals are
+strings. Errors are JSON stderr with codes 1 input, 2 external,
+3 inconsistent/blocked state and 4 internal.
 
-Success output is JSON. Financial decimals are strings. Errors are JSON on
-stderr: 1 invalid input, 2 external data unavailable, 3 inconsistent state,
-4 internal error. `invest schema` documents command inputs, output contracts
-and persistent mutation scopes.
+## Manual setup and source review
 
-## Runtime and local dashboard
+Offline acceptance needs no secrets or accounts. For public market data, create
+your own FMP account, verify required entitlements and provide `FMP_API_KEY`
+through an ignored `.env` or environment variable. Validate actual entitled
+responses before relying on real data. Never supply brokerage credentials,
+cookies or sessions. See [source setup](docs/data-sources.md).
 
-No host project installation is needed. Dependencies and testing run in Docker;
-Python dependencies live at `/opt/venv` in the `runtime_dependencies` volume.
-Compose stores accepted state at `/data/portfolio.db` in the `ledger` volume.
-The application/distribution name is Investobot / `investobot`; the CLI is `invest`.
+Institution verification needs representative anonymized HTML and human review;
+synthetic pages do not establish verified support. External agents research
+original sources; humans review accuracy and reuse rights. Named contribution
+evidence needs an independently reviewed local rights policy. Embeddings need
+explicit authorization and compatible model/dimension; no subscription or source
+upload occurs by default.
+
+## Recovery and verification
 
 ```sh
-docker compose up --build -d
+docker compose run --rm -T app invest db backup --output /data/backups/reviewed.tar
+docker compose run --rm -T app invest db verify /data/backups/reviewed.tar
+docker compose run --rm -T app invest db restore /data/backups/reviewed.tar
+# Only after reviewing the staged restore:
+docker compose run --rm -T app invest db restore /data/backups/reviewed.tar --confirm
+docker build -t investobot-test .
+docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-test uv run --locked pytest -q
+docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-test uv run --locked ruff check --config pyproject.toml .
 ```
 
-Open [the local dashboard](http://localhost:8765): Overview, Targets, Plans,
-Prompt Library and Import & Reconcile, plus secondary activity and analysis tools.
-It displays the same domain calculations as the CLI, copies plain Markdown
-prompts and never launches agents or submits orders. Compose publishes only to
-host loopback; never expose this unauthenticated single-user tool publicly.
-See [inspection](docs/inspection.md). `docker compose down` stops it;
-adding `--volumes` deletes persisted data.
+Verification uses disposable containers without private ledger volumes.
+[Benchmarks](docs/benchmarks-unified-mvp.md) disclose hashes, hardware and limits.
+Local evidence is not a remote CI result.
 
-Native CLI execution is supported for users who separately choose a local Python
-3.12+/uv environment. No host installation was performed for this implementation.
-`INVEST_DB`, `INVEST_CONFIG` and `INVEST_PROMPTS` explicitly select database,
-configuration and prompt storage. Native defaults use platformdirs `investobot`
-directories. A native default and Compose's data volume are different ledgers;
-configure both paths to the same mounted file deliberately when sharing state.
-Schema 3 requires a fresh ledger; older databases produce a reset error and are
-never deleted automatically. Follow the deliberate
-[database-reset procedure](docs/development.md#deliberate-schema-reset) before
-recreating disposable state. Reset discards holdings, targets and saved plans.
+## Documentation
 
-## External data and remaining manual validation
+[Product](docs/product.md) · [Architecture](docs/architecture.md) ·
+[Data contracts](docs/data-contracts.md) · [Workflows](docs/workflows.md) ·
+[Testing](docs/testing.md) · [Skills](docs/skills.md) ·
+[Operations](docs/operations.md) · [Tax limitations](docs/tax-limitations.md).
 
-Create your own [FMP account](https://site.financialmodelingprep.com), verify plan
-entitlements and set only its public market-data `FMP_API_KEY` in an ignored
-`.env` or shell environment. Brokerage credentials, sessions and cookies never
-belong in Investobot. Optional tax rates are user assumptions; missing rates
-produce gains/losses without invented tax estimates. See
-[data sources and setup](docs/data-sources.md) and [tax limitations](docs/tax-limitations.md).
-
-Offline demonstrations explicitly select synthetic fixtures:
-
-```sh
-docker compose run --rm -T \
-  -e INVEST_FIXTURES=/app/tests/fixtures/fmp-synthetic.json \
-  app invest fund compare AAA BBB
-```
-
-Fixtures are invented, labelled `SYNTHETIC_FMP_FIXTURE` and never automatically
-populate a live ledger. Vanguard, Fidelity NetBenefits and PNC HTML profiles
-remain provisional: representative anonymized HTML has not been provided.
-Live FMP responses have not been validated with user test credentials. Those
-manual integration checks remain open; offline test success does not establish
-verified institution support or vendor entitlement/coverage.
-
-## Development and requirements
-
-Work on `main`, with conventional red/green BDD commits and no pushes. Preserve
-[original PRD](docs/PRD.md) and [PRD v2](docs/PRD-v2.md). Packages 1–3 gate planning.
-The [stabilization PRD v2.1](docs/PRD-v2.1.md) preserves the final MVP requirements.
-The [final usability and classification audit PRD v2.2](docs/PRD-v2.2.md)
-preserves the attached stabilization scope. Real institution HTML and live
-market-data validation remain separate release gates.
-The [SQLite performance PRD v2.3](docs/PRD-v2.3.md) preserves the current baseline,
-query and planning optimization requirements.
-The [final CI stabilization PRD v2.4](docs/PRD-v2.4.md) scopes the oversized HTTP
-request regression to the test harness. Its headers-only request must receive
-HTTP 413 before any body is sent; the existing 2 MB limit remains unchanged.
-Local offline Docker verification does not establish a GitHub Actions result.
-The remote CI acceptance gate remains pending while this work stays unpushed.
-Local v2.4 verification: 309 tests passed, Ruff passed, and the oversized-request
-scenario passed 20 consecutive runs in disposable, offline Docker containers.
-No new credentials, API setup, or institution fixtures are needed for this fix.
-The unchanged synthetic 20-plan Docker workload now uses one shared baseline:
-plan storage grew 10.01 MiB, generation took 1.758 seconds, and list/compare took
-about 0.04 seconds with roughly 12 KiB responses. These are measured observations;
-see [benchmark evidence and limitations](docs/development.md#shared-baseline-benchmark-results).
-See [data model](docs/data-model.md), [targets](docs/targets.md),
-[plans and reports](docs/plans.md), [prompts](docs/prompts.md),
-[bonds](docs/bonds.md) and [development rules](AGENTS.md).
-
-```sh
-docker compose run --rm -T app uv run --locked pytest
-docker compose run --rm -T app uv run --locked ruff check --config pyproject.toml src tests
-```
-
-CI builds the same Python 3.12 Docker image and runs locked, offline checks.
-No telemetry, cloud ledger, ORM, broker API, LLM integration or background worker
-is included. SQLite, Decimal and small deterministic domain modules remain the
-foundation.
-
-V2.5 adds [executive political-contribution research](docs/political-research.md):
-an external-agent research workflow, strict JSON validation, preview/confirmed
-immutable imports, compact listing and descriptive totals with evidence.
-Named transactions require an independently reviewed local source policy;
-agent assertions and `--yes` cannot grant permission. No scraping, FEC client,
-political scoring or financial-state changes are introduced.
-The [attached V2.5 PRD](docs/PRD-v2.5.md) is preserved. Schema 4 deliberately
-rejects older databases without deleting them; evaluate with a disposable ledger
-before deciding how to preserve/recreate existing data. Local verification:
-350 offline Docker tests and Ruff passed; remote GitHub Actions remains unverified
-because no changes were pushed.
-
-V2.6 adds project-local [research skills](docs/research-skills.md) for Codex and
-Claude Code, stronger political source/identity checks, and immutable
-[earnings research](docs/earnings-research.md) with strict financial facts,
-source provenance and conservative Decimal comparisons. The political skill
-replaces the bundled political prompt; existing user prompt overrides remain.
-The [V2.6 PRD](docs/PRD-v2.6.md) is preserved. Active schema 5 rejects older
-databases without changing them. Use a disposable ledger to evaluate it;
-preserve existing data before manually selecting a replacement database.
-Research validation, previews and reads do not create a missing database.
-External research and source review remain human responsibilities; no new API
-accounts, secrets or credentials are needed for the offline MVP.
-Local V2.6 verification: 462 tests, Ruff and wheel-only skill discovery passed
-in offline Docker. Changes remain local; GitHub Actions is unverified.
-
-V2.7 adds [incremental news research](docs/news-research.md) and the
-`investobot-news` skill. Source-backed immutable events, catalysts and research
-hypotheses support compact prior context and deterministic changes between
-selected runs. Repeated articles, title edits and missing coverage cannot become
-new developments or implied resolutions. No scheduling, scraping or financial
-planning integration is included. The [V2.7 PRD](docs/PRD-v2.7.md) is preserved.
-Active schema 9 rejects existing older databases without deleting them; evaluate
-with a fresh disposable ledger and preserve private data before any manual reset.
-Local V2.7 verification: 521 tests, Ruff, skill format validation and wheel-only
-skill discovery passed in Docker. Work remains local; remote CI is unverified.
-
-The [V2.7 continuity addendum](docs/PRD-v2.7-Addendum-Research-Continuity.md)
-keeps unresolved historical context across omitted runs, distinguishes
-reobservations from discoveries, and exposes cited disputed-claim changes.
-Inherited records carry last-observed provenance; unchanged citations cannot
-establish fresh verification. Schema 6 and existing accepted research stay intact.
-Addendum verification: 540 tests, Ruff, skill format validation and wheel-only
-discovery pass in Docker. No host installs or pushes; remote CI remains unverified.
-
-V2.8 adds [competitive research](docs/competitive-research.md): source-backed
-market/segment overlaps, attributed advantages/disadvantages, and exact reported
-peer matrices. Install `investobot-competitive` through `research skills install`;
-validate and preview `research competitive import`, then explicitly accept with
-`--yes`. Private-company gaps and incompatible observations remain unknown.
-Schema 7 requires a separate fresh ledger; no private data migration or reset.
-
-V2.9 adds [management and insider research](docs/insider-research.md), with the
-portable `investobot-management-insiders` skill and `research insiders` commands.
-Strict fictional/offline validation, preview and explicit `--yes` acceptance
-preserve immutable filing evidence. Reports distinguish P/S purchases/sales from
-M/A/F/G and other codes, exclude linked corrections/duplicates and unresolved
-rows, and show dated ownership and reported compensation without misleading
-totals. No SEC API, credentials or dashboard change is required. Fresh schema 8
-rejects existing ledgers without migration or deletion; evaluate with a disposable
-database. The [original PRD](docs/PRD-v2.9.md) and
-[verification record](docs/v2.9-verification.md) preserve scope and release gates.
-
-The [V2.9 amendment addendum](docs/PRD-v2.9-Addendum-Amendment-Corrections.md)
-adds explicitly linked ownership corrections and documented transaction date/code
-corrections. Conflicting same-date balances remain uncertain; unsupported amendment
-rows never establish a new effective balance. Insider JSON is now **1.1**, its
-skill is **1.1.0**, and fresh database schema **9** rejects schema 8 without
-migration or deletion. Update new JSON inputs explicitly after reviewing their
-sources. Existing accepted evidence is never rewritten. See
-[correction verification](docs/v2.9-corrections-verification.md).
-
-V3.0 adds [ETF and mutual-fund diligence](docs/fund-diligence.md) for one
-SEC series and exact share class. The portable `investobot-fund-diligence` skill
-produces cited disclosures; `research funds validate/import/list/show/summary/holdings`
-preserve fees, dated holdings, methodology, turnover, liquidity and distributions.
-Preview is read-only; human-approved `--yes` acceptance writes immutable research
-only. Provider-based fund analysis and portfolio plans remain independent.
-Fresh SQLite schema **10** rejects earlier ledgers unchanged; select a separate
-new database. No fund API account, credentials or new dependency is needed.
-The [preserved V3.0 PRD](docs/PRD-v3.0.md) and
-[verification record](docs/v3.0-verification.md) distinguish offline software
-acceptance from remote CI and human real-source review.
+Work stays on `main`, with conventional observed red/green commits and no remote
+Git operations. Historical specifications remain unmodified references; the
+unified PRD governs current implementation. See [project rules](AGENTS.md).
