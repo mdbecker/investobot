@@ -254,3 +254,33 @@ def test_supplied_policy_id_without_saved_identity_cannot_authorize_proposals(ho
     result = harvest_plan(household['ledger'].state(), household['policy'], '2026-10-10')
     assert 'UNAPPROVED_HARVEST_POLICY' in codes(result)
     assert result['proposed_actions'] == []
+
+
+def test_new_price_above_remaining_basis_cannot_be_reported_as_loss_harvest(household):
+    household['policy']['harvest_review']['price_observations'][household['loss']]['price'] = '200'
+    result = report(household)
+    assert 'NOT_A_LOSS_AT_PROPOSED_PRICE' in codes(result)
+    assert result['proposed_actions'] == []
+
+
+def test_modifying_loaded_policy_payload_invalidates_its_approval(household):
+    approved = approve(household)
+    approved['fee_per_trade'] = '0'
+    result = harvest_plan(household['ledger'].state(), approved, '2026-10-10')
+    assert 'UNAPPROVED_HARVEST_POLICY' in codes(result)
+    assert result['proposed_actions'] == []
+
+
+@pytest.mark.parametrize('field', ['price', 'permission'])
+def test_harvest_policy_rejects_inexact_or_coerced_source_facts(household, field):
+    from pydantic import ValidationError
+
+    from invest.policy_models import TradingPolicyInput
+
+    payload = household['policy']
+    if field == 'price':
+        payload['harvest_review']['price_observations'][household['loss']]['price'] = 80.0
+    else:
+        payload['harvest_review']['replacement']['approved_for_purchase'] = 'true'
+    with pytest.raises(ValidationError):
+        TradingPolicyInput.model_validate(payload)
