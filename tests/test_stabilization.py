@@ -135,6 +135,7 @@ def rejected(ctx):
 def incomplete(ctx):
     classify(ctx)
     ctx['snap']['positions'][0]['market_value'] = '1100'
+    ctx['snap']['positions'][0]['price'] = '110'
     ctx['ledger'].apply(ctx['snap'])
 
 
@@ -156,6 +157,7 @@ def metadata(ctx):
     ctx['snap']['account'].update(name='Default', institution='generic', account_type='brokerage',
         tax_status='TAXABLE', history_complete=False, currency='EUR', active=False)
     ctx['snap']['positions'][0]['market_value'] = '1100'
+    ctx['snap']['positions'][0]['price'] = '110'
     ctx['diff'] = ctx['ledger'].reconcile(ctx['snap'])
     ctx['ledger'].apply(ctx['snap'])
 
@@ -274,6 +276,7 @@ def prior(ctx, prior):
 def reconcile_date(ctx, incoming):
     ctx['snap']['source_timestamp'] = None if incoming == 'unknown' else incoming
     ctx['snap']['positions'][0]['market_value'] = '1100'
+    ctx['snap']['positions'][0]['price'] = '110'
     ctx['diff'] = ctx['ledger'].reconcile(ctx['snap'])
 
 

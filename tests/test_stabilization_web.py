@@ -45,7 +45,9 @@ def snapshot(quantity="10", source_timestamp="2026-10-08", tax_status="TAX_FREE"
             "id": "retirement", "name": "Verified Roth IRA", "account_type": "Roth IRA",
             "tax_status": tax_status, "history_complete": True,
         },
-        "positions": [{"security": "VTI", "quantity": quantity, "market_value": "1000"}],
+        "positions": [{"security": "VTI", "quantity": quantity, "price": "100",
+                       "market_value": str(int(quantity) * 100),
+                       "displayed_price_precision": 0, "displayed_market_value_precision": 0}],
         "source_timestamp": source_timestamp,
         "source_hash": f"synthetic-{quantity}-{source_timestamp}-{tax_status}",
     }

@@ -104,7 +104,9 @@ def small_saved(ctx):
     ledger = ctx['ledger']
     ledger.apply({'account': {'id': 'ira', 'name': 'Synthetic', 'tax_status': 'TAX_FREE'},
                   'positions': [{'security': 'SYN', 'asset_type': 'STOCK', 'quantity': '1',
-                                 'price': '100', 'market_value': '100'}],
+                                 'price': '100', 'market_value': '100',
+                                 'displayed_price_precision': 0,
+                                 'displayed_market_value_precision': 0}],
                   'cash': '100', 'source_timestamp': '2026-10-08', 'source_hash': 'synthetic'})
     state = ledger.planning_state()
     ctx['fingerprint'] = state_hash(state)

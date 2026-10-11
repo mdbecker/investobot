@@ -8,7 +8,7 @@ import pytest
 from pytest_bdd import given, scenarios, then, when
 
 scenarios("features/web.feature")
-HTML = "<p>PRIVATE_ACCOUNT_12345</p><table><tr><th>Symbol</th><th>Description</th><th>Quantity</th><th>Market Value</th></tr><tr><td>VTI</td><td>Synthetic ETF</td><td>10</td><td>1000</td></tr></table>"
+HTML = "<p>PRIVATE_ACCOUNT_12345</p><table><tr><th>Symbol</th><th>Description</th><th>Quantity</th><th>Market Value</th><th>Price</th></tr><tr><td>VTI</td><td>Synthetic ETF</td><td>10</td><td>1000</td><td>100</td></tr></table>"
 
 
 @pytest.fixture

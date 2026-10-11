@@ -80,6 +80,7 @@ def removed(ctx):
 def quantity(ctx):
     ctx['snap'].update(lots_complete=False, lots=[])
     ctx['snap']['positions'][0]['quantity'] = '8'
+    ctx['snap']['positions'][0]['market_value'] = '800'
     ctx['ledger'].apply(ctx['snap'])
 
 

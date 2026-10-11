@@ -23,7 +23,8 @@ def base_snapshot():
 
     return parse_html(
         page(
-            "<tr><td>VTI</td><td>10</td><td>1000</td><td>1200</td><td>2025-01-01</td><td>ETF</td></tr><tr><td>CASH</td><td></td><td>500</td><td></td><td></td><td></td></tr>"
+            "<tr><td>VTI</td><td>10</td><td>1000</td><td>1200</td><td>2025-01-01</td><td>ETF</td><td>100</td></tr><tr><td>CASH</td><td></td><td>500</td><td></td><td></td><td></td><td></td></tr>",
+            header="<th>Symbol</th><th>Quantity</th><th>Market Value</th><th>Cost Basis</th><th>Acquisition Date</th><th>Asset Type</th><th>Price</th>",
         ),
         "example",
     )

@@ -17,7 +17,9 @@
         "market_value": "1000",
         "price": "100",
         "cost_basis": "1200",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       },
       {
         "security": "AAPL",
@@ -27,7 +29,9 @@
         "market_value": "200",
         "price": "100",
         "cost_basis": "100",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       },
       {
         "security": "BOND",
@@ -36,7 +40,9 @@
         "quantity": "1",
         "market_value": "1000",
         "price": "1000",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       }
     ],
     "lots": [
@@ -87,7 +93,9 @@
         "quantity": "2",
         "market_value": "200",
         "price": "100",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       },
       {
         "security": "BBB",
@@ -95,7 +103,9 @@
         "quantity": "5",
         "market_value": "500",
         "price": "100",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       }
     ],
     "lots": [
@@ -131,7 +141,9 @@
         "quantity": "5",
         "market_value": "500",
         "price": "100",
-        "as_of": "2026-10-08"
+        "as_of": "2026-10-08",
+        "displayed_price_precision": 0,
+        "displayed_market_value_precision": 0
       }
     ],
     "cash": "100",
