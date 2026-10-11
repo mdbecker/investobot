@@ -180,7 +180,9 @@ def summarize(batch):
             raise DomainError('Research evidence issuer is outside frozen universe', 3)
         if observation['status'] not in STATUSES:
             raise DomainError('Invalid company research coverage status')
-        if observation.get('data_environment', batch['data_environment']) != batch['data_environment']:
+        environment = observation.get('data_environment', batch['data_environment'])
+        if environment != batch['data_environment'] and not (
+                environment is None and observation['status'] == 'REVIEW_REQUIRED'):
             raise DomainError('Mixed research environments cannot share a report', 3)
         grouped.setdefault(observation['issuer_id'], []).append(observation)
     companies, issues = [], copy.deepcopy(batch.get('issues', []))
@@ -389,12 +391,17 @@ def _candidate_rows(ledger, issuer, pinned):
     name = identity.get('name') or issuer.get('name')
     skills = sorted(pinned['skills'])
     placeholders = ','.join('?' for _ in skills)
-    return ledger.connection.execute('''SELECT r.id,r.skill_name,r.researched_as_of,r.coverage_status
-        FROM research_runs r LEFT JOIN research_artifacts a
-        ON a.run_id=r.id AND a.id='provenance'
+    return ledger.connection.execute('''WITH compact AS (
+        SELECT r.id,r.skill_name,r.researched_as_of,r.coverage_status,r.imported_at,
+            r.cik,r.security_id,r.ticker,r.company_name,a.metadata_json
+        FROM research_runs r LEFT JOIN research_artifacts a ON a.run_id=r.id AND a.id='provenance'
+        UNION ALL SELECT p.id,'investobot-political-contributions',p.researched_as_of,
+            p.coverage_status,p.imported_at,NULL,p.security_id,p.ticker,p.company_name,NULL
+        FROM research_political_runs p WHERE NOT EXISTS (SELECT 1 FROM research_runs r WHERE r.id=p.id))
+        SELECT r.id,r.skill_name,r.researched_as_of,r.coverage_status FROM compact r
         WHERE r.researched_as_of<=? AND r.skill_name IN (''' + placeholders + ''') AND (
-          (a.run_id IS NOT NULL AND json_extract(a.metadata_json,'$.issuer_id')=?) OR
-          (a.run_id IS NULL AND (r.cik=? OR r.security_id=? OR
+          (r.metadata_json IS NOT NULL AND json_extract(r.metadata_json,'$.issuer_id')=?) OR
+          (r.metadata_json IS NULL AND (r.cik=? OR r.security_id=? OR
            (r.cik IS NULL AND r.security_id IS NULL AND r.ticker=?
             AND lower(trim(r.company_name))=lower(trim(?))))))
         ORDER BY r.researched_as_of DESC,r.imported_at DESC,r.id LIMIT 1001''',
@@ -443,6 +450,10 @@ def report(ledger, plan_id):
         candidates = []
         for run_id, skill_name, researched_as_of, coverage_status in rows[:1000]:
             evidence = show(ledger, run_id)
+            if skill_name == 'investobot-political-contributions' and not evidence.get('envelope'):
+                # Original native packages pin their accepted skill identity.
+                evidence['skill_version'] = evidence['package'].get('skill_version')
+                evidence['schema_version'] = evidence['package'].get('schema_version')
             candidates.append(dict(evidence, run_id=run_id, skill_name=skill_name,
                                    researched_as_of=researched_as_of, coverage_status=coverage_status))
         families = {}
@@ -465,7 +476,8 @@ def report(ledger, plan_id):
             if trusted is None or evidence['skill_version'] != trusted['skill_version']:
                 issues.append(_issue('RESEARCH_SKILL_VERSION_MISMATCH',
                     'Run does not match frozen research skill identity', issuer['issuer_id'], evidence['run_id']))
-                continue
+                if envelope is not None:
+                    continue
             families.setdefault(evidence['skill_name'], []).append(evidence)
         for skill_name, records in families.items():
             evidence = records[0]
@@ -486,7 +498,8 @@ def report(ledger, plan_id):
             projection = {'issuer_id': issuer['issuer_id'], 'status': status,
                 'run_id': evidence['run_id'], 'run_hash': evidence['run_id'],
                 'current_coverage': current_coverage,
-                'data_environment': universe['data_environment'], 'events': [], 'political': [],
+                'data_environment': evidence.get('envelope', {}).get('data_environment'),
+                'events': [], 'political': [],
                 'skill_name': skill_name, 'skill_version': evidence['skill_version']}
             if skill_name == 'investobot-news':
                 projection['events'] = _news_events(ledger, records)
@@ -499,7 +512,9 @@ def report(ledger, plan_id):
                     if not contribution['countable'] or not current_coverage:
                         continue
                     projection['political'].append({'id': contribution['id'],
-                        'category': 'EXECUTIVE_PERSONAL', 'amount': contribution['amount_usd'],
+                        'category': contribution.get('contributor_category') or 'EXECUTIVE_PERSONAL',
+                        'amount': contribution['amount_usd'],
+                        'relationship_verified': bool(contribution.get('corporate_pac_identity_evidence', {}).get('reviewed')),
                         'permission': 'REVIEWED' if package['scope']['rights_status'] == 'APPROVED' else 'UNKNOWN',
                         'identity_verified': contribution['identity_status'] == 'VERIFIED',
                         'source_id': contribution['source_ids'][0],

@@ -14,6 +14,12 @@
 - Policy approval previews validate existing canonical references before opening
   a writer. Nested permissions use strict independent booleans and exact decimal
   strings; immutable versions retain only explicitly submitted fields.
+- Household cash transfers require one explicitly reviewed paired command,
+  matching currencies/environments and verified event ordering. Both cash changes
+  and event legs commit atomically; household/account performance use the same
+  durable links rather than inferring transfers from balance differences.
+- Hybrid search filters canonical model/dimension/content compatibility before
+  lexical ranking. Keyword-only retrieval remains the explicit fallback.
 
 ## Verified implementation lessons
 

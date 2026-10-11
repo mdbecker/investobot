@@ -215,6 +215,22 @@ def search(path, *, query='', top_k=10, issuer_id=None, date_from=None, date_to=
         result['coverage'] = {'excluded_permission_chunks': connection.execute(
             "SELECT count(*) FROM document_chunks WHERE permission!='PERMITTED'").fetchone()[0]}
         where, arguments = ["c.permission='PERMITTED'"], []
+        if vector is not None:
+            blob = _vector(vector)
+            dimensions = {row[0] for row in connection.execute(
+                'SELECT DISTINCT dimension FROM embeddings WHERE model_id=?', (model_id,))}
+            if not dimensions:
+                return blocked('EMBEDDING_MODEL_MISMATCH')
+            if dimensions != {len(vector)}:
+                return blocked('EMBEDDING_DIMENSION_MISMATCH')
+            name = _name(model_id, len(vector))
+            if not connection.execute('SELECT 1 FROM sqlite_master WHERE name=?', (name,)).fetchone():
+                return blocked('VECTOR_INDEX_UNAVAILABLE', 'UNAVAILABLE')
+            # Both lexical and vector ranking use the same compatible corpus.
+            # A keyword hit cannot admit a different model or unembedded text.
+            where.append('''EXISTS (SELECT 1 FROM embeddings e WHERE e.chunk_id=c.id
+                AND e.model_id=? AND e.dimension=? AND e.chunk_hash=c.content_hash)''')
+            arguments.extend((model_id, len(vector)))
         if issuer_id:
             where.append('c.issuer_id=?')
             arguments.append(issuer_id)
@@ -240,16 +256,6 @@ def search(path, *, query='', top_k=10, issuer_id=None, date_from=None, date_to=
                     raise
         vector_scores = {}
         if vector is not None:
-            blob = _vector(vector)
-            dimensions = {row[0] for row in connection.execute(
-                'SELECT DISTINCT dimension FROM embeddings WHERE model_id=?', (model_id,))}
-            if not dimensions:
-                return blocked('EMBEDDING_MODEL_MISMATCH')
-            if dimensions != {len(vector)}:
-                return blocked('EMBEDDING_DIMENSION_MISMATCH')
-            name = _name(model_id, len(vector))
-            if not connection.execute('SELECT 1 FROM sqlite_master WHERE name=?', (name,)).fetchone():
-                return blocked('VECTOR_INDEX_UNAVAILABLE', 'UNAVAILABLE')
             sql = f'''SELECT c.id,1-vec_distance_cosine(v.embedding,?) FROM "{name}" v
                 JOIN document_chunks c ON c.id=v.chunk_id WHERE {' AND '.join(where)}'''
             vector_scores = dict(connection.execute(sql, [blob, *arguments]))

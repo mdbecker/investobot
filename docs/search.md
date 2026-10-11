@@ -27,6 +27,14 @@ or incompatible dimensions are explicit blocked outcomes, never silent model
 substitution. Search itself opens the existing ledger read-only and makes no
 network calls or automatic repairs.
 
+Use `invest research search --query "reviewed evidence"` for offline keyword
+search. For an explicitly supplied query vector, add `--semantic --embedding-file
+query-vector.json --model-id YOUR_MODEL`; the file contains a JSON array of finite
+normalized components. This command reads an existing vector; it never generates
+an embedding or calls a provider. Hybrid results include only chunks embedded
+with that exact model, dimension and current content hash. Use keyword search
+separately when passages without compatible embeddings are needed.
+
 Embedding generation requires explicit user authorization before invoking an
 adapter. Reviewed adapter output can be stored through `store_embeddings` after
 permission/model/dimension checks. No provider is contacted automatically and no

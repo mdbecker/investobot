@@ -21,6 +21,14 @@ external cash movements.
 
 Paired household transfers cancel only with explicit links, distinct accounts,
 matching dates and exact opposite amounts. Account-level transfers remain external.
+Record a reviewed pair with `invest portfolio record-cash-transfer --file
+transfer.json`; add `--confirm` only after reviewing the preview. Required JSON
+fields are `transfer_id`, `from_account_id`, `to_account_id`, exact string
+`amount`, `currency`, `data_environment`, verified `event_timestamp` and `source`.
+Both accounts must exist with known cash, matching provenance/currency and verified
+chronological ordering. The pair changes cash and writes both immutable event
+legs in one transaction. Identical retries do nothing; conflicting IDs reject
+both legs. No security transfer, inferred missing leg or FX conversion is supported.
 Retained dividends, interest, purchases, sales, fees and reinvestment are not
 external contributions. Their effects must already be represented in complete
 checkpoint valuations; they are never added twice. Default results are net of fees.

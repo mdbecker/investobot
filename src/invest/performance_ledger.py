@@ -43,7 +43,9 @@ def report(connection, *, from_date=None, to_date=None, as_of=None, account_id=N
                 amount = amount.copy_negate()
             flows.append({'id': activity['activity_id'], 'account_id': activity['account_id'],
                           'date': activity['date'], 'amount': str(amount),
-                          'classification': 'EXTERNAL', 'currency': activity.get('currency') or next((row.get('currency') for row in accounts if row['id'] == activity['account_id']), None),
+                          'classification': activity.get('classification') or 'EXTERNAL',
+                          'transfer_id': activity.get('transfer_id'),
+                          'currency': activity.get('currency') or next((row.get('currency') for row in accounts if row['id'] == activity['account_id']), None),
                           'event_timestamp': activity.get('event_timestamp')})
     for source, observed in sorted(selected.items()):
         complete = set(observed) == identities and all(

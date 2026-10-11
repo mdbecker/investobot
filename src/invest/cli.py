@@ -168,6 +168,23 @@ def record_activity(file: str, yes: bool = False):
     emit(lambda: ledger().record_activity(read_json(file), yes=yes))
 
 
+@portfolio.command('record-cash-transfer')
+def record_cash_transfer(file: str = typer.Option(...), confirm: bool = False):
+    from invest.cash_transfers import record
+    from invest.research_identity import read_ledger
+
+    def result():
+        payload = read_json(file)
+        with read_ledger(database_path()) as selected:
+            preview = record(selected, payload)
+        if not confirm:
+            return preview
+        selected = ledger()
+        with closing(selected.connection):
+            return record(selected, payload, confirm=True)
+    emit(result)
+
+
 tax = typer.Typer()
 fund = typer.Typer()
 market = typer.Typer()
@@ -1279,10 +1296,20 @@ def backtest_compare(file: str):
 
 @research.command('search')
 def research_search(query: str = '', top_k: int = 10, issuer_id: str = typer.Option(None),
-                     date_from: str = typer.Option(None), date_to: str = typer.Option(None)):
+                     date_from: str = typer.Option(None), date_to: str = typer.Option(None),
+                     semantic: bool = False, embedding_file: str = typer.Option(None),
+                     model_id: str = typer.Option(None)):
     from invest.search import search
-    emit(lambda: search(database_path(), query=query, top_k=top_k, issuer_id=issuer_id,
-                        date_from=date_from, date_to=date_to))
+
+    def result():
+        if semantic and (not embedding_file or not model_id):
+            raise DomainError('Semantic search requires an explicit query embedding file and model ID')
+        if not semantic and (embedding_file or model_id):
+            raise DomainError('Embedding file/model ID require explicit semantic search')
+        return search(database_path(), query=query, top_k=top_k, issuer_id=issuer_id,
+                      date_from=date_from, date_to=date_to,
+                      vector=read_json(embedding_file) if semantic else None, model_id=model_id)
+    emit(result)
 
 
 @research.command('index')

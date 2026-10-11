@@ -44,6 +44,15 @@ support remains **UNVERIFIED** until human acceptance. Source rights and actual
 external-agent compliance are independent manual gates. No secrets are needed
 for offline MVP acceptance; no remote CI result or push is claimed.
 
+### Subsequent integrated checkpoint
+
+Explicit paired household cash transfers, account/household actual-performance
+projection, employee/PAC category preservation, consolidated legacy political
+coverage and compatible semantic-search CLI access now pass **1,145 tests**,
+29.46 seconds, in offline Docker. Ruff passes. These close the corresponding
+items above; remaining work is the verified-lot/identity lifecycle audit, runtime
+and documentation simplification, and final exact-commit release validation.
+
 ## October 11 full specification audit checkpoint
 
 The prior committed tree `d2028ef` was independently built as image
