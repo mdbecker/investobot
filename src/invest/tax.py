@@ -1,7 +1,8 @@
 """Read-only Decimal lot analysis using known ledger state and explicit assumptions."""
 
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, localcontext
+from functools import wraps
 
 from invest.market import normalized_identities
 from invest.models import DomainError, decimal
@@ -28,7 +29,44 @@ def _term(acquired, sold):
 
 
 def _number(value):
-    return format(value.normalize(), "f") if value else "0"
+    if not value:
+        return "0"
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def _exact_analysis(function):
+    """Keep accepted high-precision financial strings intact in read-only arithmetic."""
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        def digits(value):
+            if isinstance(value, dict):
+                return sum(digits(item) for item in value.values())
+            if isinstance(value, (list, tuple)):
+                return sum(digits(item) for item in value)
+            try:
+                number = Decimal(str(value))
+            except (InvalidOperation, ValueError):
+                return 0
+            if not number.is_finite():
+                return 0
+            return len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
+        with localcontext() as context:
+            context.prec = max(100, digits(args) + digits(kwargs) + 64)
+            return function(*args, **kwargs)
+    return wrapped
+
+
+def _remaining_basis(lot):
+    """Canonical remaining adjusted basis first; proportional originals are legacy only."""
+    if lot.get('remaining_adjusted_basis') is not None:
+        basis = decimal(lot['remaining_adjusted_basis'])
+        return basis if basis >= 0 else None
+    if lot.get('basis_state') == 'REVIEW_REQUIRED' or lot.get('cost_basis') is None:
+        return None
+    if decimal(lot['quantity']) <= 0:
+        return None
+    return decimal(lot['cost_basis']) * decimal(lot['remaining_quantity']) / decimal(lot['quantity'])
 
 
 def _security(state, alias):
@@ -81,7 +119,7 @@ def _prerequisites(state, position, security, as_of, lots_required=True):
         if (
             acquired is None
             or acquired > as_of
-            or lot.get("cost_basis") is None
+            or _remaining_basis(lot) is None
             or decimal(lot["quantity"]) <= 0
             or decimal(lot["remaining_quantity"]) > decimal(lot["quantity"])
         ):
@@ -162,6 +200,7 @@ def _rate(term, rates):
     )
 
 
+@_exact_analysis
 def lots(state, as_of):
     as_of = _date(as_of)
     taxable = {a["id"] for a in state["accounts"] if a.get("tax_status") == "TAXABLE"}
@@ -193,14 +232,10 @@ def lots(state, as_of):
             pass
         elif acquired is None or acquired > as_of:
             result["warnings"].append("Lot acquired after analysis date")
-        elif lot.get("cost_basis") is None or decimal(lot["quantity"]) <= 0:
+        elif _remaining_basis(lot) is None or decimal(lot["quantity"]) <= 0:
             result["warnings"].append("Lot basis unavailable")
         else:
-            basis = (
-                decimal(lot["cost_basis"])
-                * decimal(lot["remaining_quantity"])
-                / decimal(lot["quantity"])
-            )
+            basis = _remaining_basis(lot)
             result["cost_basis"] = _number(basis)
             if position and position.get("price") is not None:
                 value = decimal(position["price"]) * decimal(lot["remaining_quantity"])
@@ -318,6 +353,7 @@ def _wash(state, security, sale_date, loss, excluded_lots, retained_quantities=N
     }
 
 
+@_exact_analysis
 def analyze(
     state,
     account,
@@ -429,7 +465,7 @@ def analyze(
         completeness["lot_inventory"] == "INSUFFICIENT_DATA"
         or sum((decimal(l["remaining_quantity"]) for l in available), ZERO) < quantity
         or any(
-            l.get("cost_basis") is None
+            _remaining_basis(l) is None
             or decimal(l["quantity"]) <= 0
             or _known_date(l.get("acquisition_date")) is None
             or _known_date(l.get("acquisition_date")) > sale_date
@@ -447,7 +483,8 @@ def analyze(
         completeness["lot_inventory"] = "INSUFFICIENT_DATA"
         return _output(result)
     for lot in available:
-        lot["_basis"] = decimal(lot["cost_basis"]) / decimal(lot["quantity"])
+        lot["_remaining_basis"] = _remaining_basis(lot)
+        lot["_basis"] = lot["_remaining_basis"] / decimal(lot["remaining_quantity"])
         lot["_term"] = _term(lot["acquisition_date"], sale_date)
     if method in {"FIFO", "LIFO"}:
         available.sort(key=lambda l: (l["acquisition_date"], l["id"]), reverse=method == "LIFO")
@@ -470,7 +507,10 @@ def analyze(
         used = min(remaining, decimal(lot["remaining_quantity"]))
         allocated_fee = remaining_fee if used == remaining else fee * used / quantity
         remaining_fee -= allocated_fee
-        basis, proceeds = used * lot["_basis"], used * price - allocated_fee
+        remaining_quantity = decimal(lot["remaining_quantity"])
+        basis = (lot["_remaining_basis"] if used == remaining_quantity else
+                 lot["_remaining_basis"] * used / remaining_quantity)
+        proceeds = used * price - allocated_fee
         gain = proceeds - basis
         result["selected_lots"].append(
             {
@@ -514,6 +554,7 @@ def analyze(
     return _output(result)
 
 
+@_exact_analysis
 def harvest_candidates(state, as_of):
     report = lots(state, as_of)
     candidates = []

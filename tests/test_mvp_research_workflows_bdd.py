@@ -852,6 +852,18 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
                 'source': 'Explicit fictional human review of original issuer registration; '
                           'CIK 0000123456, ISIN USFICT000001, CUSIP FICT00001'})
             research_ctx['research_security'] = stock['id']
+            from invest.analytics_store import snapshot
+
+            holdings = [{'security_id': stock['id'], 'cusip': 'FICT00001', 'weight': '1'}]
+            source_hash = hashlib.sha256(json.dumps(
+                holdings, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            accepted = snapshot(ledger, {
+                'id': 'reviewed-fictional-holdings', 'data_environment': 'SYNTHETIC',
+                'artifacts': [{'id': 'fictional-holdings-known-at-time', 'kind': 'FUND_HOLDINGS',
+                    'provider': 'REVIEWED_FICTIONAL_SOURCE', 'security_id': research_ctx['security'],
+                    'as_of': '2026-10-01', 'published_at': '2026-10-01',
+                    'observed_at': '2026-10-01', 'sha256': source_hash, 'rows': holdings}]}, confirm=True)
+            assert accepted['committed'] is True
             research_ctx['financial_before'] = copy.deepcopy(ledger.planning_state())
         finally:
             ledger.connection.close()

@@ -159,6 +159,12 @@ def _prepare(ledger, payload, policy_path):
         preview = module.import_research(ledger, envelope['package'], yes=False, **kwargs)
         run_id = preview['research_run_id']
         package = envelope['package']
+        company = package.get('company', {})
+        canonical = next((row for row in ledger.rows('securities')
+                          if row['id'] == company.get('security_id')), {})
+        sourced_issuer = canonical.get('issuer_id') or canonical.get('cik')
+        if sourced_issuer and envelope['issuer_id'] != sourced_issuer:
+            raise DomainError('Envelope issuer contradicts sourced canonical issuer identity', 3)
         scoped_date = package.get('researched_as_of') or package.get('scope', {}).get('researched_as_of')
         if scoped_date != envelope['as_of']:
             raise DomainError('Envelope date contradicts specialist source scope')

@@ -46,11 +46,26 @@ def run(ledger, *, portfolio, start, end, policy, manifest):
     state = ledger.planning_state()
     household_currency(state)
     issues = []
+    cash_return = decimal(policy.get('cash_return', '0'))
+    slippage = decimal(policy.get('slippage', '0'))
+    requested_taxes = policy.get('modeled_taxes', policy.get('taxes', False))
+    if cash_return != 0:
+        issues.append(_issue('UNSUPPORTED_CASH_RETURN_MODEL',
+                             'MVP historical cash earns zero; nonzero return needs an explicit supported unit and model'))
+    if slippage != 0:
+        issues.append(_issue('UNSUPPORTED_SLIPPAGE_MODEL',
+                             'MVP historical execution models zero slippage only'))
+    if requested_taxes not in (False, None):
+        issues.append(_issue('UNSUPPORTED_BACKTEST_TAX_MODEL',
+                             'MVP hypothetical returns do not model taxes'))
     numeric_values = [decimal(row['total_return_index'])
                       for rows in manifest.get('series', {}).values() for row in rows
                       if 'total_return_index' in row]
     numeric_values.extend(decimal(row['market_value']) for row in state['positions'])
     numeric_values.extend(decimal(row['amount']) for row in state['cash_balances'])
+    numeric_values.extend(decimal(event['amount']) for event in policy.get('contribution_schedule', []))
+    numeric_values.extend(decimal(policy.get(key, default)) for key, default in (
+        ('starting_value', '10000'), ('fee_per_trade', '0')))
     precision = max(100, max((len(value.as_tuple().digits) + abs(value.as_tuple().exponent)
                               for value in numeric_values), default=0) * 3 + 32)
     with localcontext() as context:
@@ -144,11 +159,12 @@ def run(ledger, *, portfolio, start, end, policy, manifest):
         if not 0 <= trigger <= 1:
             raise DomainError('Historical drift trigger must be a fraction')
         assumptions = {
-            'cash_return': '0', 'fee_per_trade': _text(fee),
+            'cash_return': _text(cash_return), 'fee_per_trade': _text(fee),
             'contribution_schedule': [{'date': day, 'amount': _text(value)}
                                       for day, value in sorted(contributions.items())],
             'dividends': 'REINVESTED_TOTAL_RETURN_INDEX', 'external_contributions': bool(contributions),
-            'slippage': '0', 'modeled_taxes': False, 'rebalance_frequency': frequency,
+            'slippage': _text(slippage), 'modeled_taxes': requested_taxes,
+            'rebalance_frequency': frequency,
             'drift_trigger': _text(trigger),
             'benchmark': policy.get('benchmark'), 'survivorship_free': False,
             'session_coverage': calendar_coverage}

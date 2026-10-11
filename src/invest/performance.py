@@ -89,7 +89,7 @@ def _calculate(payload):
 
     currencies = {row.get('currency', payload.get('currency', 'USD'))
                   for row in checkpoints + flows}
-    if len(currencies) > 1:
+    if len(currencies) > 1 or None in currencies:
         issue('UNSUPPORTED_CURRENCY', 'Actual performance requires one verified currency')
     if payload.get('cash_flow_history_complete') is not True:
         issue('INCOMPLETE_CASH_FLOW_HISTORY', 'External cash-flow history is incomplete')

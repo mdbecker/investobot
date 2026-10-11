@@ -4,6 +4,31 @@ Specification: [preserved October 10 PRD](../PRD-unified-mvp-2026-10-10.md).
 This is an implementation record, not a claim that the rebuild is delivered.
 Historical PRDs retain their original contents.
 
+## October 11 full specification audit checkpoint
+
+The prior committed tree `d2028ef` was independently built as image
+`fdc7149a3ac8`: locked offline verification passed **1,036 tests in 24.32s**
+and Ruff. Its wheel built and installed in a disposable offline container;
+the installed CLI and all 13 skills imported successfully.
+
+Additional observed red checkpoints cover adjusted tax basis, account/currency
+performance, independent cash freshness and inventory completeness, retirement
+sale and underweight purchase priority, historical immutable holdings, missing
+risk sessions, unsupported backtest assumptions, shared research envelopes,
+corporate PAC/employee acceptance, private corpus sources, saved calculation
+storage identity, plain bond runtime, authoritative CLI schemas and reproducible
+benchmarks. No skips or blocked-only replacement of success workflows were used.
+Source-preserving fixture assertions were corrected where they incorrectly
+expected a normalized research lexeme or omitted known-at-time holdings evidence.
+
+Mounted-source offline Docker verification now passes **1,085 tests in 25.83s**.
+The dependency lock was resolved inside Docker after removing QuantLib; fresh
+locked image verification is still required for this checkpoint. Full-corpus
+measurement is running separately; its tiny-fixture acceptance is not a claim
+about 100,000 chunks. Dashboard parity, orphan cleanup and the identical-data
+plan baseline comparison remain release work. Institution and entitled live FMP
+validation remain explicit human gates.
+
 ## Baseline
 
 - Branch: `main`; source commit `5120897e9e5a314ad50fb242ad1496d976549a92`.

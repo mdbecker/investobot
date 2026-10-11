@@ -149,6 +149,21 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
     if preview:
         issue('SYNTHETIC_DOMAIN_PREVIEW', 'Supplied policy dictionary is synthetic preview only', blocking=False)
     max_age = policy.get('max_position_age_days', 120)
+    for account in baseline['accounts']:
+        identity = account['id']
+        observation = next((row for row in baseline['snapshots']
+                            if row['account']['id'] == identity), {})
+        if observation.get('positions_complete') is not True:
+            issue('INCOMPLETE_POSITION_COVERAGE', 'Whole-household proposals require complete position coverage', account=identity)
+        balance = next((row for row in baseline['cash_balances']
+                        if row['account_id'] == identity), {})
+        cash_source = balance.get('source_timestamp') or balance.get('as_of')
+        if not cash_source:
+            issue('UNKNOWN_CASH_FRESHNESS', 'Confirm independent cash source chronology', account=identity)
+        else:
+            age = (day - date.fromisoformat(cash_source[:10])).days
+            if age < 0 or age > policy.get('max_cash_age_days', max_age):
+                issue('STALE_CASH', 'Cash source is stale or follows proposal date', account=identity)
     for position in baseline['positions']:
         source = position.get('source_timestamp')
         if not source:
@@ -264,7 +279,7 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
             if accounts[account]['tax_status'] == 'OTHER':
                 issue('UNKNOWN_ACCOUNT_TAX_CLASSIFICATION', 'Sale needs authoritative account tax treatment', blocking=False)
                 return
-            if taxable and any(row.get('cost_basis') is None or not row.get('acquisition_date')
+            if taxable and any((row.get('cost_basis') is None and row.get('remaining_adjusted_basis') is None) or not row.get('acquisition_date')
                                or row.get('identity_status') != 'VERIFIED' for row in lots):
                 issue('UNRESOLVED_LOTS', 'Taxable sale requires verified acquisition dates and basis', blocking=False)
                 return
@@ -312,7 +327,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
     blocking = any(item['blocks_calculation'] for item in issues)
     if not blocking and total > 0:
         def purchases():
-            for sid, weight in sorted(weights.items(), key=lambda pair: pair[0]):
+            for sid, weight in sorted(weights.items(), key=lambda pair: (
+                    -(total * pair[1] - values.get(pair[0], Decimal(0))), pair[0])):
                 if sid == 'CASH':
                     continue
                 for account in sorted(eligible):
@@ -327,7 +343,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                      post_cash_drift > decimal(policy.get('drift_trigger', '0.05')))
         cadence = mode == 'contributions-only' or quarterly
         if mode == 'rebalance' and quarterly:
-            for account, sid in sorted(positions):
+            for account, sid in sorted(positions, key=lambda pair: (
+                    accounts[pair[0]]['tax_status'] == 'TAXABLE', pair)):
                 if account not in eligible:
                     continue
                 surplus = max(Decimal(0), values.get(sid, Decimal(0)) - total * weights.get(sid, Decimal(0)))

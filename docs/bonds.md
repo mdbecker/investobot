@@ -1,6 +1,6 @@
 # Known-bond analysis
 
-`invest bond analyze` evaluates supplied fixed-rate terms using QuantLib.
+`invest bond analyze` evaluates supplied plain fixed-rate terms using SciPy.
 It does not discover bonds, retrieve prices, or place orders.
 Pass JSON with `face_value`, `coupon` (annual decimal fraction), `issue_date`,
 `maturity`, `settlement_date` (all ISO dates), `frequency` (1, 2, 4, or 12),
@@ -15,7 +15,10 @@ Example terms:
 
 The result contains yield to maturity, accrued interest for the supplied face
 value, dirty price per 100, dirty value, modified duration, and convexity.
-QuantLib uses floating-point numerical solving; displayed metrics are decimal
+SciPy solves the discounted regular cash-flow price equation for the nominal
+compounded annual yield. Duration and convexity use its analytical first and
+second price derivatives. These calculations use floating-point numerical solving;
+displayed metrics are decimal
 strings with 12 significant digits, rather than exact ledger monetary arithmetic.
 
 Conventions are disclosed in every calculated result: NullCalendar,
@@ -37,3 +40,7 @@ rather than a guessed cash flow. Absent call schedules produce an explicit
 warning; they are not interpreted as proof that a bond is non-callable.
 An explicitly empty schedule permits maturity-only yield to worst, with the
 same warning that schedule completeness must be verified by the user.
+
+Explicit `instrument_type` values `CALLABLE`, `CONVERTIBLE` and `STRUCTURED`
+return `UNAVAILABLE` with typed issues and no metrics. A supplied redemption
+date is a fixed cash-flow scenario only; it does not value an embedded option.

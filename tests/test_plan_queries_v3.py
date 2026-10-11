@@ -44,6 +44,9 @@ def household(ctx):
                   'source_timestamp': '2026-10-08'})
     ctx['state'] = ledger.planning_state()
     ctx['original'] = alternative('first', ctx['state'])
+    ctx['original']['storage_identity'] = {
+        'schema_version': 1, 'manifest_hash': ledger.connection.execute(
+            "SELECT checksum FROM schema_migrations WHERE id='001'").fetchone()[0]}
     for identity in ('first', 'second'):
         save_plan(ledger, alternative(identity, ctx['state']))
 
@@ -192,4 +195,6 @@ def shared_baseline(ctx):
     assert connection.execute('SELECT count(*) FROM plan_runs').fetchone()[0] == 4
     assert connection.execute('PRAGMA foreign_key_check').fetchall() == []
     for identity in ('first', 'second', 'third', 'fourth'):
-        assert load_plan(ctx['ledger'], identity) == alternative(identity, ctx['state'])
+        expected = alternative(identity, ctx['state'])
+        expected['storage_identity'] = ctx['original']['storage_identity']
+        assert load_plan(ctx['ledger'], identity) == expected

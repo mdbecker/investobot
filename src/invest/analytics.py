@@ -249,7 +249,14 @@ def risk(state, client, refresh=False):
             correlations={},
             usable_period=None,
         )
-    aligned = pd.DataFrame(series).sort_index().dropna()
+    aligned = pd.DataFrame(series).sort_index()
+    if aligned.isna().any().any():
+        return dict(base, status="UNAVAILABLE", annualized_volatility=None,
+                    maximum_drawdown=None, correlations={}, usable_period=None,
+                    issues=[{"code": "INCOMPLETE_HISTORY_ALIGNMENT",
+                             "message": "Historical series do not cover identical sessions",
+                             "blocks_calculation": True, "blocks_proposals": True,
+                             "blocks_execution_review": True}])
     if len(aligned) < 3:
         return dict(
             base,

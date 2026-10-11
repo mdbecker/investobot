@@ -126,6 +126,14 @@ class Recipient(StrictModel):
     party_source_id: Text
 
 
+class CorporatePacIdentityEvidence(StrictModel):
+    committee_id: Annotated[str, Field(pattern=r'^C\d{8}$')]
+    company_source_id: Text
+    registration_source_id: Text
+    source_locator: Text
+    reviewed: StrictBool
+
+
 class Contribution(StrictModel):
     id: Text
     executive_id: Text
@@ -143,6 +151,8 @@ class Contribution(StrictModel):
     source_ids: list[Text] = Field(min_length=1)
     notes: str = Field(default='', max_length=4000)
     original_contribution_id: Text | None = None
+    contributor_category: Literal['EXECUTIVE_PERSONAL', 'EMPLOYEE_PERSONAL', 'CORPORATE_PAC'] | None = None
+    corporate_pac_identity_evidence: CorporatePacIdentityEvidence | None = None
 
 
 class UnresolvedMatch(StrictModel):
@@ -154,7 +164,9 @@ class UnresolvedMatch(StrictModel):
 
 class PoliticalResearchInput(StrictModel):
     schema_version: Literal['1.0']
-    research_type: Literal['EXECUTIVE_POLITICAL_CONTRIBUTIONS']
+    research_type: Literal['EXECUTIVE_POLITICAL_CONTRIBUTIONS',
+                           'EMPLOYEE_POLITICAL_CONTRIBUTIONS',
+                           'CORPORATE_PAC_POLITICAL_CONTRIBUTIONS']
     company: Company
     scope: Scope
     sources: list[Source]
@@ -207,6 +219,18 @@ class PoliticalResearchInput(StrictModel):
         records, counted = set(), set()
         refund_totals = {}
         for contribution in self.contributions:
+            expected_category = {
+                'EXECUTIVE_POLITICAL_CONTRIBUTIONS': 'EXECUTIVE_PERSONAL',
+                'EMPLOYEE_POLITICAL_CONTRIBUTIONS': 'EMPLOYEE_PERSONAL',
+                'CORPORATE_PAC_POLITICAL_CONTRIBUTIONS': 'CORPORATE_PAC',
+            }[self.research_type]
+            category = contribution.contributor_category
+            if category != expected_category and not (
+                    category is None and expected_category == 'EXECUTIVE_PERSONAL'):
+                raise ValueError('contributor category contradicts political research type')
+            pac = contribution.corporate_pac_identity_evidence
+            if expected_category != 'CORPORATE_PAC' and pac is not None:
+                raise ValueError('personal contribution cannot carry corporate PAC linkage')
             if contribution.executive_id not in executives or contribution.recipient_id not in recipients:
                 raise ValueError('invalid contribution cross-reference')
             if any(s not in sources for s in contribution.source_ids):
@@ -214,6 +238,15 @@ class PoliticalResearchInput(StrictModel):
             if len(set(contribution.source_ids)) != len(contribution.source_ids):
                 raise ValueError('duplicate evidence reference')
             role_source = executives[contribution.executive_id].role_source_id
+            if expected_category == 'CORPORATE_PAC':
+                if not pac or not pac.reviewed:
+                    raise ValueError('corporate PAC identity requires independently reviewed linkage')
+                if (pac.company_source_id != role_source or
+                        pac.registration_source_id == pac.company_source_id or
+                        {pac.company_source_id, pac.registration_source_id} - set(contribution.source_ids)):
+                    raise ValueError('corporate PAC linkage requires distinct cited company and registration evidence')
+                if sources[pac.company_source_id].source_type != 'CORPORATE_PAC_REGISTRATION':
+                    raise ValueError('corporate PAC company evidence requires original registration')
             identity_types = {
                 'INDEPENDENT_DISCLOSURE', 'CONTRIBUTION_RECORD', 'IDENTITY_CORROBORATION',
                 'EXECUTIVE_STATEMENT', 'PERMITTED_DISCLOSURE',

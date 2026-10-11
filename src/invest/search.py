@@ -107,8 +107,11 @@ def store_chunks(path, chunks, *, confirmed=False):
     seen = set()
     for supplied in chunks:
         row = dict(supplied)
-        if row.get('document_kind') in PRIVATE_KINDS:
+        if (row.get('document_kind') in PRIVATE_KINDS or
+                row.get('source_kind') in PRIVATE_KINDS | {'BROKERAGE', 'PERSONAL_CONTRIBUTION'}):
             raise DomainError('Private broker or personal documents are excluded from corpus indexing', 3)
+        if row.get('source_kind') is not None:
+            raise DomainError('source_kind is unsupported; supply an explicit document_kind')
         if row.get('permission') != 'PERMITTED':
             # Retain only exclusion metadata; never denied text or embeddings.
             if row.get('permission') not in {'DENIED', 'UNKNOWN'}:

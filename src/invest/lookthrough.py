@@ -76,6 +76,10 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 return missing('MAX_LOOKTHROUGH_DEPTH', sid, value, path)
             if observation is None:
                 return missing('UNKNOWN_HOLDINGS', sid, value, path)
+            environments = {row.get('data_environment') for row in accounts.values()}
+            source_environment = observation.get('data_environment')
+            if source_environment is not None and environments - {source_environment}:
+                return missing('MIXED_DATA_ENVIRONMENT', sid, value, path)
             if observation.get('currency', currency) != currency:
                 raise DomainError('Underlying holdings currency differs; FX model required', 3)
             if observation.get('published_at') and _day(observation['published_at']) > reporting_day:

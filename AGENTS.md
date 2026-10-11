@@ -22,6 +22,16 @@
   100-digit context can erase real low-order cash and value residues.
 - Check unknown permissions before iterating eligible trades. An empty rule map
   is unknown eligibility; an empty proposal does not establish readiness.
+- Tax inventory and sale analysis use remaining adjusted basis, including when
+  original basis is unknown. Final sales conserve the exact remaining residue.
+- Historical CLI exposure reads accepted immutable vintages before touching a
+  market client. Source publication/observation dates and hashes survive paths.
+- Align risk histories on every requested session; silently dropping missing
+  rows changes the modeled period and must return a typed coverage blocker.
+- Preserve research evidence lexemes and native specialist hashes. Envelope
+  issuer labels cannot override reviewed canonical issuer identities.
+- The plain bond runtime uses SciPy cash flows. Explicit complex instruments
+  remain unavailable; fixed redemption scenarios do not price embedded options.
 
 ## Active specification and work order
 

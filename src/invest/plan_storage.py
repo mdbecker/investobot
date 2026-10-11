@@ -18,6 +18,11 @@ def save_plan(ledger, plan):
     from invest.plans import plan_summary, state_hash
 
     state = plan['source_state']
+    from invest.db import SCHEMA_VERSION
+
+    checksum = ledger.connection.execute(
+        "SELECT checksum FROM schema_migrations WHERE id='001'").fetchone()[0]
+    plan['storage_identity'] = {'schema_version': SCHEMA_VERSION, 'manifest_hash': checksum}
     baseline_id = state_hash(state)
     details = {k: v for k, v in plan.items() if k not in {'source_state', 'source_state_hash'}}
     assumptions = plan.get('assumptions', {})

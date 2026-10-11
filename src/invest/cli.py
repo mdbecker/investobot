@@ -110,13 +110,14 @@ def portfolio_check(as_of: str = typer.Option(...)):
 @portfolio.command('performance')
 def portfolio_performance(from_date: str = typer.Option(None, '--from'),
                           to_date: str = typer.Option(None, '--to'),
-                          as_of: str = typer.Option(None)):
+                          as_of: str = typer.Option(None),
+                          account: str = typer.Option(None, '--account')):
     from invest.performance_ledger import report
     from invest.research_identity import read_ledger
 
     def result():
         with read_ledger(database_path()) as selected:
-            return report(selected.connection, from_date=from_date, to_date=to_date, as_of=as_of)
+            return report(selected.connection, from_date=from_date, to_date=to_date, as_of=as_of, account_id=account)
     emit(result)
 
 
@@ -243,13 +244,15 @@ def history(ticker: str, refresh: bool = False):
 def portfolio_exposure(refresh: bool = False, as_of: str = typer.Option(None)):
     from invest.analytics import exposure
     def result():
+        if as_of is not None:
+            from invest.portfolio_research_inputs import universe
+            from invest.research_identity import read_ledger
+
+            with read_ledger(database_path()) as selected:
+                return universe(selected, as_of=as_of)
         selected_client = client()
         with closing(selected_client.ledger.connection):
-            observed = exposure(selected_client.ledger.state(), selected_client, refresh)
-            if as_of is None:
-                return observed
-            from invest.portfolio_research_inputs import universe
-            return universe(selected_client.ledger, as_of=as_of)
+            return exposure(selected_client.ledger.state(), selected_client, refresh)
     emit(result)
 
 
@@ -532,6 +535,24 @@ def political_validate(file: str):
     emit(run)
 
 
+def _specialty_envelope(payload, kind, yes):
+    from invest.models import DomainError
+    from invest.research_identity import read_ledger
+    from invest.research_storage import import_run
+
+    if payload.get('kind') != kind:
+        raise DomainError('Envelope kind differs from specialist import command')
+    with read_ledger(database_path()) as selected:
+        preview = import_run(selected, payload, confirmed=False)
+    if not yes:
+        return preview
+    selected = ledger()
+    try:
+        return import_run(selected, payload, confirmed=True)
+    finally:
+        selected.connection.close()
+
+
 @political.command('import')
 def political_import(file: str, yes: bool = False):
     """Preview research; --yes stores it without financial mutations."""
@@ -539,7 +560,10 @@ def political_import(file: str, yes: bool = False):
     from invest.political_models import PoliticalResearchInput, enforce_policy
 
     def run():
-        model = PoliticalResearchInput.model_validate(read_json(file))
+        payload = read_json(file)
+        if isinstance(payload, dict) and 'package' in payload:
+            return _specialty_envelope(payload, 'POLITICAL', yes)
+        model = PoliticalResearchInput.model_validate(payload)
         enforce_policy(model)
         from invest.research_identity import read_ledger
         if not yes:
@@ -601,7 +625,10 @@ def earnings_import(file: str, yes: bool = False):
     from invest.research_identity import read_ledger
 
     def run():
-        model = EarningsResearchInput.model_validate(read_json(file))
+        payload = read_json(file)
+        if isinstance(payload, dict) and 'package' in payload:
+            return _specialty_envelope(payload, 'EARNINGS', yes)
+        model = EarningsResearchInput.model_validate(payload)
         if not yes:
             with read_ledger(database_path()) as db:
                 return import_research(db, model, yes=False)
@@ -662,7 +689,10 @@ def news_import(file: str, yes: bool = False):
     from invest.research_identity import read_ledger
 
     def run():
-        model = NewsResearchInput.model_validate(read_json(file))
+        payload = read_json(file)
+        if isinstance(payload, dict) and 'package' in payload:
+            return _specialty_envelope(payload, 'NEWS', yes)
+        model = NewsResearchInput.model_validate(payload)
         if not yes:
             with read_ledger(database_path()) as db:
                 return import_research(db, model, yes=False)
@@ -739,7 +769,10 @@ def competitive_import(file: str, yes: bool = False):
     from invest.research_identity import read_ledger
 
     def run():
-        model = CompetitiveResearchInput.model_validate(read_json(file))
+        payload = read_json(file)
+        if isinstance(payload, dict) and 'package' in payload:
+            return _specialty_envelope(payload, 'COMPETITIVE', yes)
+        model = CompetitiveResearchInput.model_validate(payload)
         # Verify canonical identity before even creating a confirmed destination.
         with read_ledger(database_path()) as db:
             if not yes:
@@ -806,7 +839,10 @@ def insiders_import(file: str, yes: bool = False):
     from invest.research_identity import read_ledger, verify_company
 
     def run():
-        model = InsiderResearchInput.model_validate(read_json(file))
+        payload = read_json(file)
+        if isinstance(payload, dict) and 'package' in payload:
+            return _specialty_envelope(payload, 'INSIDERS', yes)
+        model = InsiderResearchInput.model_validate(payload)
         with read_ledger(database_path()) as db:
             if not yes:
                 return import_research(db, model, yes=False)
@@ -1091,8 +1127,9 @@ app.add_typer(backtests, name='backtest')
 
 def _backtest_file(file, compare_runs=False):
     from invest.backtest import compare, run
+    from invest.backtest_models import BacktestInput
     from invest.ledger import _issue
-    payload = read_json(file)
+    payload = BacktestInput.model_validate(read_json(file)).model_dump(mode='json', exclude_none=True)
     selected = ledger()
     with closing(selected.connection):
         if payload.get('run_ids'):
@@ -1114,15 +1151,24 @@ def _backtest_file(file, compare_runs=False):
                     'issues': [_issue('INCOMPLETE_BACKTEST_ASSUMPTIONS',
                                      'Supply sourced adjusted history and explicit cash, fee and rebalancing assumptions')],
                     'candidates': [], 'comparable': False}
+        policy['contribution_schedule'] = payload.get('contribution_schedule', [])
+        for assumption in ('slippage', 'taxes'):
+            if assumption in payload:
+                policy[assumption] = payload[assumption]
         candidates = payload.get('candidates', [])
         if not candidates:
             raise DomainError('Supply explicit candidate allocations or saved run IDs')
+        if payload.get('candidate_ids') and payload['candidate_ids'] != [item['id'] for item in candidates]:
+            raise DomainError('Candidate IDs contradict explicit candidate allocations')
+        if payload.get('data_environment') and payload['data_environment'] != provenance.get('data_environment'):
+            raise DomainError('Candidate and history data environments differ', 3)
         runs = [run(selected, portfolio=candidate['weights'], start=payload['start'],
                     end=payload['end'], policy=policy, manifest=manifest) for candidate in candidates]
         comparison = compare(selected, [value['id'] for value in runs]) if compare_runs else None
         issues = comparison['issues'] if comparison else [issue for value in runs for issue in value['issues']]
         result = {'status': 'PARTIAL' if issues else 'AVAILABLE',
                 'classification': 'HYPOTHETICAL', 'comparable': not issues,
+                'requested_mode': payload['mode'],
                 'period': {'start': payload['start'], 'end': payload['end']},
                 'manifest_ids': payload.get('manifest_ids', []), 'issues': issues,
                 'candidates': [dict(value, candidate_id=candidate['id'])

@@ -75,6 +75,11 @@ def import_research(ledger, payload, yes=False, policy_path=None):
     for collection in ('sources', 'executives', 'recipients', 'contributions'):
         data[collection].sort(key=lambda item: item['id'])
     for contribution in data['contributions']:
+        # Preserve historical executive package identities when new optional
+        # category/linkage fields were absent from the original interchange.
+        for field in ('contributor_category', 'corporate_pac_identity_evidence'):
+            if contribution[field] is None:
+                contribution.pop(field)
         contribution['source_ids'].sort()
         value = contribution['amount_usd']
         # Plain strings preserve every significant digit beyond context precision.

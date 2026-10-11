@@ -20,7 +20,7 @@ scenarios('features/compact_plans.feature')
 
 SUMMARY_KEYS = {'id', 'name', 'target_version_id', 'created_at', 'as_of', 'status',
                 'generated_status', 'trade_count', 'turnover', 'tax_summary', 'drift_summary',
-                'warning_count', 'warnings_preview'}
+                'warning_count', 'warnings_preview', 'storage_identity'}
 
 
 @pytest.fixture

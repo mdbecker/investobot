@@ -290,6 +290,29 @@ def _describe(name, command):
         result["json_input_contract"] = JSON_CONTRACTS.get(
             name, "Read the command's validated JSON payload from FILE or stdin with '-'."
         )
+    if name in {'data.snapshot', 'data.verify'}:
+        from invest.analytics_store import ManifestInput
+
+        result['json_input_schema'] = ManifestInput.model_json_schema()
+    if name == 'tax.harvest-plan':
+        from invest.tax_policy import HarvestReviewPolicy
+
+        result['json_input_schema'] = HarvestReviewPolicy.model_json_schema()
+    if name in {'backtest.run', 'backtest.compare'}:
+        from invest.backtest_models import BacktestInput
+
+        result['json_input_schema'] = BacktestInput.model_json_schema()
+    if name in {'research.' + family + '.import' for family in (
+            'news', 'earnings', 'competitive', 'insiders', 'political')}:
+        from invest.research_storage import ResearchEnvelope
+
+        native = result['json_input_schema']
+        envelope = ResearchEnvelope.model_json_schema()
+        result['json_input_schema'] = {
+            'type': 'object', 'additionalProperties': False,
+            'properties': {**native['properties'], **envelope['properties']},
+            '$defs': {**native.get('$defs', {}), **envelope.get('$defs', {})},
+            'anyOf': [native, envelope]}
     return result
 
 

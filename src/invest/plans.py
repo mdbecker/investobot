@@ -372,6 +372,7 @@ def plan_summary(plan, current_state_hash=None):
         **{key: plan.get(key) for key in ('id', 'name', 'target_version_id', 'created_at',
                                          'as_of', 'trade_count')},
         status=status, generated_status=original_status,
+        storage_identity=plan.get('storage_identity'),
         turnover=str(plan['turnover']) if plan.get('turnover') is not None else None,
         tax_summary={key: str(tax[key]) if tax.get(key) is not None else None for key in
                      ('short_term_gain_loss', 'long_term_gain_loss', 'estimated_tax_effect')},
