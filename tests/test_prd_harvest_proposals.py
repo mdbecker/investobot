@@ -221,3 +221,36 @@ def test_missing_saved_policy_cli_is_typed_and_read_only(household):
     assert result.exit_code == 3, result.output
     assert json.loads(result.stderr)['code'] == 3
     assert state_hash(household['ledger'].planning_state()) == before
+
+
+@pytest.mark.parametrize(('mutation', 'issue'), [
+    ('lot', 'UNVERIFIED_LOT_IDENTITY'), ('cash', 'UNKNOWN_CASH'),
+    ('account_environment', 'MIXED_DATA_ENVIRONMENT'), ('date', 'HARVEST_DATE_MISMATCH'),
+    ('budget', 'UNKNOWN_ANNUAL_TAX_BUDGET'),
+])
+def test_invalid_financial_state_or_policy_suppresses_actions(household, mutation, issue):
+    ctx = household
+    if mutation == 'lot':
+        with ctx['ledger'].connection:
+            lot = next(row for row in ctx['ledger'].rows('lots') if row['id'] == 'LOSS-lot')
+            ctx['ledger'].put('lots', lot['id'], dict(lot, identity_status='UNRESOLVED'))
+    elif mutation == 'cash':
+        with ctx['ledger'].connection:
+            ctx['ledger'].connection.execute('DELETE FROM cash_balances')
+    elif mutation == 'account_environment':
+        with ctx['ledger'].connection:
+            row = ctx['ledger'].rows('accounts')[0]
+            ctx['ledger'].put('accounts', row['id'], dict(row, data_environment='REAL'))
+    elif mutation == 'date':
+        ctx['policy']['harvest_review']['loss_sale_date'] = '2026-10-11'
+    else:
+        ctx['policy'].pop('annual_tax_budget')
+    result = report(ctx)
+    assert issue in codes(result)
+    assert result['proposed_actions'] == []
+
+
+def test_supplied_policy_id_without_saved_identity_cannot_authorize_proposals(household):
+    result = harvest_plan(household['ledger'].state(), household['policy'], '2026-10-10')
+    assert 'UNAPPROVED_HARVEST_POLICY' in codes(result)
+    assert result['proposed_actions'] == []
