@@ -137,7 +137,8 @@ def prepare_analysis_case(ctx):
                 boundary['source_timestamp'] = '2026-04-10T11:59:00Z'
                 ctx['ledger'].apply(boundary)
             ctx['ledger'].record_activity(activity('CASH_DEPOSIT', 'flow-boundary',
-                amount='100', date='2026-04-10'), yes=True)
+                amount='100', date='2026-04-10',
+                event_timestamp='2026-04-10T12:00:00Z'), yes=True)
             if case == 'B20':
                 after = snapshot(date='2026-04-10', cash='200')
                 after['source_timestamp'] = '2026-04-10T12:01:00Z'
