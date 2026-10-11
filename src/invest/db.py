@@ -172,6 +172,10 @@ def _ddl():
             dimension INTEGER NOT NULL,vector BLOB NOT NULL,chunk_hash TEXT NOT NULL,
             PRIMARY KEY(chunk_id,model_id))''',
         '''CREATE TABLE plan_baselines (id TEXT PRIMARY KEY,state_json TEXT NOT NULL)''',
+        '''CREATE TABLE backtest_runs (
+            id TEXT PRIMARY KEY,created_at TEXT NOT NULL,start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,status TEXT NOT NULL,comparison_hash TEXT NOT NULL,
+            result_json TEXT NOT NULL,inputs_json TEXT NOT NULL)''',
         '''CREATE TABLE plan_runs (
             id TEXT PRIMARY KEY,baseline_id TEXT NOT NULL REFERENCES plan_baselines(id),
             created_at TEXT NOT NULL,as_of TEXT NOT NULL,generated_status TEXT NOT NULL,
@@ -332,10 +336,11 @@ def rows(connection, table, key=None):
                 cell = bool(cell)
             value[key] = cell
         if table == 'activities':
-            allocations = list(connection.execute('SELECT lot_id,quantity FROM activity_lot_allocations '
+            allocations = list(connection.execute('SELECT lot_id,quantity,basis_removed,term,realized_gain,fee_allocated FROM activity_lot_allocations '
                                                   'WHERE activity_id=? ORDER BY rowid', (value['activity_id'],)))
             if allocations:
-                value['lot_allocations'] = [dict(lot_id=row[0], quantity=row[1]) for row in allocations]
+                names = ('lot_id', 'quantity', 'basis_removed', 'term', 'realized_gain', 'fee_allocated')
+                value['lot_allocations'] = [dict(zip(names, row)) for row in allocations]
         result.append(value)
     return result
 
@@ -381,8 +386,10 @@ def put(connection, table, key, value):
     if table == 'activities':
         connection.execute('DELETE FROM activity_lot_allocations WHERE activity_id=?', (key,))
         for allocation in value.get('lot_allocations') or []:
-            connection.execute('INSERT INTO activity_lot_allocations(activity_id,lot_id,quantity) '
-                               'VALUES (?,?,?)', (key,allocation['lot_id'],text_decimal(allocation['quantity'])))
+            connection.execute('INSERT INTO activity_lot_allocations(activity_id,lot_id,quantity,basis_removed,term,realized_gain,fee_allocated) '
+                               'VALUES (?,?,?,?,?,?,?)', (key,allocation['lot_id'],text_decimal(allocation['quantity']),
+                               text_decimal(allocation.get('basis_removed')), allocation.get('term'),
+                               text_decimal(allocation.get('realized_gain')), text_decimal(allocation.get('fee_allocated'))))
     if table == 'securities':
         connection.execute('DELETE FROM security_aliases WHERE security_id=?', (key,))
         for kind in ('ticker','cusip','isin','figi'):

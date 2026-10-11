@@ -392,17 +392,25 @@ class Ledger:
         prior = next((a for a in self.rows("activities") if a.get("activity_id") == aid), None)
         content = {k: v for k, v in activity.items() if k not in {"id", "recorded_at"}}
         if prior:
-            if {k: v for k, v in prior.items() if k not in {"id", "recorded_at"}} != content:
+            original = {k: v for k, v in prior.items() if k not in {"id", "recorded_at"}}
+            if original.get('lot_allocations'):
+                original['lot_allocations'] = [{k: row[k] for k in ('lot_id', 'quantity')}
+                                              for row in original['lot_allocations']]
+            if original != content:
                 raise DomainError("Activity ID already exists with different content", 3)
             return dict(status="UNCHANGED", activity_id=aid, committed=False)
         state = self.state()
         changed, result = activity_change(state, activity)
+        confirmed_allocations = result.pop('_confirmed_allocations', None)
         if yes:
             with self.connection:
                 for table in ["positions", "cash_balances", "lots"]:
                     for item in changed[table]:
                         self.put(table, item["id"], item)
-                self.put("activities", aid, dict(content, id=aid,
+                accepted_content = dict(content)
+                if confirmed_allocations is not None:
+                    accepted_content['lot_allocations'] = confirmed_allocations
+                self.put("activities", aid, dict(accepted_content, id=aid,
                     recorded_at=datetime.now(timezone.utc).isoformat()))
         return dict(result, activity_id=aid, status="RECORDED" if yes else "PREVIEW", committed=yes)
 
@@ -489,6 +497,7 @@ def activity_change_inplace(state, activity):
     if not cash:
         raise DomainError("Cash balance is unknown", 3)
     delta = Decimal("0")
+    confirmed_allocations = []
     if kind in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
         qty, price, fee = (
             decimal(activity["quantity"]),
@@ -578,8 +587,21 @@ def activity_change_inplace(state, activity):
                     used = decimal(allocation["quantity"])
                     if lot is None or used <= 0 or used > decimal(lot["remaining_quantity"]):
                         raise DomainError("Executed lot allocation exceeds available lot shares", 3)
-                    basis_removed += decimal(lot["cost_basis"]) * used / decimal(lot["quantity"])
-                    lot["remaining_quantity"] = str(decimal(lot["remaining_quantity"]) - used)
+                    remaining = decimal(lot['remaining_quantity'])
+                    available_basis = (decimal(lot['remaining_adjusted_basis'])
+                                       if lot.get('remaining_adjusted_basis') is not None else
+                                       decimal(lot['cost_basis']) * remaining / decimal(lot['quantity']))
+                    removed = available_basis if used == remaining else available_basis * used / remaining
+                    basis_removed += removed
+                    lot['remaining_adjusted_basis'] = str(available_basis - removed)
+                    lot["remaining_quantity"] = str(remaining - used)
+                    acquired = date.fromisoformat(lot['acquisition_date'])
+                    sold = date.fromisoformat(activity['date'])
+                    anniversary = acquired.replace(year=acquired.year + 1, day=min(acquired.day, 28)) if acquired.month == 2 and acquired.day == 29 else acquired.replace(year=acquired.year + 1)
+                    allocated_fee = fee * used / qty
+                    confirmed_allocations.append(dict(lot_id=lot['id'], quantity=str(used),
+                        basis_removed=str(removed), term='LONG_TERM' if sold > anniversary else 'SHORT_TERM',
+                        realized_gain=str(used * price - allocated_fee - removed), fee_allocated=str(allocated_fee)))
                 if p.get("cost_basis") is not None:
                     p["cost_basis"] = str(decimal(p["cost_basis"]) - basis_removed)
                 represented = sum((decimal(l["remaining_quantity"]) for l in state["lots"]
@@ -598,6 +620,7 @@ def activity_change_inplace(state, activity):
         "cash_change": str(delta),
         "cash_after": str(after_cash),
         "warnings": ["Recorded activities do not establish complete household transaction history"],
+        "_confirmed_allocations": confirmed_allocations if kind == 'SELL' and activity.get('lot_allocations') else None,
     }
 
 

@@ -81,6 +81,16 @@ unchanged at this checkpoint.
 
 ## Remaining delivery gates
 
+Incremental domain checks: specific-lot adjusted-basis and final-residue cases
+pass (two cases), with all 870 foundation/regression cases still passing,
+20.89 seconds. Confirmed sale allocations now retain basis, term, realized gain
+and fee separately; retries compare the submitted facts rather than derived
+fields. Recursive look-through passes eleven frozen cases, retaining residuals,
+cycles/depth bounds, dated holdings, issuer evidence and each contributing path.
+See [look-through](../lookthrough.md). These checks do not claim CLI integration
+or complete policy/planning acceptance. Backtest storage is reserved for immutable
+runs; its engine remains outstanding.
+
 Remaining domain implementation, integrated full-suite green, locked offline fresh-image
 verification, recovery roundtrip, synthetic CLI demonstration, performance
 measurements and current operations docs are outstanding. No new-design ledger
