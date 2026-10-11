@@ -230,12 +230,15 @@ def risk(state, client, refresh=False):
                 raise
             warnings.append(f"{ticker}: historical data unavailable")
     base = {
+        "mode": "HYPOTHETICAL_CURRENT_ALLOCATION",
         "position_concentration": concentration,
         "provenance": histories,
         "warnings": warnings,
-        "assumptions": [
-            "Current weights rebalanced each observation; cash return assumed zero; no fees/taxes; not realized account performance"
-        ],
+        "assumptions": {
+            "cash_return": "0", "fees": "0", "modeled_taxes": False,
+            "weights": "CURRENT_WEIGHTS_REBALANCED_EACH_OBSERVATION",
+            "performance": "HYPOTHETICAL",
+        },
     }
     if len(series) != len(weights) or not series:
         return dict(

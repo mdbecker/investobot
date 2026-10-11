@@ -45,6 +45,20 @@ SUPPORTED_SKILLS = {
     },
 }
 AGENT_DIRECTORIES = {'codex': '.agents', 'claude-code': '.claude'}
+for _name, _command in {
+    'portfolio-sync': 'portfolio.reconcile',
+    'portfolio-performance': 'portfolio.performance',
+    'monthly-investing': 'plan.propose',
+    'tax-loss-harvesting': 'tax.harvest-plan',
+    'investment-screening': 'fund.search',
+    'portfolio-research': 'research.portfolio.plan',
+    'portfolio-strategy': 'backtest.compare',
+}.items():
+    SUPPORTED_SKILLS['investobot-' + _name] = {
+        'skill_version': '1.0.0', 'schema_version': '1.0',
+        'description': 'Orchestrate the ' + _name.replace('-', ' ') + ' workflow through discovered CLI contracts.',
+        'research_command': _command,
+    }
 
 
 def _root():

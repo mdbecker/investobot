@@ -68,7 +68,7 @@ FIELDS = {
         'quantity': 'TEXT', 'price': 'TEXT', 'fee': 'TEXT', 'amount': 'TEXT',
         'currency': 'TEXT', 'source': 'TEXT', 'classification': 'TEXT',
         'to_account': 'TEXT', 'from_account': 'TEXT', 'transfer_id': 'TEXT',
-        'recorded_at': 'TEXT', 'data_environment': 'TEXT'},
+        'recorded_at': 'TEXT', 'data_environment': 'TEXT', 'split_ratio': 'TEXT'},
     'targets': {
         'id': 'TEXT PRIMARY KEY', 'name': 'TEXT', 'description': 'TEXT', 'status': 'TEXT',
         'version': 'INTEGER', 'created_at': 'TEXT', 'updated_at': 'TEXT',
@@ -78,7 +78,7 @@ JSON_FIELDS = {'metadata_history', 'classification_history', 'ticker_aliases',
                'issuer_identity_evidence', 'cell_provenance'}
 BOOL_FIELDS = {'active', 'history_complete', 'saleable'}
 DECIMAL_FIELDS = {'quantity', 'remaining_quantity', 'price', 'market_value', 'cost_basis',
-                  'remaining_adjusted_basis', 'wash_adjustment', 'amount', 'fee'}
+                  'remaining_adjusted_basis', 'wash_adjustment', 'amount', 'fee', 'split_ratio'}
 PAYLOAD_TABLES = {'snapshots', 'market_data_cache', 'fund_holdings_cache',
                   'trade_proposals', 'target_versions'}
 

@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 from invest.db import rows
 from invest.ledger import _issue
@@ -30,16 +30,22 @@ def report(connection, *, from_date=None, to_date=None, as_of=None):
     flows = []
     for activity in activities:
         if activity['type'] in {'CASH_DEPOSIT', 'CASH_WITHDRAWAL'}:
-            amount = decimal(activity['amount']) * (-1 if activity['type'] == 'CASH_WITHDRAWAL' else 1)
+            amount = decimal(activity['amount'])
+            if activity['type'] == 'CASH_WITHDRAWAL':
+                amount = amount.copy_negate()
             flows.append({'id': activity['activity_id'], 'account_id': activity['account_id'],
                           'date': activity['date'], 'amount': str(amount),
                           'classification': 'EXTERNAL', 'event_timestamp': activity.get('event_timestamp')})
     for source, observed in sorted(selected.items()):
         complete = set(observed) == identities and all(
             row.get('positions_complete') is True and row.get('cash_known') is True for row in observed.values())
-        value = sum((decimal(position['market_value']) for row in observed.values()
-                     for position in row['positions']), Decimal(0))
-        value += sum((decimal(row['cash']) for row in observed.values() if row.get('cash_known')), Decimal(0))
+        amounts = [decimal(position['market_value']) for row in observed.values()
+                   for position in row['positions']]
+        amounts.extend(decimal(row['cash']) for row in observed.values() if row.get('cash_known'))
+        with localcontext() as context:
+            context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
+                                       for number in amounts) + 64)
+            value = sum(amounts, Decimal(0))
         checkpoint = {'date': source[:10], 'value': str(value), 'complete': complete}
         same_day = [flow for flow in flows if flow['date'] == source[:10]]
         if same_day and len(source) > 10 and all(flow.get('event_timestamp') and len(flow['event_timestamp']) > 10 for flow in same_day):

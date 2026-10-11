@@ -8,6 +8,12 @@ and remaining acceptance cases are still in progress. See
 Treat the current app as a development preview, with provisional institution
 adapters and an unverified live-provider gate.
 
+Before changing a real ledger, create and verify an owner-only archive with
+`docker compose run --rm -T app invest db backup --output /data/backups/reviewed.tar`
+and `docker compose run --rm -T app invest db verify /data/backups/reviewed.tar`.
+Restore stages and validates first and requires explicit confirmation. See
+[local recovery instructions](docs/operations.md); never reset a private ledger.
+
 Local financial tools for a browser-equipped coding agent: accepted portfolio
 facts, tax/exposure analysis, hypothetical targets, proposed manual trades and
 reproducible reports. The agent researches and explains; the human decides and

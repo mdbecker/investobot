@@ -222,6 +222,11 @@ def summarize(batch):
                     row['status'] == 'AVAILABLE' and row.get('current_coverage', True) for row in observations)
             if status == 'AVAILABLE' and any(value != 'AVAILABLE' for value in specialty_statuses.values()):
                 status = 'PARTIAL'
+            incomplete = [name for name, value in specialty_statuses.items() if value != 'AVAILABLE']
+            if incomplete:
+                issues.append(_issue('RESEARCH_TASKS_INCOMPLETE',
+                    'Requested specialty research remains missing, partial or requires review',
+                    issuer['issuer_id'], *incomplete))
             totals, political_issues, count = _political(evidence, issuer['issuer_id'])
             excluded += count
             issues.extend(political_issues)

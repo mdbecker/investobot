@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
@@ -148,6 +149,7 @@ class TargetInput(BaseModel):
     id: str | None = None
     name: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=10000)
+    data_environment: Literal['REAL', 'SYNTHETIC'] | None = None
     status: Literal["DRAFT", "ACTIVE", "ARCHIVED"] = "DRAFT"
     target_allocations: dict[str, Weight]
     planning_constraints: PlanningConstraints = Field(default_factory=PlanningConstraints)
@@ -167,6 +169,24 @@ class SecurityTickerAlias(BaseModel):
     source: str = Field(min_length=1, max_length=1000)
 
 
+class IssuerIdentityEvidence(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    source_locator: str = Field(min_length=1, max_length=2000)
+    source: str = Field(min_length=1, max_length=1000)
+    reviewed: StrictBool
+    cik: str = Field(pattern=r'^\d{10}$')
+    lei: str | None = Field(default=None, pattern=r'^[A-Z0-9]{20}$')
+
+    @model_validator(mode='after')
+    def reviewed_locator(self):
+        parts = urlsplit(self.source_locator)
+        if (not self.reviewed or parts.scheme != 'https' or not parts.hostname
+                or parts.username is not None or parts.password is not None
+                or parts.query or parts.fragment or any(char.isspace() for char in self.source_locator)):
+            raise ValueError('Issuer identity needs reviewed credential-free HTTPS source evidence')
+        return self
+
+
 class SecurityInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     ticker: str = Field(min_length=1, max_length=32, pattern=r"^[A-Z0-9.\-^]+$")
@@ -178,6 +198,22 @@ class SecurityInput(BaseModel):
     figi: str | None = None
     source: str = Field(min_length=1, max_length=1000)
     ticker_aliases: list[SecurityTickerAlias] | None = None
+    cik: str | None = Field(default=None, pattern=r'^\d{10}$')
+    lei: str | None = Field(default=None, pattern=r'^[A-Z0-9]{20}$')
+    issuer_id: str | None = None
+    issuer_identity_evidence: IssuerIdentityEvidence | None = None
+    data_environment: Literal['REAL', 'SYNTHETIC'] | None = None
+
+    @model_validator(mode='after')
+    def sourced_issuer(self):
+        if any(value is not None for value in (self.cik, self.lei, self.issuer_id,
+                                               self.issuer_identity_evidence)):
+            evidence = self.issuer_identity_evidence
+            if (not self.cik or self.issuer_id != self.cik or evidence is None
+                    or self.data_environment is None or evidence.cik != self.cik
+                    or evidence.lei != self.lei):
+                raise ValueError('Issuer mapping needs matching reviewed strong IDs and explicit environment')
+        return self
 
 
 class ActivityAllocation(BaseModel):
@@ -190,7 +226,7 @@ class Activity(BaseModel):
     model_config = ConfigDict(extra="forbid")
     activity_id: str = Field(min_length=1)
     account_id: str = Field(min_length=1)
-    type: Literal["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "INTEREST", "FEE", "CASH_DEPOSIT", "CASH_WITHDRAWAL"]
+    type: Literal["BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT", "DIVIDEND", "INTEREST", "FEE", "CASH_DEPOSIT", "CASH_WITHDRAWAL", "DIVIDEND_REINVESTMENT", "STOCK_SPLIT", "RETURN_OF_CAPITAL"]
     date: date
     event_timestamp: str | None = None
     security: str | None = None
@@ -203,6 +239,7 @@ class Activity(BaseModel):
     to_account: str | None = None
     from_account: str | None = None
     classification: str | None = None
+    split_ratio: Positive | None = None
 
     @field_validator('event_timestamp')
     @classmethod
@@ -213,7 +250,16 @@ class Activity(BaseModel):
     def required_values(self):
         if self.event_timestamp and self.event_timestamp[:10] != self.date.isoformat():
             raise ValueError('Event timestamp must match the confirmed activity date')
-        if self.type in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
+        if self.type == 'STOCK_SPLIT':
+            if not self.security or self.split_ratio is None:
+                raise ValueError('Stock split requires security and explicit ratio')
+        elif self.type == 'RETURN_OF_CAPITAL':
+            if not self.security or self.amount is None:
+                raise ValueError('Return of capital requires security and amount')
+        elif self.type == 'DIVIDEND_REINVESTMENT':
+            if not self.security or self.quantity is None or self.price is None or self.amount is None:
+                raise ValueError('Reinvestment requires security, gross amount, quantity and price')
+        elif self.type in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
             if not self.security or self.quantity is None or self.price is None:
                 raise ValueError("Trade activities require security, quantity and price")
         elif self.amount is None:

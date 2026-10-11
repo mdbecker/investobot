@@ -190,6 +190,10 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
         values[sid] = values.get(sid, Decimal(0)) + decimal(position['market_value'])
     total = sum(values.values(), sum(cash.values(), Decimal(0)))
     for account in eligible:
+        for sid, weight in weights.items():
+            if sid != 'CASH' and weight > 0 and sid not in permissions.get(account, {}):
+                issue('UNKNOWN_TRADING_PERMISSION', 'Target security lacks explicit approved trading permissions',
+                      account=account, security=sid)
         if account not in cash:
             issue('UNKNOWN_CASH_COVERAGE', 'Account cash is unknown', account=account)
         if policy.get('cash_confirmation', {}).get(account) is False:
@@ -207,6 +211,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                  for sid, weight in weights.items() if sid != 'CASH'), default=Decimal(0)) if total else Decimal(0)
     quarterly = day.month in policy.get('quarterly_months', [3, 6, 9, 12]) and drift > decimal(policy.get('drift_trigger', '0.05'))
     cadence = mode == 'contributions-only' or quarterly
+    if not cadence:
+        issue('CADENCE_NOT_ELIGIBLE', 'Rebalance requires approved quarter and drift threshold', blocking=False)
     used = {event['account_id'] for event in baseline['activities'] if event.get('type') in {'BUY', 'SELL'}
             and event.get('date', '')[:7] == as_of[:7]}
     for account in set(eligible) & used:
@@ -297,8 +303,9 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
             spent += cost
             if consistent_lots:
                 action['lot_allocations'] = selected
-        actions.append(action)
         delta = quantity * price
+        action['notional'] = _text(delta)
+        actions.append(action)
         values[sid] = values.get(sid, Decimal(0)) + (delta if kind == 'BUY' else -delta)
         cash[account] += -delta - fee if kind == 'BUY' else delta - fee
 

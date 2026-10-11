@@ -96,10 +96,25 @@ def search(client, filters):
     )
     response = client.screen(params)
     candidates, warnings, provenance = [], list(response["warnings"]), []
+    issues, missing_characteristics = [], []
+
+    def missing_issue(symbol, fields, code="MISSING_FUND_CHARACTERISTICS"):
+        missing_characteristics.append({"ticker": symbol, "fields": fields})
+        issues.append({"code": code, "severity": "WARNING", "ticker": symbol,
+                       "fields": fields, "blocks_calculation": False,
+                       "blocks_proposal": True, "requires_review": True,
+                       "blocks_execution_review": True,
+                       "message": "Requested fund criteria cannot be verified from available evidence"})
+    if response["partial"]:
+        issues.append({"code": "SCREEN_COVERAGE_INCOMPLETE", "severity": "WARNING",
+                       "blocks_calculation": False, "blocks_proposal": True,
+                       "blocks_execution_review": True, "requires_review": True,
+                       "message": "Provider candidate limit prevents exhaustive coverage"})
     for row in response["candidates"]:
         symbol = row.get("symbol")
         if not symbol:
             warnings.append("Provider candidate without a symbol excluded")
+            missing_issue(None, ["symbol"], "MISSING_CANDIDATE_IDENTITY")
             continue
         try:
             metadata = client.metadata(symbol)
@@ -107,20 +122,22 @@ def search(client, filters):
             if exc.code != 2:
                 raise
             warnings.append(f"{symbol}: fund metadata unavailable; candidate excluded")
+            missing_issue(symbol, ["metadata"], "FUND_METADATA_UNAVAILABLE")
             continue
         provenance.append(
             {k: metadata[k] for k in ("ticker", "source", "retrieved_at", "data_as_of")}
         )
         if metadata["status"] != "AVAILABLE":
             warnings.append(f"{symbol}: fund metadata unavailable; candidate excluded")
+            missing_issue(symbol, ["metadata"], "FUND_METADATA_UNAVAILABLE")
             continue
-        missing = (
-            (expense is not None and metadata["expense_ratio"] is None)
-            or (aum is not None and metadata["aum"] is None)
-            or ("issuer" in filters and metadata["issuer"] is None)
-        )
+        required = {"expense_ratio": expense is not None, "aum": aum is not None,
+                    "issuer": "issuer" in filters}
+        missing = [field for field, requested in required.items()
+                   if requested and metadata.get(field) is None]
         if missing:
             warnings.append(f"{symbol}: required filter metadata missing; candidate excluded")
+            missing_issue(symbol, missing)
             continue
         if expense is not None and Decimal(metadata["expense_ratio"]) > expense:
             continue
@@ -139,12 +156,21 @@ def search(client, filters):
                 issuer=metadata["issuer"],
                 fund_type=kind,
                 metadata_provenance=provenance[-1],
+                source_ids=[f"{metadata['source']}:profile:{metadata['ticker']}"],
             )
         )
     return dict(
         response,
         candidates=candidates,
         filters=filters,
+        criteria=dict(filters, fund_type=kind),
+        status="REVIEW_REQUIRED" if issues else response.get("status", "AVAILABLE"),
+        issues=issues,
+        coverage={"screened_candidates": len(response["candidates"]),
+                  "matched_candidates": len(candidates),
+                  "metadata_observations": len(provenance),
+                  "missing_characteristics": missing_characteristics,
+                  "complete": not issues and not response["partial"]},
         metadata_provenance=provenance,
         partial=response["partial"] or bool(warnings),
         warnings=warnings,

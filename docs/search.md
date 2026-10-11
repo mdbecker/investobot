@@ -31,4 +31,4 @@ Embedding generation requires explicit user authorization before invoking an
 adapter. Reviewed adapter output can be stored through `store_embeddings` after
 permission/model/dimension checks. No provider is contacted automatically and no
 broker or personal document is automatically embedded. The Docker extension is
-loaded from the installed pinned package; there are no runtime downloads.
+loaded from the hash-verified native binary baked into Docker; there are no runtime downloads.

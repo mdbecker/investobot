@@ -126,6 +126,9 @@ class Ledger:
             raise DomainError("Security identifiers conflict", 3)
         if matches and (matches[0].get("currency") != data["currency"] or matches[0].get("asset_type") != data["asset_type"]):
             raise DomainError("Security classification conflicts with accepted metadata", 3)
+        if matches and any(data.get(key) and matches[0].get(key) and data[key] != matches[0][key]
+                           for key in ('cik', 'lei', 'issuer_id', 'data_environment')):
+            raise DomainError('Issuer identity conflicts with accepted metadata', 3)
         existing = matches[0] if matches else {}
         data = dict(existing, **{k: v for k, v in data.items() if v is not None}, id=existing.get("id", str(uuid.uuid4())))
         with self.connection:
@@ -288,6 +291,8 @@ class Ledger:
             observations.append(dict(kind="freshness", status="CONFLICT"))
             warnings.append("Older source date requires a reviewed override and justification")
         if snap["source_timestamp"] is None:
+            issues.append(dict(_issue('UNKNOWN_SOURCE_DATE',
+                'Import time does not establish source freshness'), blocks_acceptance=False))
             observations.append(dict(kind="freshness", status="UNKNOWN_VALUE"))
             warnings.append("Unknown source date; import time does not establish source freshness")
             if override_required:
@@ -350,8 +355,9 @@ class Ledger:
         if identical:
             return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id, warnings=snap["warnings"])
         reconciliation = self.reconcile(snap)
-        if reconciliation['issues']:
-            if {row['code'] for row in reconciliation['issues']} == {'OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY'}:
+        acceptance_issues = [issue for issue in reconciliation['issues'] if issue.get('blocks_acceptance', True)]
+        if acceptance_issues:
+            if {row['code'] for row in acceptance_issues} == {'OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY'}:
                 audit_id = str(uuid.uuid4())
                 with self.connection:
                     self.put('snapshots', audit_id, dict(snap, id=audit_id,
@@ -554,6 +560,9 @@ def activity_change(state, activity):
 def activity_change_inplace(state, activity):
     """Shared accounting for disposable working states; discard state on failure."""
     account_id, kind = activity["account_id"], activity["type"].upper()
+    if kind in {'DIVIDEND_REINVESTMENT', 'STOCK_SPLIT', 'RETURN_OF_CAPITAL'}:
+        from invest.corporate_actions import apply
+        return apply(state, activity)
     account = next((a for a in state["accounts"] if a["id"] == account_id), None)
     if not account:
         raise DomainError("Account does not exist")

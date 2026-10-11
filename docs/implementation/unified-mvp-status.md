@@ -88,8 +88,8 @@ and fee separately; retries compare the submitted facts rather than derived
 fields. Recursive look-through passes eleven frozen cases, retaining residuals,
 cycles/depth bounds, dated holdings, issuer evidence and each contributing path.
 See [look-through](../lookthrough.md). These checks do not claim CLI integration
-or complete policy/planning acceptance. Backtest storage is reserved for immutable
-runs; its engine remains outstanding.
+or complete policy/planning acceptance. Backtest storage at that checkpoint was
+reserved for immutable runs; the engine was implemented at the following checkpoint.
 
 Additional domain checkpoint: strict observation timestamp/unknown-field and
 independent provenance cases pass (three). Annual budget/household harvest cases
@@ -138,3 +138,26 @@ synthetic pages cannot establish institution support. FMP entitlement/endpoints
 require the user's manually reviewed live-provider gate. Real-company source
 truth, permissions and actual LLM skill-following remain separate human gates.
 No GitHub Actions result is claimed; this session never pushes.
+
+## October 11 full local green checkpoint
+
+All **1,036 tests pass**, 24.50 seconds, in the offline analytics Docker runtime
+with mounted source; Ruff passes. No tests were skipped, marked expected-failure,
+or deselected in this run. This includes all fourteen complete portable workflow
+success/blocked walkthroughs, the preserved specialist suites, exact arithmetic
+above 100 digits, reviewed issuer registration, independent readiness coverage,
+and corporate-action lot/basis conservation. Search and confirmed derived-index
+rebuild are now discoverable CLI commands. Missing source dates, permissions,
+research tasks and screening characteristics return typed review issues.
+
+Confirmed reinvestment records gross distribution, acquisition and fee separately.
+Its derived acquisition basis does not establish a verified broker lot identity.
+Splits preserve acquisition references and basis; return-of-capital excess or
+unknown lot basis requires manual review. The pre-release schema-1 foundation
+now includes the normalized split-ratio column. Earlier development foundation
+checksums remain rejected without modification; no existing database is migrated
+implicitly. Use disposable new ledgers for this rebuild.
+
+Fresh-image `uv run --locked` verification, packaging, reproducible measurements,
+and a full-PRD coverage audit remain outstanding. Passing the current suite does
+not establish every PRD requirement or real institution/provider/source rights.

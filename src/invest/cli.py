@@ -66,17 +66,18 @@ def import_page(
     as_of: str = typer.Option(None),
     positions_complete: bool = False,
     lots_complete: bool = False,
+    data_environment: str = typer.Option(None),
 ):
+    def parsed():
+        if data_environment not in {None, 'REAL', 'SYNTHETIC'}:
+            raise DomainError('Data environment must be REAL or SYNTHETIC')
+        return dict(parse_html(
+            sys.stdin.read() if file == '-' else Path(file).read_text(), account,
+            institution, tax_status, as_of=as_of,
+            positions_complete=positions_complete, lots_complete=lots_complete),
+            data_environment=data_environment)
     emit(
-        lambda: parse_html(
-            sys.stdin.read() if file == "-" else Path(file).read_text(),
-            account,
-            institution,
-            tax_status,
-            as_of=as_of,
-            positions_complete=positions_complete,
-            lots_complete=lots_complete,
-        )
+        parsed
     )
 
 
@@ -86,7 +87,7 @@ def reconcile(file: str):
 
 
 @portfolio.command()
-def apply(file: str, allow_older: bool = False, justification: str = typer.Option(None)):
+def apply(file: str, allow_older: bool = False, justification: str = typer.Option(None), confirm: bool = False):
     emit(lambda: ledger().apply(read_json(file), allow_older=allow_older, justification=justification))
 
 
@@ -97,15 +98,12 @@ def summary():
 
 @portfolio.command('check')
 def portfolio_check(as_of: str = typer.Option(...)):
-    from invest.db import rows
     from invest.readiness import check
     from invest.research_identity import read_ledger
 
     def result():
         with read_ledger(database_path()) as selected:
-            state = {table: rows(selected.connection, table) for table in
-                     ('accounts', 'positions', 'lots', 'cash_balances', 'activities', 'securities')}
-            return check(state, as_of=as_of)
+            return check(selected.planning_state(), as_of=as_of)
     emit(result)
 
 
@@ -242,10 +240,28 @@ def history(ticker: str, refresh: bool = False):
 
 
 @portfolio.command("exposure")
-def portfolio_exposure(refresh: bool = False):
+def portfolio_exposure(refresh: bool = False, as_of: str = typer.Option(None)):
     from invest.analytics import exposure
+    def result():
+        selected_client = client()
+        with closing(selected_client.ledger.connection):
+            observed = exposure(selected_client.ledger.state(), selected_client, refresh)
+            if as_of is None:
+                return observed
+            from invest.portfolio_research_inputs import universe
+            return universe(selected_client.ledger, as_of=as_of)
+    emit(result)
 
-    emit(lambda: exposure(ledger().state(), client(), refresh))
+
+@portfolio.command('research-universe')
+def portfolio_research_universe(as_of: str = typer.Option(...), top: int = 20,
+                                min_exposure: str = '0.01'):
+    from invest.portfolio_research_inputs import universe
+    from invest.research_identity import read_ledger
+    def result():
+        with read_ledger(database_path()) as selected:
+            return universe(selected, as_of=as_of, top=top, min_exposure=min_exposure)
+    emit(result)
 
 
 @bond.command("analyze")
@@ -997,4 +1013,187 @@ def research_portfolio_report(plan: str = typer.Option(...)):
     def result():
         with read_ledger(database_path()) as selected:
             return report(selected, plan)
+    emit(result)
+
+
+@plan.command('propose')
+def plan_propose(file: str = typer.Option(...), policy: str = typer.Option(...),
+                 mode: str = typer.Option(...), as_of: str = typer.Option(...)):
+    from invest.planning import propose
+    from invest.targets import save
+    def result():
+        payload = read_json(file)
+        selected = ledger()
+        with closing(selected.connection):
+            target = payload.get('target_id') or payload.get('target')
+            if isinstance(target, dict):
+                identifier = target.get('id')
+                existing = {item['id'] for item in selected.rows('targets')}
+                target = save(selected, {'id': identifier if identifier in existing else None,
+                    'name': target.get('name') or target.get('id') or 'Reviewed proposal target',
+                    'target_allocations': target['weights'],
+                    'data_environment': payload.get('data_environment'),
+                    'planning_constraints': {'eligible_accounts': [payload['account_id']]}
+                    if payload.get('account_id') else {}})['id']
+            proposal = propose(selected, target, policy=policy, mode=mode,
+                               as_of=as_of, prices=payload.get('prices', {}))
+            proposal['proposed_actions'] = [
+                {key: action[key] for key in ('type', 'account_id', 'security', 'quantity', 'notional')}
+                for action in proposal['proposed_actions']]
+            return proposal
+    emit(result)
+
+
+@tax.command('harvest-plan')
+def tax_harvest_plan(file: str = typer.Option(None), as_of: str = typer.Option(...)):
+    from invest.ledger import _issue
+    from invest.research_identity import read_ledger
+    from invest.tax import harvest_plan
+    def result():
+        if file is None:
+            return {'status': 'REVIEW_REQUIRED', 'as_of': as_of,
+                    'issues': [_issue('MISSING_HARVEST_REVIEW_SCOPE',
+                                     'Supply reviewed household acquisition coverage and loss-sale scope')],
+                    'replacement_candidates': [], 'guaranteed_tax_savings': None,
+                    'legal_wash_sale_safe': None, 'wash_sale_certified': False}
+        with read_ledger(database_path()) as selected:
+            report = harvest_plan(selected.state(), read_json(file), as_of)
+            report['wash_sale_certified'] = False
+            for issue in list(report['issues']):
+                if issue['code'] in {'HOUSEHOLD_IRA_ACQUISITION_CONFLICT', 'POTENTIAL_WASH_SALE_CONFLICT'}:
+                    report['issues'].append(dict(issue, code='HOUSEHOLD_PURCHASE_CONFLICT'))
+                elif issue['code'] in {'UNKNOWN_OUTSIDE_ACCOUNT_HISTORY', 'UNKNOWN_DIVIDEND_REINVESTMENTS'}:
+                    report['issues'].append(dict(issue, code='HOUSEHOLD_HISTORY_INCOMPLETE'))
+            return report
+    emit(result)
+
+
+@tax.command('budget')
+def tax_budget(year: int = typer.Option(...), as_of: str = typer.Option(...),
+               policy: str = typer.Option(None)):
+    from invest.config import load_config
+    from invest.planning import get_policy
+    from invest.research_identity import read_ledger
+    from invest.tax import annual_budget
+    def result():
+        identifier = policy or load_config().get('planning', {}).get('policy_id')
+        with read_ledger(database_path()) as selected:
+            approved = get_policy(selected, identifier)
+            allowance = dict(approved.get('annual_tax_budget', {}), year=year,
+                             as_of=as_of + 'T23:59:59+00:00', data_environment=approved['data_environment'])
+            return annual_budget(selected.state(), allowance)
+    emit(result)
+
+
+backtests = typer.Typer()
+app.add_typer(backtests, name='backtest')
+
+
+def _backtest_file(file, compare_runs=False):
+    from invest.backtest import compare, run
+    from invest.ledger import _issue
+    payload = read_json(file)
+    selected = ledger()
+    with closing(selected.connection):
+        if payload.get('run_ids'):
+            return compare(selected, payload['run_ids'])
+        provenance = payload.get('history_provenance', {})
+        manifest = {'id': payload.get('manifest_ids', [None])[0],
+                    'data_environment': provenance.get('data_environment'),
+                    'series': payload.get('history', {}),
+                    'sessions': provenance.get('expected_sessions'),
+                    'provenance': provenance}
+        policy = {'cash_return': payload.get('cash_return'),
+                  'fee_per_trade': payload.get('fees'),
+                  'starting_value': payload.get('starting_value'),
+                  'rebalance_frequency': 'BUY_AND_HOLD' if payload.get('rebalancing') == 'NONE'
+                  else payload.get('rebalancing')}
+        if (provenance.get('kind') != 'DIVIDEND_ADJUSTED_TOTAL_RETURN_INDEX'
+                or not provenance.get('source_id') or any(value is None for value in policy.values())):
+            return {'status': 'UNAVAILABLE', 'classification': 'HYPOTHETICAL',
+                    'issues': [_issue('INCOMPLETE_BACKTEST_ASSUMPTIONS',
+                                     'Supply sourced adjusted history and explicit cash, fee and rebalancing assumptions')],
+                    'candidates': [], 'comparable': False}
+        candidates = payload.get('candidates', [])
+        if not candidates:
+            raise DomainError('Supply explicit candidate allocations or saved run IDs')
+        runs = [run(selected, portfolio=candidate['weights'], start=payload['start'],
+                    end=payload['end'], policy=policy, manifest=manifest) for candidate in candidates]
+        comparison = compare(selected, [value['id'] for value in runs]) if compare_runs else None
+        issues = comparison['issues'] if comparison else [issue for value in runs for issue in value['issues']]
+        result = {'status': 'PARTIAL' if issues else 'AVAILABLE',
+                'classification': 'HYPOTHETICAL', 'comparable': not issues,
+                'period': {'start': payload['start'], 'end': payload['end']},
+                'manifest_ids': payload.get('manifest_ids', []), 'issues': issues,
+                'candidates': [dict(value, candidate_id=candidate['id'])
+                               for candidate, value in zip(candidates, runs)],
+                'assumptions': runs[0]['assumptions']}
+        if compare_runs:
+            from invest.config import load_config
+            from invest.planning import get_policy, propose
+            from invest.targets import save
+            policy_id = payload.get('policy_id') or load_config().get('planning', {}).get('policy_id')
+            result['transition_plans'] = []
+            if policy_id:
+                approved = get_policy(selected, policy_id)
+                state = selected.planning_state()
+                dated = [row['source_timestamp'][:10] for row in state['snapshots']
+                         if row.get('source_timestamp')]
+                transition_date = payload.get('as_of') or max(dated, default=None)
+                if transition_date is not None:
+                    prices = {}
+                    for position in state['positions']:
+                        if position.get('price') is None or position.get('source_timestamp') is None:
+                            continue
+                        source = next((row for row in state['snapshots']
+                                       if row['account']['id'] == position['account_id']), None)
+                        if source is None:
+                            continue
+                        prices[position['security_id']] = {
+                            'price': position['price'], 'as_of': position['source_timestamp'],
+                            'currency': next(row['currency'] for row in state['accounts']
+                                             if row['id'] == position['account_id']),
+                            'data_environment': source['data_environment'],
+                            'source': 'ACCEPTED_SQLITE_OBSERVATION:' + source['id'],
+                            'source_snapshot_id': source['id'], 'source_hash': source['source_hash']}
+                    for candidate in candidates:
+                        target = save(selected, {'name': candidate['id'],
+                            'data_environment': payload.get('data_environment'),
+                            'target_allocations': candidate['weights'],
+                            'planning_constraints': {'eligible_accounts': sorted(approved['permissions'])}})
+                        result['transition_plans'].append(propose(selected, target['id'],
+                            policy=policy_id, mode='rebalance', as_of=transition_date, prices=prices))
+            return result
+        return result
+
+
+@backtests.command('run')
+def backtest_run(file: str):
+    emit(lambda: _backtest_file(file))
+
+
+@backtests.command('compare')
+def backtest_compare(file: str):
+    emit(lambda: _backtest_file(file, compare_runs=True))
+
+
+@research.command('search')
+def research_search(query: str = '', top_k: int = 10, issuer_id: str = typer.Option(None),
+                     date_from: str = typer.Option(None), date_to: str = typer.Option(None)):
+    from invest.search import search
+    emit(lambda: search(database_path(), query=query, top_k=top_k, issuer_id=issuer_id,
+                        date_from=date_from, date_to=date_to))
+
+
+@research.command('index')
+def research_index(confirm: bool = False):
+    from invest.ledger import _issue
+    from invest.search import rebuild_index
+    def result():
+        if not confirm:
+            return {'status': 'PREVIEW', 'canonical_changed': False, 'committed': False}
+        if not database_path().exists():
+            return {'status': 'UNAVAILABLE', 'committed': False, 'canonical_changed': False,
+                    'issues': [_issue('CORPUS_UNAVAILABLE', 'Accept authorized canonical corpus evidence first')]}
+        return dict(rebuild_index(database_path()), committed=True)
     emit(result)

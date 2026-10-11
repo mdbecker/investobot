@@ -2,7 +2,6 @@
 
 from contextlib import contextmanager
 from pathlib import Path
-from types import SimpleNamespace
 
 from invest.models import DomainError
 
@@ -29,7 +28,11 @@ def read_ledger(path):
         from invest.db import connect
         connection = connect(path, readonly=True)
         try:
-            yield SimpleNamespace(connection=connection)
+            from invest.ledger import Ledger
+            selected = object.__new__(Ledger)
+            selected.path = Path(path)
+            selected.connection = connection
+            yield selected
         finally:
             connection.close()
     else:

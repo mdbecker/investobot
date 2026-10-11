@@ -14,8 +14,25 @@ def simulate(state, actions):
     if not isinstance(actions, list):
         raise DomainError('Simulation actions must be an array')
     working = copy.deepcopy(state)
+    numbers = []
+    financial_fields = {'quantity', 'remaining_quantity', 'price', 'market_value',
+                        'cost_basis', 'remaining_adjusted_basis', 'amount', 'fee'}
+
+    def supplied_numbers(value):
+        if isinstance(value, dict):
+            for key, cell in value.items():
+                if key in financial_fields and cell is not None:
+                    numbers.append(decimal(cell))
+                elif isinstance(cell, (dict, list)):
+                    supplied_numbers(cell)
+        elif isinstance(value, list):
+            for cell in value:
+                supplied_numbers(cell)
+    supplied_numbers(state)
+    supplied_numbers(actions)
     with localcontext() as context:
-        context.prec = 100
+        context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
+                                   for number in numbers) + 64)
         for index, original in enumerate(actions):
             action = copy.deepcopy(original)
             if action.get('type') not in {'BUY', 'SELL'}:

@@ -12,14 +12,16 @@
   issuer metadata before loading immutable packages; unrelated evidence must
   not break a selected report. Historical coverage is not current coverage.
 
-## Verified implementation lessons
-
 - Schema 1 identity includes the foundation migration checksum, not just SQLite
   user_version. Legacy schema 1 must remain byte-preserved and rejected.
 - All application database connections hold the shared restore lock until close;
   close write handles before announcing completion to local HTTP clients.
 - Disposable benchmark builders must insert parent accounts before observation
   rows and query plan_runs. Keep foreign keys enabled during fixture creation.
+- Scale Decimal calculation contexts to supplied financial magnitudes. A fixed
+  100-digit context can erase real low-order cash and value residues.
+- Check unknown permissions before iterating eligible trades. An empty rule map
+  is unknown eligibility; an empty proposal does not establish readiness.
 
 ## Active specification and work order
 

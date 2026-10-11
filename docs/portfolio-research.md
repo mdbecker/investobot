@@ -49,6 +49,9 @@ and report researched counts/weights separately under `coverage.specialties`.
 One complete news run cannot complete the other four tasks. Selected and whole
 portfolio completeness require all pinned specialties to be available for every
 selected issuer. Missing tasks remain `NOT_RESEARCHED`.
+An incomplete requested task set returns the typed `RESEARCH_TASKS_INCOMPLETE`
+issue with the affected issuer and skill names; callers need not interpret prose
+to distinguish complete research from missing or partial evidence.
 
 Interval specialties must cover the requested window to be complete. Overlapping
 partial windows count as researched with partial coverage; evidence entirely
