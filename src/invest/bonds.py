@@ -61,7 +61,9 @@ def _fraction(start, end, convention, reference_start, reference_end, frequency)
 def analyze(terms):
     if not isinstance(terms, dict):
         raise DomainError('Bond terms must be a JSON object')
-    if terms.get('instrument_type', 'FIXED_RATE') not in {'FIXED_RATE', 'FIXED_COUPON', 'PLAIN_FIXED_RATE'}:
+    if (terms.get('instrument_type', 'FIXED_RATE') not in {'FIXED_RATE', 'FIXED_COUPON', 'PLAIN_FIXED_RATE'}
+            or terms.get('call_schedule') or terms.get('conversion_ratio') is not None
+            or terms.get('conversion_security') is not None or terms.get('structured_payoff') is not None):
         return {'status': 'UNAVAILABLE', 'issues': [{
             'code': 'UNSUPPORTED_BOND_STRUCTURE',
             'message': 'Only regular plain fixed-coupon instruments are supported',
@@ -146,27 +148,7 @@ def analyze(terms):
               'settlement_date': terms['settlement_date'], 'conventions': conventions,
               'warnings': warnings, 'call_yields': []}
     calls = terms.get('call_schedule')
-    if calls is None:
-        warnings.append('Call schedule unavailable; yield to worst is not calculable')
-    elif not isinstance(calls, list):
+    if calls is not None and not isinstance(calls, list):
         raise DomainError('call_schedule must be a list of date/price objects')
-    else:
-        yields, complete = [ytm], True
-        for call in calls:
-            if not isinstance(call, dict) or 'date' not in call or 'price' not in call:
-                raise DomainError('Each call must supply date and redemption price per 100')
-            call_date = qdate(call['date'])
-            call_price = number(call['price'], 'call price', positive=True)
-            if not settlement < call_date <= maturity:
-                raise DomainError('Call dates must be after settlement and no later than maturity')
-            if call_date not in schedule:
-                complete = False
-                warnings.append('Off-coupon call date requires explicit stub/accrued redemption terms; yield to worst unavailable')
-                continue
-            value = solve(flows(call_date, call_price))
-            yields.append(value)
-            result['call_yields'].append({'date': call['date'], 'redemption_price': metric(call_price), 'yield': metric(value)})
-        if complete:
-            result['yield_to_worst'] = metric(min(yields))
-            warnings.append('Yield to worst covers only maturity and the supplied fixed-redemption scenarios; verify schedule completeness')
+    warnings.append('Embedded optionality is unsupported; no yield to worst is calculated')
     return result

@@ -8,7 +8,7 @@ from pytest_bdd import given, scenarios, then, when
 from invest.ledger import Ledger
 from invest.models import DomainError
 
-scenarios("features/targets_v2.feature")
+scenarios("features/household_targets.feature")
 
 
 @pytest.fixture

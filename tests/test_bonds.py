@@ -72,12 +72,12 @@ def conventions(context):
     assert conventions["calendar"] == "NullCalendar"
 
 
-@then("yield to worst includes the supplied call scenario")
+@then("callable bond measures are unavailable")
 def worst(context):
     result = context["result"]
-    assert len(result["call_yields"]) == 1
-    values = [Decimal(result["yield_to_maturity"]), Decimal(result["call_yields"][0]["yield"])]
-    assert Decimal(result["yield_to_worst"]) == min(values)
+    assert result['status'] == 'UNAVAILABLE'
+    assert result['issues'][0]['code'] == 'UNSUPPORTED_BOND_STRUCTURE'
+    assert 'yield_to_worst' not in result and 'yield_to_maturity' not in result
 
 
 @then("bond analysis reports insufficient data without guessed metrics")

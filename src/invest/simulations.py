@@ -21,7 +21,7 @@ def simulate(state, actions):
     def supplied_numbers(value):
         if isinstance(value, dict):
             for key, cell in value.items():
-                if key in financial_fields and cell is not None:
+                if key in financial_fields and isinstance(cell, (str, int, float, Decimal)) and not isinstance(cell, bool):
                     numbers.append(decimal(cell))
                 elif isinstance(cell, (dict, list)):
                     supplied_numbers(cell)

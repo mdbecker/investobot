@@ -10,6 +10,12 @@ Exact financial decimals are normalized text. Foreign keys, WAL, synchronous
 FULL and a five-second busy timeout protect related transactional writes.
 Observation evidence is distinct from authoritative balances and execution facts.
 
+The persistence-facing ledger delegates exact activity accounting, read-only
+portfolio summaries and canonical security lookup to cohesive modules. Stable
+financial fingerprints are separate from compact saved-plan retrieval. Preserved
+scenario proposal generation and approved-policy planning share authoritative
+simulation primitives; they are not generic repository or solver abstractions.
+
 Checksum-identified schema 1 initializes only empty ledgers. Existing incompatible
 development ledgers are rejected without modification. Future migrations require
 a verified pre-migration backup and transactional checksum tracking. Shared

@@ -6,7 +6,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from invest.ledger import Ledger
 from invest.models import DomainError
 
-scenarios('features/sync_v2.feature')
+scenarios('features/snapshot_reconciliation.feature')
 
 
 def snapshot():

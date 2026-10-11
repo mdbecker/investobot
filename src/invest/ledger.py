@@ -1,15 +1,18 @@
 """Small explicit SQLite ledger; mutations are atomic and preserve normalized audit history."""
 
-import copy
 import hashlib
 import json
 import uuid
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from decimal import Decimal, localcontext
 from pathlib import Path
 
 from pydantic import ValidationError
 
+from invest.accounting import activity_change as activity_change
+from invest.accounting import activity_change_inplace as activity_change_inplace
+from invest.accounting import activity_content as activity_content
+from invest.issues import _issue as _issue
 from invest.models import (
     AccountUpdate,
     Activity,
@@ -19,6 +22,8 @@ from invest.models import (
     Snapshot,
     decimal,
 )
+from invest.portfolio_summary import household_currency as household_currency
+from invest.portfolio_summary import summarize as summarize
 
 TABLES = [
     "accounts",
@@ -43,9 +48,6 @@ def snapshot_fingerprint(snap):
         if k not in {"imported_at", "status", "warnings"}}, sort_keys=True).encode()).hexdigest()
 
 
-def _issue(code, message, **fields):
-    return dict(code=code, message=message, blocks_calculation=True,
-                blocks_proposals=True, blocks_execution_review=True, **fields)
 
 
 class Ledger:
@@ -183,22 +185,10 @@ class Ledger:
 
     def _snapshot_security(self, position, account_id):
         """Resolve source identities consistently for review and atomic acceptance."""
-        supplied = {key: position[key].strip().upper() for key in ("cusip", "isin", "figi")
-                    if position.get(key)}
-        securities = self.rows("securities")
-        existing = [s for s in securities if any(s.get(k) == v for k, v in supplied.items())]
+        from invest.security_identity import resolve_observation
+
         held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
-        if any(sec["id"] in held and sec["ticker"] == position["security"]
-               and any(sec.get(k) and sec[k] != v for k, v in supplied.items())
-               for sec in securities):
-            raise DomainError("Held ticker has conflicting strong identity", 3)
-        if not existing:
-            existing = [s for s in securities if s["ticker"] == position["security"]
-                        and not any(s.get(k) and s[k] != v for k, v in supplied.items())]
-        if len(existing) > 1 or (existing and any(existing[0].get(k) and existing[0][k] != v
-                                                for k, v in supplied.items())):
-            raise DomainError("Security aliases conflict; resolve identity explicitly", 3)
-        return (existing[0] if existing else None), supplied
+        return resolve_observation(self.rows('securities'), position, held)
 
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
@@ -325,16 +315,26 @@ class Ledger:
                 issues.append(_issue('OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY',
                     'Dated observation precedes the confirmed activity'))
             else:
+                canonical_old = {row['security_id']: row for row in self.rows('positions')
+                                 if row['account_id'] == account_id}
+                canonical_incoming = {}
                 for symbol, position in incoming.items():
-                    prior_position = old.get(symbol)
+                    try:
+                        security, _ = self._snapshot_security(position, account_id)
+                    except DomainError:
+                        # The identity review pass above already records its typed blocker.
+                        continue
+                    canonical_id = security['id'] if security else symbol
+                    canonical_incoming[canonical_id] = position
+                    prior_position = canonical_old.get(canonical_id)
                     if prior_position and decimal(position['quantity']) != decimal(prior_position['quantity']):
                         issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
                             'Observation quantity contradicts confirmed activity', security=symbol))
                 if snap['positions_complete']:
-                    for symbol in old.keys() - incoming.keys():
-                        if decimal(old[symbol]['quantity']) > 0:
+                    for identity in canonical_old.keys() - canonical_incoming.keys():
+                        if decimal(canonical_old[identity]['quantity']) > 0:
                             issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
-                                'Complete observation omits confirmed inventory', security=symbol))
+                                'Complete observation omits confirmed inventory', security=canonical_old[identity]['security']))
                 if snap['cash_known'] and current_cash and decimal(snap['cash']) != decimal(current_cash['amount']):
                     issues.append(_issue('CONFIRMED_EVENT_DISCREPANCY',
                         'Observation cash contradicts confirmed activity', account_id=account_id))
@@ -517,276 +517,6 @@ class Ledger:
                 self.put("activities", aid, dict(accepted_content, id=aid,
                     recorded_at=datetime.now(timezone.utc).isoformat()))
         return dict(result, activity_id=aid, status="RECORDED" if yes else "PREVIEW", committed=yes)
-
-
-def household_currency(state):
-    currencies = {a.get("currency", "USD") for a in state.get("accounts", [])}
-    if len(currencies) > 1:
-        raise DomainError("Household currencies differ; no FX conversion is configured", 3)
-    return next(iter(currencies), "USD")
-
-
-def summarize(state):
-    currency = household_currency(state)
-    missing_cash = [row['id'] for row in state['accounts'] if not any(
-        cash['account_id'] == row['id'] for cash in state['cash_balances'])]
-    unmarked = [row for row in state['positions'] if row.get('market_value') is None]
-    issues = [_issue('UNKNOWN_CASH_COVERAGE', 'Confirm cash coverage', account_id=identity) for identity in missing_cash]
-    issues.extend(_issue('MISSING_VALUATION_MARK', 'Confirm an independent valuation mark', security_id=row['security_id']) for row in unmarked)
-    cash = sum((decimal(c["amount"]) for c in state["cash_balances"]), Decimal("0"))
-    value = sum((decimal(p["market_value"]) for p in state["positions"] if p.get('market_value') is not None), cash)
-    accounts, taxes, allocation = {}, {}, {"CASH": str(cash)}
-    warnings = []
-    for a in state["accounts"]:
-        if not any(c["account_id"] == a["id"] for c in state["cash_balances"]):
-            warnings.append(f"{a['id']}: cash balance unavailable; total excludes unknown cash")
-        total = sum(
-            (decimal(p["market_value"]) for p in state["positions"] if p["account_id"] == a["id"] and p.get('market_value') is not None),
-            Decimal("0"),
-        )
-        total += sum(
-            (decimal(c["amount"]) for c in state["cash_balances"] if c["account_id"] == a["id"]),
-            Decimal("0"),
-        )
-        accounts[a["id"]] = str(total)
-        taxes[a["tax_status"]] = str(decimal(taxes.get(a["tax_status"], "0")) + total)
-    unrealized = Decimal("0")
-    for p in state["positions"]:
-        asset = p.get("asset_type", "OTHER")
-        if p.get('market_value') is None:
-            continue
-        allocation[asset] = str(decimal(allocation.get(asset, "0")) + decimal(p["market_value"]))
-        if p.get("cost_basis") is None:
-            warnings.append(f"{p['security']}: basis unavailable")
-        else:
-            unrealized += decimal(p["market_value"]) - decimal(p["cost_basis"])
-    return {
-        "currency": currency,
-        'status': 'PARTIAL' if issues else 'AVAILABLE', 'issues': issues,
-        "total_value": None if unmarked or missing_cash else str(value),
-        'known_value_subtotal': str(value),
-        "cash": None if missing_cash else str(cash),
-        "by_account": accounts,
-        "by_tax_status": taxes,
-        "allocation": allocation,
-        "largest_positions": sorted(
-            state["positions"], key=lambda p: (p.get('market_value') is not None, decimal(p['market_value']) if p.get('market_value') is not None else Decimal(0)), reverse=True
-        )[:10],
-        "unrealized_gain_loss_known_basis": str(unrealized),
-        "snapshot_dates": sorted({p["as_of"] for p in state["positions"]}),
-        "warnings": warnings,
-    }
-
-
-def activity_change(state, activity):
-    """Public copy-on-write accounting transform; failed changes cannot alter input."""
-    return activity_change_inplace(copy.deepcopy(state), activity)
-
-
-def activity_content(value):
-    """Normalize monetary lexemes only; identity and source evidence stay literal."""
-    from invest.db import DECIMAL_FIELDS, text_decimal
-
-    def normalize(item):
-        if isinstance(item, dict):
-            return {key: text_decimal(child) if key in DECIMAL_FIELDS else normalize(child)
-                    for key, child in item.items()}
-        if isinstance(item, list):
-            return [normalize(child) for child in item]
-        return item
-
-    result = normalize(value)
-    result.setdefault('fee', '0')
-    return result
-
-
-def activity_change_inplace(state, activity):
-    from invest.db import DECIMAL_FIELDS
-
-    numbers = []
-
-    def collect(value):
-        if isinstance(value, dict):
-            for key, child in value.items():
-                if key in DECIMAL_FIELDS and isinstance(child, (str, int, float, Decimal)) and not isinstance(child, bool):
-                    numbers.append(decimal(child))
-                elif isinstance(child, (dict, list)):
-                    collect(child)
-        elif isinstance(value, list):
-            for child in value:
-                collect(child)
-
-    collect(state)
-    collect(activity)
-    with localcontext() as context:
-        context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
-                                   for number in numbers) + 64)
-        return _activity_change_inplace(state, activity)
-
-
-def _activity_change_inplace(state, activity):
-    """Shared accounting for disposable working states; discard state on failure."""
-    account_id, kind = activity["account_id"], activity["type"].upper()
-    if kind in {'DIVIDEND_REINVESTMENT', 'STOCK_SPLIT', 'RETURN_OF_CAPITAL'}:
-        from invest.corporate_actions import apply
-        return apply(state, activity)
-    account = next((a for a in state["accounts"] if a["id"] == account_id), None)
-    if not account:
-        raise DomainError("Account does not exist")
-    date.fromisoformat(activity["date"])
-    if kind not in {
-        "BUY",
-        "SELL",
-        "TRANSFER_IN",
-        "TRANSFER_OUT",
-        "DIVIDEND",
-        "INTEREST",
-        "FEE",
-        "CASH_DEPOSIT",
-        "CASH_WITHDRAWAL",
-    }:
-        raise DomainError("Unsupported activity type")
-    if kind in {"TRANSFER_IN", "TRANSFER_OUT"}:
-        raise DomainError("Security transfers require explicit classification and manual review; unsupported in MVP")
-    if activity.get("to_account") or activity.get("from_account"):
-        raise DomainError("Cross-account movement requires explicit classification and manual review", 3)
-    cash = next((c for c in state["cash_balances"] if c["account_id"] == account_id), None)
-    if not cash:
-        raise DomainError("Cash balance is unknown", 3)
-    delta = Decimal("0")
-    confirmed_allocations = []
-    if kind in {"BUY", "SELL", "TRANSFER_IN", "TRANSFER_OUT"}:
-        qty, price, fee = (
-            decimal(activity["quantity"]),
-            decimal(activity["price"]),
-            decimal(activity.get("fee", 0)),
-        )
-        if qty <= 0 or price < 0 or fee < 0:
-            raise DomainError("Quantity must be positive; price and fee nonnegative")
-        from invest.security_identity import resolve
-
-        security = resolve(state['securities'], activity['security'])
-        p = next(
-            (
-                p
-                for p in state["positions"]
-                if p["account_id"] == account_id and p["security_id"] == security["id"]
-            ),
-            None,
-        )
-        if p is None:
-            p = dict(
-                id=f"{account_id}:{security['id']}",
-                account_id=account_id,
-                security_id=security["id"],
-                security=security["ticker"],
-                name=security["name"],
-                asset_type=security["asset_type"],
-                quantity="0",
-                market_value="0",
-                cost_basis=None,
-                as_of=activity["date"],
-                source_timestamp=None,
-            )
-            state["positions"].append(p)
-        selling = kind in {"SELL", "TRANSFER_OUT"}
-        if kind == "SELL" and fee > qty * price:
-            raise DomainError("Sale fee exceeds gross proceeds")
-        if selling and qty > decimal(p["quantity"]):
-            raise DomainError("Sale/transfer exceeds known position", 3)
-        old_qty = decimal(p["quantity"])
-        market_price = decimal(p["price"]) if p.get("price") is not None else (
-            decimal(p["market_value"]) / old_qty if old_qty else None)
-        p["quantity"] = str(old_qty + (-qty if selling else qty))
-        if market_price is not None:
-            p["market_value"] = str(decimal(p["quantity"]) * market_price)
-        else:
-            p["market_value"] = None
-            p["valuation_state"] = "UNRESOLVED"
-        # Execution price belongs to the activity, not the remaining portfolio mark.
-        if kind == "BUY":
-            delta = -(qty * price + fee)
-            if p.get("cost_basis") is not None:
-                p["cost_basis"] = str(decimal(p["cost_basis"]) + qty * price + fee)
-            lid = str(uuid.uuid4())
-            state["lots"].append(
-                dict(
-                    id=lid,
-                    account_id=account_id,
-                    security_id=security["id"],
-                    security=security["ticker"],
-                    acquisition_date=activity["date"],
-                    quantity=str(qty),
-                    remaining_quantity=str(qty),
-                    cost_basis=str(qty * price + fee),
-                )
-            )
-        elif kind == "SELL":
-            delta = qty * price - fee
-        if selling:
-            allocations = activity.get("lot_allocations")
-            if allocations is None:
-                p["lot_state"] = "UNRESOLVED"
-                p["cost_basis"] = None
-            else:
-                if not isinstance(allocations, list) or not allocations:
-                    raise DomainError("Supply nonempty executed lot allocations")
-                if len({a["lot_id"] for a in allocations}) != len(allocations):
-                    raise DomainError("Duplicate executed lot allocation")
-                if sum((decimal(a["quantity"]) for a in allocations), Decimal("0")) != qty:
-                    raise DomainError("Executed lot allocations must equal sold quantity", 3)
-                basis_removed = Decimal("0")
-                fee_remaining = fee
-                for allocation in allocations:
-                    lot = next((l for l in state["lots"] if l["id"] == allocation["lot_id"]
-                        and l["account_id"] == account_id and l["security_id"] == security["id"]), None)
-                    used = decimal(allocation["quantity"])
-                    if lot is None or used <= 0 or used > decimal(lot["remaining_quantity"]):
-                        raise DomainError("Executed lot allocation exceeds available lot shares", 3)
-                    if lot.get('identity_status') == 'UNRESOLVED' or lot.get('saleable') is False:
-                        raise DomainError('Executed lot needs verified saleable identity', 3)
-                    if account.get('data_environment') == 'REAL' and (
-                            lot.get('identity_status') != 'VERIFIED' or lot.get('saleable') is not True
-                            or not lot.get('source_lot_id') or not lot.get('identity_source')):
-                        error = DomainError('Real executed lot requires reviewed source identity and saleability', 3)
-                        error.result = {'status': 'BLOCKED', 'issues': [_issue('UNVERIFIED_LOT_IDENTITY', str(error))]}
-                        raise error
-                    remaining = decimal(lot['remaining_quantity'])
-                    available_basis = (decimal(lot['remaining_adjusted_basis'])
-                                       if lot.get('remaining_adjusted_basis') is not None else
-                                       decimal(lot['cost_basis']) * remaining / decimal(lot['quantity']))
-                    removed = available_basis if used == remaining else available_basis * used / remaining
-                    basis_removed += removed
-                    lot['remaining_adjusted_basis'] = str(available_basis - removed)
-                    lot["remaining_quantity"] = str(remaining - used)
-                    acquired = date.fromisoformat(lot['acquisition_date'])
-                    sold = date.fromisoformat(activity['date'])
-                    anniversary = acquired.replace(year=acquired.year + 1, day=min(acquired.day, 28)) if acquired.month == 2 and acquired.day == 29 else acquired.replace(year=acquired.year + 1)
-                    allocated_fee = fee_remaining if allocation is allocations[-1] else fee * used / qty
-                    fee_remaining -= allocated_fee
-                    confirmed_allocations.append(dict(lot_id=lot['id'], quantity=str(used),
-                        basis_removed=str(removed), term='LONG_TERM' if sold > anniversary else 'SHORT_TERM',
-                        realized_gain=str(used * price - allocated_fee - removed), fee_allocated=str(allocated_fee)))
-                if p.get("cost_basis") is not None:
-                    p["cost_basis"] = str(decimal(p["cost_basis"]) - basis_removed)
-                represented = sum((decimal(l["remaining_quantity"]) for l in state["lots"]
-                    if l["account_id"] == account_id and l["security_id"] == security["id"]), Decimal("0"))
-                p["lot_state"] = "RESOLVED" if represented == decimal(p["quantity"]) else "UNRESOLVED"
-    else:
-        amount = decimal(activity["amount"])
-        if amount <= 0:
-            raise DomainError("Amount must be positive")
-        delta = -amount if kind in {"FEE", "CASH_WITHDRAWAL"} else amount
-    after_cash = decimal(cash["amount"]) + delta
-    if after_cash < 0:
-        raise DomainError("Insufficient cash", 3)
-    cash["amount"] = str(after_cash)
-    return state, {
-        "cash_change": str(delta),
-        "cash_after": str(after_cash),
-        "warnings": ["Recorded activities do not establish complete household transaction history"],
-        "_confirmed_allocations": confirmed_allocations if kind == 'SELL' and activity.get('lot_allocations') else None,
-    }
 
 
 def source_time(value):

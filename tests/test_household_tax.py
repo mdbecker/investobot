@@ -6,7 +6,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from invest.analytics import exposure, risk
 from invest.tax import analyze
 
-scenarios("features/tax_v2.feature")
+scenarios("features/household_tax.feature")
 
 
 @pytest.fixture

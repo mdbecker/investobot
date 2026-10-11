@@ -3,7 +3,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 
 from invest.models import DomainError
 
-scenarios("features/prompts_v2.feature")
+scenarios("features/prompt_library.feature")
 
 
 @pytest.fixture

@@ -1,0 +1,177 @@
+{
+  "assumptions": {
+    "cache": "warm repeated calls; no OS cold-cache claim",
+    "lookthrough": "explicit hypothetical 20-issuer universe, not accepted holdings",
+    "memory": "kernel physical memory; container limit may differ",
+    "timings": "perf_counter wall time, no external APIs, no fixed throughput target",
+    "vector_dimension": 2,
+    "vector_model": "fictional-unit-vector-v1"
+  },
+  "canonical_financial_state_unchanged": true,
+  "container": {
+    "docker": true,
+    "duckdb": "1.4.1",
+    "network": "none",
+    "python": "3.12.12",
+    "sqlite_vec": "v0.1.6"
+  },
+  "data_environment": "SYNTHETIC",
+  "disposable_workspace_removed": true,
+  "fixture_sha256": "f423cb8e33b31e6b74503ebfabde63db4e3b21f898017f5426ff53d3f52da926",
+  "hardware": {
+    "cpu_count": 16,
+    "machine": "aarch64",
+    "memory_bytes": 8216731648,
+    "processor": ""
+  },
+  "measurement_identity": {
+    "benchmark_and_invoked_domain_sources_unchanged_at_first_completion_check": true,
+    "changed_files_at_first_completion_check": [
+      "src/invest/bonds.py",
+      "src/invest/cli.py"
+    ],
+    "git_head_at_start": "2c8d70c9ee76fd50a518960b1e9ca6dbdc445abd",
+    "image": "sha256:e4b9647d935f9b58dc002f3cda74fb943cb6dba3ecfe009ce856c6d5789fc96b",
+    "limitations": "Two-dimensional fictional unit embeddings; warm repeated queries; no cold-cache, external-provider or production-model latency claim",
+    "mounted_source": true,
+    "network": "none",
+    "recorded_at_utc": "2026-10-11T18:54:38.928011+00:00",
+    "source_at_start": {
+      "files": {
+        "scripts/benchmark_unified_mvp.py": "f1c3a202be7227e19abaa5898b10096c3209eda2cefb58e553434fc21fa91c50",
+        "src/invest/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/invest/accounting.py": "1df32b8a21199ff72430e15d492d6b202f23dcfe5957bd16403cf191c70605f9",
+        "src/invest/analytics.py": "a92b1e040b500eac7ac3a8583ea14000af6ae3cb3726d00993c396563fe1f60f",
+        "src/invest/analytics_store.py": "33d55d82303e7bca6dcd87f17e06b80c7f45d022a6649f9e3be3abd0e97b595d",
+        "src/invest/artifact_cleanup.py": "74e072499d96f91bb1d6ecc152ff2b8cd0f33108c87d1068898ff8c77a534fe8",
+        "src/invest/backtest.py": "2399510cc4f747c14695ba2e986a79934961ef2f7a6d75a17f18b2da54120d24",
+        "src/invest/backtest_models.py": "6fcd01ca77010acb1c2e562b30a2affbdf70bead63e1d8a9cb6f6f2e125503c9",
+        "src/invest/backup.py": "3cb4b967b613718e8d52e7ec3e8ef41483926b9b69d8c7745db61df7bb182e1d",
+        "src/invest/bonds.py": "b498db1475ed4b93a56bb720e9e0f0c79269fce7a5ad4fa10c9bd6b74659beb4",
+        "src/invest/cash_transfers.py": "f1d928aeaeacacc4dcd50da7acaf3d0a15426d5aefa0eb67eff5f8a49be58ba6",
+        "src/invest/cli.py": "36a153adac03b47d2d561e8584f071ed2a4e98445d61b5f0bb015c4d3f6f5009",
+        "src/invest/competitive.py": "849c794b06c2db64d6b4ae255e0d79939839e14317080a76f803b4feeb21243d",
+        "src/invest/competitive_models.py": "135882c58193ee8474def8e31fdbe851ee474b11a1ffeed67fa9f001d2a07d4a",
+        "src/invest/competitive_queries.py": "613189404216ff450512aae7300c26518a34bd661f6ef89cc803fb67664bd06c",
+        "src/invest/config.py": "c77a2b1966930968c422babfd45ff388dd668f871c5fc84ca30b3045024a93c4",
+        "src/invest/contracts.py": "b642f41176d859cfff1652b22b81481d856cf9700b5755b70786e9a90a8a4085",
+        "src/invest/corporate_actions.py": "c2ee8d28be17e66c9f78357d660ad5e84be609a10bd1638bdbe87dbe57974e37",
+        "src/invest/db.py": "f3a4797afb0089fefd308c3e28c03df102ad201f7659719b1b30f52e35ab9d51",
+        "src/invest/discovery.py": "0a3da7e4aab7b612fc4f6097f1cd1845eee95cd457786f052b3db8663eaca4ca",
+        "src/invest/earnings.py": "73015202c205a24244e5ea826fc5bfdbdd436eaf9bbdf4e32420342a62cd9061",
+        "src/invest/earnings_models.py": "3af47663fb60f0f7a7d670054bdb9da9e5c25a200d6327c8a2c14e2718ad2bd4",
+        "src/invest/earnings_queries.py": "8674d94ea035527491cc38f7e1498881b01fcab78270f368a790cbf5760428ab",
+        "src/invest/embedding.py": "bb39e27108f62f17ee691b09761100d253c39468c1adf1d02e35eb7d3b14effb",
+        "src/invest/financial_state.py": "bbbe7fe4c33eda08b48355a7efc2e264934b4c11a7a088aa470afc95c0fe97b9",
+        "src/invest/fund_diligence.py": "d7788da2f14460563abab1eb6b63767554d9b14e6fa0e93403e10e22f55ff507",
+        "src/invest/fund_diligence_models.py": "f209e01589ac9b778ac94f5700cc5bd0d340c8aadd648f03dd1a29b2f61da0d6",
+        "src/invest/fund_diligence_queries.py": "70632e1598cf719e864d50e42186408f1ccf0cd4c16bb6dd118fec7adf4f04b8",
+        "src/invest/insider_models.py": "a99bcef9ba9ea32c1f8dcb6b9074ece5eb46090bb8f60a41cb36299b941c991a",
+        "src/invest/insider_queries.py": "d11d73ae7b3c7f5debdc79a1645e93032a5e25df1cc355bf0df50c0721d449c0",
+        "src/invest/insiders.py": "d6f7efb6267a567b2b4d703f0923c9f1befdc1c99c206500e91ab191cb458d53",
+        "src/invest/issues.py": "50d89a05240cdb4e49aff28e49c76c5b3244341bc4e0cf7e6926deedade3fa29",
+        "src/invest/ledger.py": "4cc8c277a1f52d2c271f63749262a505841866ff01880d69cf0ce9f66d755539",
+        "src/invest/lookthrough.py": "d98ff5d9d6ae47007d2a1dd692dd4ced0532557503fdca7e4a1a1eaf2507d3e9",
+        "src/invest/market.py": "98599e8cb84ac2d3207126cc2ea7f220cb7d07b34486f41400077fd7d6f90a9e",
+        "src/invest/migrations.py": "195caf918189547b67110b8d6ddffc75527eab2abbb77f3a3fb6035074f6e28a",
+        "src/invest/models.py": "df4277cc090eb2f54fe8511246dcd0cadaa244116bd14bcccd7d597078299005",
+        "src/invest/news.py": "a35454165f4b3865f103076b7d19dcbc8ac12c1affebb4f4571ef45db661eac6",
+        "src/invest/news_models.py": "5cbd179e950b8b88ce4ea12984495b5d34e00b168e258ca3a503894bcabeeee0",
+        "src/invest/news_queries.py": "212289290370a432f0cec42da6faf26c659b536abb21b44684ff60e129145280",
+        "src/invest/parsers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/invest/parsers/generic.py": "2ffcaee955cdda564f22b54d253b6750086abdce522db081cafd39f562744b2f",
+        "src/invest/parsers/profiles.py": "28379ee7fc26d5be93f3e111ce53a2b13e02100614228aaf70598d05217ae8a7",
+        "src/invest/performance.py": "105ef4165501ba69dd1e76919015099efe8afdbed25705bdfbe29c1d6df1be05",
+        "src/invest/performance_ledger.py": "c27f77ac780e197f76e8a3e900ca11116562e89a546f3dddc47a7242257ac279",
+        "src/invest/plan_storage.py": "66705e30746b6cfc7d3ddb8d038520415f973b5be755d34ac9b8abd6c75107fc",
+        "src/invest/planning.py": "b397e6062f99541c8c63a5a489d098e33b363443081858da01315d9777140788",
+        "src/invest/plans.py": "0cc895de8a5d84578bc33acd4ce336406020baff004360d4dcb86146e24591cd",
+        "src/invest/policy_models.py": "3da0dca712f5d7b85bbbdd1599302a6eab99c4004803a98d8ae6b3a25a0ba539",
+        "src/invest/political.py": "746c093df5d14a4a9253694e5e524b0941b008b03895806eebee799b7f1aae98",
+        "src/invest/political_models.py": "df2045e331deac4a32304bbce43d2a8fcb980ced2a8bc8d4efd838682a14c69f",
+        "src/invest/political_queries.py": "da2865cecc0e3174ba7433d11bd8379e675ebf126af9bb88d85df187b811340f",
+        "src/invest/portfolio_research_inputs.py": "47992880f33678f65234254924f373feba01f4918d35d43e88369a4cfb6bebe8",
+        "src/invest/portfolio_summary.py": "7829ac187bb3541d2fc803bd7ce0d6522b0ca9ec6b222d6a1fa6e831bf578d75",
+        "src/invest/prompts.py": "80b21349c83efa1c861dd41199e2757deec43b771b084543bf0f9a7972b5d96d",
+        "src/invest/proposal_generation.py": "93ea34643b3c846ef4fbee8bc9db515eff5ec5bef67df8e3f08133b58c3b17fc",
+        "src/invest/readiness.py": "69a8b52f92a09687109d438af131c19b4108db051237c59ab1330d1f13e5c911",
+        "src/invest/reports.py": "e1ff9ed08967857bb050e70edfb0e02ff5094a9dc235a206d9756a7c6a379085",
+        "src/invest/research_identity.py": "757d346222cbcc8d9719d5597759ed4dc1670e4f3c688f0e611d59114473b7ec",
+        "src/invest/research_portfolio.py": "ceb8b66e11d55adc706def40c02ed615eedc15717b2ea787a267acef277d062b",
+        "src/invest/research_skills.py": "828d1ee0cb72598b56be9e2473a87fa0295d0c037c15b3f20616688b95105684",
+        "src/invest/research_storage.py": "33e203e91de112af4426156336f13e873affc11c5b3604e7c3b2078993b6c66b",
+        "src/invest/scenarios.py": "8fbc16ce7497e04be4d1f685745f101deebda2a5390c76a34d2e35a53710ad98",
+        "src/invest/search.py": "0418761aa7fc32a2249778c9b583d4037c49ecde340e761a597271d669f8fa83",
+        "src/invest/security_identity.py": "2c8110c5a800bc1c15b5929495b787a72574c3225a3001919146fb9010738bab",
+        "src/invest/simulations.py": "3da3229364b85e3e1f54f6d0c378f77278ab1451ccaa53134866e3ee66ff805c",
+        "src/invest/targets.py": "1d7b484321b84b64183f3656043a78ee88d3f6f65e82fce0489bc3b8ac6f7d41",
+        "src/invest/tax.py": "4c4b92c0d1b1e1876eac8b59ff71b582c0f22a796bde9c59da305c4527697856",
+        "src/invest/tax_policy.py": "d1f059e4e2f474203a704d7790f2d89f01cc5c6406e6897d42cf86513b706a4d",
+        "src/invest/web.py": "e482b228f9d9377afb4224e9d5a20e3287939b0d02cd219d02bf000b28e90a05"
+      },
+      "source_sha256": "558412d5ae6091a80dba1905136453ccbf8b8cc8930cfbe5e63462b0da2b7701"
+    },
+    "source_note": "CLI and bond analytics changed during the run; this benchmark calls neither. Source proof checked immediately after completion, before subsequent backup/search edits; report does not claim those later revisions were measured.",
+    "source_sha256_at_first_completion_check": "2f7f087008c4d58bf243022c9c0ac31853e2ca1a88ae865bc0324d68a39df004"
+  },
+  "parameters": {
+    "chunks": 100000,
+    "default_chunks": 100000,
+    "queries": 20,
+    "top_k": 10
+  },
+  "schema_version": "1",
+  "workloads": {
+    "backup": {
+      "count": 1,
+      "elapsed_ms": 22.493875003419816
+    },
+    "corpus_build": {
+      "count": 100000,
+      "elapsed_ms": 216028.12276300392,
+      "size_bytes": 218568542
+    },
+    "historical_parquet": {
+      "count": 1,
+      "elapsed_ms": 39.6673329960322
+    },
+    "import": {
+      "count": 1,
+      "elapsed_ms": 0.7000829937169328
+    },
+    "plan_compare": {
+      "count": 20,
+      "elapsed_ms": 0.375540999812074
+    },
+    "plan_list": {
+      "count": 20,
+      "elapsed_ms": 0.37095899460837245
+    },
+    "reconcile": {
+      "count": 1,
+      "elapsed_ms": 0.16083299124147743
+    },
+    "startup": {
+      "count": 1,
+      "elapsed_ms": 22.357666995958425
+    },
+    "text_search": {
+      "count": 20,
+      "elapsed_ms": 6405.861710023601,
+      "p50_ms": 317.6199380031903,
+      "p95_ms": 326.15641815573326,
+      "result_count": 10
+    },
+    "top_n_lookthrough": {
+      "count": 20,
+      "elapsed_ms": 0.13174999912735075
+    },
+    "vector_search": {
+      "count": 20,
+      "elapsed_ms": 13231.798172026174,
+      "p50_ms": 662.7955000003567,
+      "p95_ms": 718.1654066000192,
+      "result_count": 10
+    }
+  }
+}

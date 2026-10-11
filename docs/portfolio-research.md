@@ -82,8 +82,11 @@ Executive personal, employee personal and corporate PAC contribution categories
 remain separate. Unverified contributor permission/identity or issuer-PAC linkage
 excludes the contribution and increases excluded coverage. Human confirmation
 does not override permissions. Existing political imports supply independently
-validated executive evidence; they do not invent a corporate PAC relationship or
-employee category that their specialist schema does not support. No stance score
+validated category evidence, including independently sourced employee and corporate
+PAC evidence. Reports retain those categories and reviewed PAC links; they never
+invent a relationship. Original native political runs remain discoverable in
+the consolidated report with their saved trusted identity; unknown environment
+or older skill identity requires explicit review. No stance score
 or issuer corporate-policy conclusion is calculated.
 
 `summarize` is a pure projection helper for already validated domain evidence,

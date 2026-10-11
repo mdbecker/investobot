@@ -60,7 +60,7 @@ def test_disposable_public_cli_release_demonstration_covers_required_workflow(tm
     assert report['nested_exposure_path_depth'] >= 2
     research = by_name['research.partial']['output']
     assert research['status'] in {'PARTIAL', 'REVIEW_REQUIRED'}
-    assert research['issues'] and research['coverage']['selected_issuer_scope_complete'] is False
+    assert research['issues'] and research['coverage']['selected_research_complete'] is False
     backtest = by_name['backtest.compare']['output']
     assert backtest['classification'] == 'HYPOTHETICAL'
     assert backtest['comparable'] is True

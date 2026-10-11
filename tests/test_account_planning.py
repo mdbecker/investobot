@@ -14,7 +14,7 @@ from invest.models import DomainError
 from invest.plan_storage import load_plan, summaries
 from invest.targets import save
 
-scenarios('features/plans_v2.feature')
+scenarios('features/account_planning.feature')
 
 
 @pytest.fixture

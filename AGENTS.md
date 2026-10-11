@@ -28,6 +28,13 @@
 - Financial lookups share security_identity.resolve for strong IDs and sourced
   aliases; ambiguous matches fail. Dashboard GET uses read_ledger and closes
   handles before responding, including missing/incompatible ledgers.
+- Recovery integrity checks and logical fingerprints must load checksum-verified
+  baked vec0 when a ledger contains derived vector tables; ordinary SQLite
+  connections otherwise cannot validate or dump them. Recovery must include real
+  corpus retrieval, not only a financial-table roundtrip.
+- The standalone synthetic demo uses real HTML provenance and actual CLI commands.
+  Do not strip source-cell metadata to make simulation pass; numeric collectors
+  accept scalar financial leaves and preserve provenance structures separately.
 
 ## Verified implementation lessons
 

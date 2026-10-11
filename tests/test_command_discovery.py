@@ -4,7 +4,7 @@ from pytest_bdd import given, scenarios, then, when
 
 from invest.models import DomainError, Snapshot
 
-scenarios("features/contracts_v2.feature")
+scenarios("features/command_discovery.feature")
 
 
 @pytest.fixture

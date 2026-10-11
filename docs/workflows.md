@@ -29,7 +29,7 @@ entire relevant inventory is represented. Do not infer activity from differences
 Explicitly accept only after review/authorization:
 
 ```sh
-docker compose run --rm -T app invest portfolio apply - < local-data/snapshot.json
+docker compose run --rm -T app invest portfolio apply - --confirm < local-data/snapshot.json
 docker compose run --rm -T app invest portfolio overview
 ```
 
@@ -44,7 +44,7 @@ undated snapshots superseding dated state fail unless explicitly overridden
 with a recorded justification:
 
 ```sh
-docker compose run --rm -T app invest portfolio apply - --allow-older \
+docker compose run --rm -T app invest portfolio apply - --confirm --allow-older \
   --justification "Human verified correction to the previously accepted source page" \
   < local-data/corrected-snapshot.json
 ```

@@ -405,7 +405,7 @@ def atomic(ctx):
 
 @given('accepted household positions and a saved plan')
 def household(ctx):
-    from test_plans_v2 import setup
+    from test_account_planning import setup
 
     from invest.market import MarketClient
     from invest.plan_storage import load_plan

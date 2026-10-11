@@ -88,6 +88,9 @@ def _atomic_json(path, payload):
 
 def logical_fingerprint(connection):
     """Stream a deterministic logical dump; WAL/header layout is not provenance."""
+    from invest.sqlite_extensions import load_required
+
+    load_required(connection)
     digest = hashlib.sha256()
     for statement in connection.iterdump():
         digest.update(statement.encode('utf-8'))
@@ -117,6 +120,9 @@ def _check_connection(connection):
 
     issues = []
     try:
+        from invest.sqlite_extensions import load_required
+
+        load_required(connection)
         rows = [tuple(row) for row in connection.execute('PRAGMA integrity_check')]
         if rows != [('ok',)]:
             issues.append(_issue('SQLITE_INTEGRITY_FAILED', '; '.join(str(row[0]) for row in rows),

@@ -5,11 +5,11 @@ Feature: Deterministic known-bond analysis
     Then yield accrued interest dirty price duration and convexity are calculable
     And calculation conventions are disclosed
 
-  Scenario: Compare yield to supplied call terms
+  Scenario: Reject unsupported supplied call terms
     Given a synthetic fixed-rate bond with known terms
     And a supplied call date and redemption price
     When I analyze the bond
-    Then yield to worst includes the supplied call scenario
+    Then callable bond measures are unavailable
 
   Scenario: Preserve unknown bond terms
     Given a bond without a known coupon or price

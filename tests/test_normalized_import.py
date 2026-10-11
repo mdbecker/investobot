@@ -6,7 +6,7 @@ from pytest_bdd import given, parsers, scenarios, then, when
 from invest.models import DomainError
 from invest.parsers.generic import parse_html
 
-scenarios("features/import_v2.feature")
+scenarios("features/normalized_import.feature")
 
 
 @pytest.fixture

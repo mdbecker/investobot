@@ -62,3 +62,9 @@ acceptance gates. Synthetic offline tests establish behavior, not real-source
 accuracy. Never put brokerage credentials, raw account HTML or private backup
 archives in Git. Store prompt overrides separately at `/data/prompts`; restoring
 an archive does not replace that directory.
+
+Preview abandoned managed publication staging with `invest db cleanup-artifacts
+--artifact-root /data/artifacts`; repeat with `--confirm` to remove reviewed
+unreferenced `.artifact-*` staging files. This command shares the publication lock,
+preserves referenced artifacts and ordinary user files, and rejects symlink paths.
+It is not general directory cleanup and never changes canonical financial state.

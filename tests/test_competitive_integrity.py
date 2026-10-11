@@ -115,7 +115,7 @@ def test_schema_seven_rejects_six_without_touching_files(tmp_path):
 
 
 def test_existing_saved_plan_and_financial_fingerprint_remain_current(ctx):
-    from test_plans_v2 import setup
+    from test_account_planning import setup
 
     from invest.market import MarketClient
     from invest.plan_storage import load_plan

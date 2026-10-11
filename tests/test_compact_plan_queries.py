@@ -10,7 +10,7 @@ from invest import plans
 from invest.ledger import Ledger
 from invest.plan_storage import load_plan, save_plan
 
-scenarios('features/plan_queries_v3.feature')
+scenarios('features/compact_plan_queries.feature')
 
 
 @pytest.fixture

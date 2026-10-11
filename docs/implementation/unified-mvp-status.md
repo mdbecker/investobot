@@ -62,6 +62,23 @@ alias lookup. Dashboard GET routes use read-only connections and never initializ
 the selected ledger. Missing and incompatible database HTTP cases are covered.
 The five previously missing canonical documentation pages are now present.
 
+The subsequent complete offline Docker suite passes **1,195 tests**, 41.45
+seconds; Ruff passes for source, tests and scripts. It includes the standalone
+ordered synthetic CLI demonstration and vector-bearing backup/restore/migration
+checks. Exact partial-lot conservation and accepted/restored financial fingerprints
+match. Required module extraction and release-version test renames preserve
+coverage. Snapshot acceptance requires `--confirm`; pure read/preview commands
+covered by the audit do not create a selected ledger. Unsupported bond optionality
+is rejected even without a type label. Later alias observations reconcile against
+canonical identity after confirmed events.
+
+The updated 100,000-chunk measurement records hybrid p95 718.165 ms and text
+p95 326.156 ms, with unchanged financial state and cleanup. Its source-hash
+limitations are explicit in `benchmark-unified-100k-current-2026-10-11.json`.
+Remaining release work is the legacy scenario policy-boundary audit and fresh
+exact-commit image/package verification. Manual institution/provider/rights gates
+remain separate.
+
 ## October 11 full specification audit checkpoint
 
 The prior committed tree `d2028ef` was independently built as image

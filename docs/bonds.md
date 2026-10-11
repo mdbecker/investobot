@@ -31,16 +31,9 @@ Verify these conventions against the actual security. This MVP does not support
 floating coupons, irregular schedules, ex-coupon terms, inflation adjustments,
 or instrument-specific Treasury/bank holiday calendars.
 
-Optional `call_schedule` is a list of `{"date":"2028-01-15","price":"100"}`
-redemption scenarios. The minimum of maturity yield and all supplied valid call
-yields is returned as yield to worst. Calls on regular coupon dates preserve
-the supplied original coupon schedule. Off-coupon calls require additional
-stub/accrued-redemption terms and produce a warning with no yield to worst,
-rather than a guessed cash flow. Absent call schedules produce an explicit
-warning; they are not interpreted as proof that a bond is non-callable.
-An explicitly empty schedule permits maturity-only yield to worst, with the
-same warning that schedule completeness must be verified by the user.
-
 Explicit `instrument_type` values `CALLABLE`, `CONVERTIBLE` and `STRUCTURED`
-return `UNAVAILABLE` with typed issues and no metrics. A supplied redemption
-date is a fixed cash-flow scenario only; it does not value an embedded option.
+return `UNAVAILABLE` with typed issues and no metrics. Nonempty `call_schedule`,
+conversion terms or structured-payoff terms also return that outcome when the
+type label is omitted. Embedded optionality cannot become a plain bond by leaving
+out its label. Yield to worst is not calculated. An absent/empty call schedule
+does not establish that original instrument terms were independently verified.

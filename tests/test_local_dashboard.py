@@ -12,7 +12,7 @@ from pytest_bdd import given, scenarios, then, when
 from invest.ledger import Ledger
 from invest.plan_storage import load_plan, summaries
 
-scenarios("features/dashboard_v2.feature")
+scenarios("features/local_dashboard.feature")
 
 
 @pytest.fixture

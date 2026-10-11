@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from invest.cli import app
 
-scenarios('features/cli_v2.feature')
+scenarios('features/agent_cli.feature')
 
 
 @pytest.fixture

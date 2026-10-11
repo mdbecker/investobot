@@ -99,6 +99,22 @@ def ledger():
     return Ledger(database_path())
 
 
+def read_selected(call):
+    from invest.research_identity import read_ledger
+
+    with read_ledger(database_path()) as selected:
+        return call(selected)
+
+
+def review_selected(call, *, confirm):
+    preview = read_selected(lambda selected: call(selected, False))
+    if not confirm:
+        return preview
+    selected = ledger()
+    with closing(selected.connection):
+        return call(selected, True)
+
+
 @portfolio.command("import")
 def import_page(
     file: str,
@@ -125,17 +141,36 @@ def import_page(
 
 @portfolio.command()
 def reconcile(file: str):
-    emit(lambda: ledger().reconcile(read_json(file)))
+    emit(lambda: read_selected(lambda selected: selected.reconcile(read_json(file))))
 
 
 @portfolio.command()
 def apply(file: str, allow_older: bool = False, justification: str = typer.Option(None), confirm: bool = False):
-    emit(lambda: ledger().apply(read_json(file), allow_older=allow_older, justification=justification))
+    from invest.models import Snapshot
+    from invest.research_identity import read_ledger
+
+    def result():
+        payload = Snapshot.model_validate(read_json(file)).model_dump(mode='json')
+        with read_ledger(database_path()) as selected:
+            reconciliation = selected.reconcile(payload)
+            # Validate the actual acceptance path against a consistent disposable
+            # copy before creating/opening a selected writer. No internal mocks.
+            staged = Ledger(':memory:')
+            with closing(staged.connection):
+                selected.connection.backup(staged.connection)
+                staged.apply(payload, allow_older=allow_older, justification=justification)
+        if not confirm:
+            return dict(reconciliation, status='PREVIEW', committed=False)
+        selected = ledger()
+        with closing(selected.connection):
+            accepted = selected.apply(payload, allow_older=allow_older, justification=justification)
+            return dict(accepted, committed=accepted['status'] != 'UNCHANGED')
+    emit(result)
 
 
 @portfolio.command()
 def summary():
-    emit(lambda: ledger().summary())
+    emit(lambda: read_selected(lambda selected: selected.summary()))
 
 
 @portfolio.command('check')
@@ -165,7 +200,10 @@ def portfolio_performance(from_date: str = typer.Option(None, '--from'),
 
 @portfolio.command("record-activity")
 def record_activity(file: str, yes: bool = False):
-    emit(lambda: ledger().record_activity(read_json(file), yes=yes))
+    def result():
+        payload = read_json(file)
+        return review_selected(lambda selected, confirmed: selected.record_activity(payload, yes=confirmed), confirm=yes)
+    emit(result)
 
 
 @portfolio.command('record-cash-transfer')
@@ -205,12 +243,16 @@ for group, name in [
 @security.command("classify")
 def security_classify(security_id: str, asset_type: str = typer.Option(...),
                       source: str = typer.Option(...), confirm: bool = False):
-    emit(lambda: ledger().classify_security(security_id, asset_type, source, confirm=confirm))
+    emit(lambda: review_selected(lambda selected, confirmed:
+        selected.classify_security(security_id, asset_type, source, confirm=confirmed), confirm=confirm))
 
 
 @account.command("update")
 def account_update(account_id: str, file: str = typer.Option(...), yes: bool = False):
-    emit(lambda: ledger().update_account(account_id, read_json(file), yes=yes))
+    def result():
+        payload = read_json(file)
+        return review_selected(lambda selected, confirmed: selected.update_account(account_id, payload, yes=confirmed), confirm=yes)
+    emit(result)
 
 
 def client():
@@ -418,14 +460,14 @@ def target_save(file: str):
 def target_list():
     from invest.targets import list_targets
 
-    emit(lambda: list_targets(ledger()))
+    emit(lambda: read_selected(list_targets))
 
 
 @target.command("show")
 def target_show(target_id: str, version: int = typer.Option(None)):
     from invest.targets import show
 
-    emit(lambda: show(ledger(), target_id, version=version))
+    emit(lambda: read_selected(lambda selected: show(selected, target_id, version=version)))
 
 
 @target.command("activate")
@@ -446,7 +488,7 @@ def target_archive(target_id: str):
 def target_diff(target_id: str, version: int = typer.Option(None)):
     from invest.targets import diff
 
-    emit(lambda: diff(ledger(), target_id, version=version))
+    emit(lambda: read_selected(lambda selected: diff(selected, target_id, version=version)))
 
 
 @security.command("register")
@@ -480,14 +522,14 @@ def plan_generate(
 def plan_list():
     from invest.plans import list_plans
 
-    emit(lambda: list_plans(ledger()))
+    emit(lambda: read_selected(list_plans))
 
 
 @plan.command("show")
 def plan_show(plan_id: str):
     from invest.plans import show
 
-    emit(lambda: show(ledger(), plan_id))
+    emit(lambda: read_selected(lambda selected: show(selected, plan_id)))
 
 
 @plan.command("compare")

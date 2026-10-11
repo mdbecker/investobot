@@ -3,7 +3,6 @@
 import hashlib
 import json
 import math
-import os
 import re
 import struct
 from datetime import date
@@ -24,26 +23,11 @@ METADATA_FIELDS = {'chunk_id', 'document_id', 'issuer_id', 'source_url', 'source
 
 
 def open_search_connection(path, *, readonly=False):
+    from invest.sqlite_extensions import load_vector
+
     connection = connect(path, readonly=readonly, initialize=not readonly)
     try:
-        runtime_path = os.environ.get('INVEST_ANALYTICS_RUNTIME')
-        if not runtime_path:
-            raise DomainError('Pinned SQLite vector runtime manifest unavailable', 2)
-        try:
-            record = json.loads(Path(runtime_path).read_text())['sqlite_vec']
-            binary = Path(record['path'])
-            if (record['version'] != '0.1.6' or not binary.is_file() or
-                    hashlib.sha256(binary.read_bytes()).hexdigest() != record['sha256']):
-                raise DomainError('Pinned SQLite vector binary verification failed', 2)
-        except (OSError, KeyError, ValueError) as error:
-            raise DomainError('Pinned SQLite vector manifest is invalid', 2) from error
-        try:
-            connection.enable_load_extension(True)
-            connection.load_extension(str(binary))
-        finally:
-            connection.enable_load_extension(False)
-        if connection.execute('SELECT vec_version()').fetchone()[0] != 'v0.1.6':
-            raise DomainError('Loaded SQLite vector extension version differs from pin', 2)
+        load_vector(connection)
         return connection
     except Exception:
         connection.close()

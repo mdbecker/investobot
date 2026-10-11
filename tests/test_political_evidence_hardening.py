@@ -10,7 +10,7 @@ from invest.political import import_research
 from invest.political_models import safe_url
 from invest.political_queries import summary
 
-scenarios('features/political_hardening_v26.feature')
+scenarios('features/political_evidence_hardening.feature')
 
 
 @pytest.fixture
