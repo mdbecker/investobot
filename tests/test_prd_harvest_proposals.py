@@ -41,7 +41,6 @@ def household(tmp_path, monkeypatch):
     ledger.record_activity({'activity_id': 'fictional-prior-gain', 'account_id': 'tax',
         'type': 'SELL', 'security': 'GAIN', 'quantity': '1', 'price': '120', 'fee': '0',
         'date': '2026-09-02', 'source': 'Reviewed fictional execution',
-        'data_environment': 'SYNTHETIC',
         'lot_allocations': [{'lot_id': 'GAIN-lot', 'quantity': '1'}]}, yes=True)
     closing = copy.deepcopy(snapshot)
     closing.update(source_timestamp='2026-10-10', source_hash='fictional-closing', cash='220')
