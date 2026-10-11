@@ -755,7 +755,7 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
         research_ctx['financial_before'] = copy.deepcopy(ledger.planning_state())
         ledger.connection.close()
     else:
-        accepted_household(research_ctx)
+        accepted_household(research_ctx, history_complete=workflow == 'harvest' and mode == 'success')
     research_ctx['mode'] = mode
     research_ctx['report_path'] = research_ctx['tmp'] / 'immutable-report.md'
     market_data = {
@@ -767,12 +767,6 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
                                 'weightPercentage': '100', 'updated': '2026-10-01',
                                 'isin': 'USFICT000001', 'cusip': 'FICT00001',
                                 'assetType': 'STOCK', 'cik': '0000123456',
-                                'issuer_id': 'CIK:0000123456', 'issuer_verified': True,
-                                'issuer_identity_evidence': {
-                                    'source_id': 'fictional-reviewed-issuer-register',
-                                    'source_url': 'https://example.invalid/fictional-issuer-register',
-                                    'as_of': '2026-10-01', 'data_environment': 'SYNTHETIC',
-                                    'reviewed_by': 'Explicit fictional human source review'},
                                 }]},
         'history': {'FUND-A': [{'date': '2020-01-02', 'total_return_index': '100'},
                               {'date': '2020-01-03', 'total_return_index': '105'},
@@ -808,14 +802,39 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
     research_ctx['screen_file'] = write_input(research_ctx, 'screen.json', {
         'expense_ratio_max': '0.002', 'fund_type': 'ETF'})
     research_ctx['harvest_file'] = write_input(research_ctx, 'harvest.json', {
-        'as_of': '2026-10-10', 'data_environment': 'SYNTHETIC',
-        'household_history_complete': mode == 'success',
+        'loss_sale_date': '2026-10-10', 'security': research_ctx['security'],
+        'data_environment': 'SYNTHETIC',
         'spouse_history_complete': False,
-        'replacement_candidates': ['FUND-A'],
-        'purchases': [{'account_id': 'fictional-ira', 'tax_status': 'TAX_DEFERRED',
-                       'security_id': research_ctx['security'],
-                       'date': '2026-09-20', 'quantity': '1'}],
+        'outside_account_history_complete': False,
+        'dividend_reinvestment_history_complete': None,
+        'replacement': {'security': 'FUND-A', 'security_id': research_ctx['security'],
+                        'substantially_identical': None, 'approved_for_purchase': False,
+                        'source': 'Fictional candidate only; no replacement permission or legal conclusion'},
+        'scheduled_acquisitions': [],
     })
+    if workflow == 'harvest':
+        ledger = Ledger(research_ctx['path'])
+        try:
+            ledger.apply({
+                'account': {'id': 'fictional-ira', 'name': 'Fictional household IRA',
+                            'tax_status': 'TAX_DEFERRED', 'currency': 'USD',
+                            'history_complete': mode == 'success'},
+                'positions': [], 'lots': [], 'cash': '100', 'cash_known': True,
+                'positions_complete': True, 'lots_complete': True,
+                'source_timestamp': '2026-09-19T16:00:00Z',
+                'source_hash': 'fictional-ira-opening-observation',
+                'data_environment': 'SYNTHETIC'})
+            purchase = ledger.record_activity({
+                'activity_id': 'fictional-ira-purchase-2026-09-20',
+                'account_id': 'fictional-ira', 'type': 'BUY',
+                'date': '2026-09-20', 'event_timestamp': '2026-09-20T15:00:00Z',
+                'security': research_ctx['security'], 'quantity': '1', 'price': '100',
+                'fee': '0',
+                'source': 'Explicit fictional human confirmation of IRA broker purchase record'}, yes=True)
+            assert purchase['committed'] is True
+            research_ctx['financial_before'] = copy.deepcopy(ledger.planning_state())
+        finally:
+            ledger.connection.close()
     research_ctx['news_file'] = write_input(research_ctx, 'news.json', fictional_news_package())
     if workflow == 'research':
         ledger = Ledger(research_ctx['path'])
@@ -824,6 +843,12 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
                 'ticker': 'FICT-A', 'name': 'Fictional Operating Company',
                 'asset_type': 'STOCK', 'currency': 'USD',
                 'isin': 'USFICT000001', 'cusip': 'FICT00001',
+                'cik': '0000123456', 'issuer_id': '0000123456',
+                'data_environment': 'SYNTHETIC',
+                'issuer_identity_evidence': {
+                    'source_locator': 'https://example.invalid/fictional-issuer-register',
+                    'source': 'Explicit fictional human review of original issuer registration',
+                    'reviewed': True, 'cik': '0000123456'},
                 'source': 'Explicit fictional human review of original issuer registration; '
                           'CIK 0000123456, ISIN USFICT000001, CUSIP FICT00001'})
             research_ctx['research_security'] = stock['id']
