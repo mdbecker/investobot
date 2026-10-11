@@ -115,5 +115,20 @@ def test_cli_invalid_input_is_stderr_only_without_database(ctx):
 def test_explicit_cli_skill_install_reports_files_without_financial_writes(ctx):
     result = invoke(ctx, ['research', 'skills', 'install', '--agent', 'codex',
                           '--workspace', str(ctx['directory'])])
-    assert result['copied_files'] and len(result['skills']) == 6
+    assert result['copied_files'] and len(result['skills']) == 13
+    assert {item['name'] for item in result['skills']} == {
+        'investobot-earnings',
+        'investobot-political-contributions',
+        'investobot-news',
+        'investobot-competitive',
+        'investobot-management-insiders',
+        'investobot-fund-diligence',
+        'investobot-portfolio-sync',
+        'investobot-portfolio-performance',
+        'investobot-monthly-investing',
+        'investobot-tax-loss-harvesting',
+        'investobot-investment-screening',
+        'investobot-portfolio-research',
+        'investobot-portfolio-strategy',
+    }
     assert not ctx['path'].exists()

@@ -18,7 +18,11 @@ EXISTING = {
 
 def test_fund_skill_discovery_preserves_existing_versions():
     discovered = {item['name']: item for item in list_skills()['skills']}
-    assert set(discovered) == {*EXISTING, NAME}
+    assert set(discovered) == {*EXISTING, NAME,
+             'investobot-portfolio-sync', 'investobot-portfolio-performance',
+             'investobot-monthly-investing', 'investobot-tax-loss-harvesting',
+             'investobot-investment-screening', 'investobot-portfolio-research',
+             'investobot-portfolio-strategy'}
     for name, version in EXISTING.items():
         assert discovered[name]['skill_version'] == version
     assert discovered[NAME]['skill_version'] == '1.0.0'

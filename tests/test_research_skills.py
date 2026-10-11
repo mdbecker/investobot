@@ -29,7 +29,11 @@ def install(ctx):
 @then('both portable skills and their references are discoverable')
 def discover(ctx):
     names = {'investobot-earnings', 'investobot-political-contributions', 'investobot-news',
-             'investobot-competitive', 'investobot-management-insiders', 'investobot-fund-diligence'}
+             'investobot-competitive', 'investobot-management-insiders', 'investobot-fund-diligence',
+             'investobot-portfolio-sync', 'investobot-portfolio-performance',
+             'investobot-monthly-investing', 'investobot-tax-loss-harvesting',
+             'investobot-investment-screening', 'investobot-portfolio-research',
+             'investobot-portfolio-strategy'}
     assert {item['name'] for item in ctx['skills']} == names
     for entry in ctx['skills']:
         expected = {'investobot-news': '1.0.1', 'investobot-management-insiders': '1.1.0'}

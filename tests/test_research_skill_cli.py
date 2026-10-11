@@ -26,7 +26,23 @@ def scoped(ctx):
     assert ctx['install'].exit_code == 0
     assert json.loads(ctx['install'].stdout)['mutation_scope'] == 'project_skill_files'
     assert ctx['list'].exit_code == 0
-    assert len(json.loads(ctx['list'].stdout)['skills']) == 6
+    skills = json.loads(ctx['list'].stdout)['skills']
+    assert len(skills) == 13
+    assert {item['name'] for item in skills} == {
+        'investobot-earnings',
+        'investobot-political-contributions',
+        'investobot-news',
+        'investobot-competitive',
+        'investobot-management-insiders',
+        'investobot-fund-diligence',
+        'investobot-portfolio-sync',
+        'investobot-portfolio-performance',
+        'investobot-monthly-investing',
+        'investobot-tax-loss-harvesting',
+        'investobot-investment-screening',
+        'investobot-portfolio-research',
+        'investobot-portfolio-strategy',
+    }
 
 
 @given('a user override of the legacy political prompt')

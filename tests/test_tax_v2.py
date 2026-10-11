@@ -304,6 +304,7 @@ def historical_risk(ctx):
 def drawdown(ctx):
     assert ctx["result"]["maximum_drawdown"] == pytest.approx(-0.05)
     assert ctx["result"]["usable_period"]["start"] == "2026-10-06"
-    assert any(
-        "cash return assumed zero" in assumption for assumption in ctx["result"]["assumptions"]
-    )
+    assert ctx["result"]["mode"] == "HYPOTHETICAL_CURRENT_ALLOCATION"
+    assert ctx["result"]["assumptions"]["cash_return"] == "0"
+    assert ctx["result"]["assumptions"]["fees"] == "0"
+    assert ctx["result"]["assumptions"]["modeled_taxes"] is False
