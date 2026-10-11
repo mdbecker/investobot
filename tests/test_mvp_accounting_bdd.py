@@ -334,7 +334,7 @@ def parse(accounting):
     <tr><td>FICTION</td><td>10</td><td>100</td><td>1000</td></tr></table>
     <table><caption>Account summary totals</caption><tr><th>Symbol</th><th>Quantity</th>
     <th>Market Value</th></tr><tr><td>TOTAL</td><td>10</td><td>1000</td></tr></table>'''
-    accounting['result'] = parse_html(html, 'fictional', as_of='2026-10-10')
+    accounting['result'] = parse_html(html, 'fictional', as_of='2026-10-10', data_environment='SYNTHETIC')
 
 
 @then('only the actual holding is proposed and ambiguous summary is typed review required')
@@ -619,7 +619,8 @@ def extended_boundary(accounting):
             ctx['error'] = exc
     elif case in {'AC06', 'AC07', 'AC08'}:
         ctx['result'] = parse_html(ctx['html'], 'fictional',
-            institution='vanguard' if case == 'AC06' else 'generic', as_of='2026-10-10')
+            institution='vanguard' if case == 'AC06' else 'generic', as_of='2026-10-10',
+            data_environment='SYNTHETIC')
         if case == 'AC07':
             ctx['ledger'].apply(ctx['result'])
     elif case == 'AC10':

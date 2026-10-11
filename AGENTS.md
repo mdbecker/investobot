@@ -38,6 +38,13 @@
 
 ## Verified implementation lessons
 
+- Accept observations only with explicit REAL/SYNTHETIC source provenance.
+  Propagate it to accepted financial rows; reject conflicting rows/accounts.
+  Fictional fixtures state SYNTHETIC explicitly; parsing must never guess it.
+- Legacy unapproved scenarios carry typed policy review issues; REAL inputs
+  cannot use scenario generation to bypass approved trading policies. Gate on
+  issue fields, never on warning wording.
+
 - Printed financial precision is source evidence: provide it explicitly in
   synthetic fixtures; never infer it from normalized decimal storage. Keep
   quantity, price and value coherent except in deliberate rejection cases.

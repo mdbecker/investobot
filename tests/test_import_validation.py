@@ -27,6 +27,7 @@ def base_snapshot():
             header="<th>Symbol</th><th>Quantity</th><th>Market Value</th><th>Cost Basis</th><th>Acquisition Date</th><th>Asset Type</th><th>Price</th>",
         ),
         "example",
+        data_environment='SYNTHETIC',
     )
 
 
@@ -73,6 +74,7 @@ def derivative(ctx):
     ctx["snapshot"] = parse_html(
         page("<tr><td>OPTION</td><td>1</td><td>500</td><td></td><td></td><td>OPTION</td></tr>"),
         "example",
+        data_environment='SYNTHETIC',
     )
 
 

@@ -49,7 +49,7 @@ def request(ctx, path, payload=None, origin=True):
 
 @given('a local server with a dated synthetic retirement portfolio')
 def setup(ctx):
-    ctx['ledger'].apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE',
+    ctx['ledger'].apply({'data_environment': 'SYNTHETIC', 'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE',
                                    'history_complete': True},
         'positions': [{'security': 'AAA', 'asset_type': 'STOCK', 'quantity': '10', 'price': '100',
                        'market_value': '1000', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},

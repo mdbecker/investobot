@@ -50,6 +50,7 @@ def snapshot(quantity="10", source_timestamp="2026-10-08", tax_status="TAX_FREE"
                        "displayed_price_precision": 0, "displayed_market_value_precision": 0}],
         "source_timestamp": source_timestamp,
         "source_hash": f"synthetic-{quantity}-{source_timestamp}-{tax_status}",
+        "data_environment": "SYNTHETIC",
     }
 
 

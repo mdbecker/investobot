@@ -11,6 +11,7 @@ scenarios('features/snapshot_reconciliation.feature')
 
 def snapshot():
     return {
+        'data_environment': 'SYNTHETIC',
         'account': {'id': 'sync', 'name': 'Synthetic', 'tax_status': 'TAXABLE'},
         'positions': [
             {'security': 'AAA', 'cusip': 'C1', 'quantity': '10', 'price': '100',

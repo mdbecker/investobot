@@ -19,6 +19,7 @@ def ctx(tmp_path, monkeypatch):
 
 def snapshot(cash_known=True):
     return {
+        'data_environment': 'SYNTHETIC',
         "account": {"id": "synthetic", "name": "synthetic"},
         "positions": [
             {

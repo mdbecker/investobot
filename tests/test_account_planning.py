@@ -28,7 +28,7 @@ def ctx(tmp_path, monkeypatch):
 
 
 def setup(ctx, status, account='ira', quantity='10'):
-    ctx['ledger'].apply({'account': {'id': account, 'name': account, 'tax_status': status,
+    ctx['ledger'].apply({'data_environment': 'SYNTHETIC', 'account': {'id': account, 'name': account, 'tax_status': status,
                                     'history_complete': True},
         'positions': [{'security': 'AAA', 'asset_type': 'STOCK', 'quantity': quantity,
                        'price': '100', 'market_value': str(Decimal(quantity)*100),
@@ -261,7 +261,7 @@ def coordinated(ctx):
 
 @given('an account uses another currency')
 def currency(ctx):
-    ctx['ledger'].apply({'account': {'id': 'eur', 'name': 'EUR', 'currency': 'EUR'},
+    ctx['ledger'].apply({'data_environment': 'SYNTHETIC', 'account': {'id': 'eur', 'name': 'EUR', 'currency': 'EUR'},
                          'positions': [], 'cash': '1', 'source_hash': 'eur'})
 
 

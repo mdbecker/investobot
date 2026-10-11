@@ -29,6 +29,7 @@ def household(ctx):
 
     ctx["snapshots"] = json.loads(Path("tests/fixtures/household.json").read_text())
     for snapshot in ctx["snapshots"]:
+        snapshot['data_environment'] = 'SYNTHETIC'
         ctx["ledger"].apply(snapshot)
     # Household holdings use the dedicated fund fixture; discovery comparison uses its own fixture.
     ctx["holdings_client"] = MarketClient(

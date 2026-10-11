@@ -12,6 +12,12 @@ different facts. Positions, lots and cash carry independent coverage/freshness;
 unknown cash is never zero. Displayed source precision is required for validating
 quantity/price/value rounding. Raw broker HTML is never persisted.
 
+Accepted snapshots require explicit `data_environment: REAL` or `SYNTHETIC`.
+Parsing may leave this unknown for review; acceptance then returns typed
+`UNKNOWN_DATA_ENVIRONMENT` issues. Accepted positions, lots and cash inherit
+the confirmed source environment. Conflicting row or existing account provenance
+returns `MIXED_DATA_ENVIRONMENT` without changing financial facts.
+
 Confirmations are explicit and idempotent. Reusing a confirmed ID with different
 facts fails atomically. Later observations cannot erase confirmed events; partial
 observations cannot delete unseen inventory. Trading policies and targets are

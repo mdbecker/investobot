@@ -24,7 +24,7 @@ def parse(context):
     from invest.parsers.generic import parse_html
 
     context["snapshot"] = parse_html(
-        context["html"], account_id="synthetic", institution="vanguard"
+        context["html"], account_id="synthetic", institution="vanguard", data_environment='SYNTHETIC'
     )
 
 

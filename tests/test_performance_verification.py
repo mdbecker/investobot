@@ -102,7 +102,7 @@ def reproducible(ctx):
 def small_saved(ctx):
     from invest.plan_storage import save_plan
     ledger = ctx['ledger']
-    ledger.apply({'account': {'id': 'ira', 'name': 'Synthetic', 'tax_status': 'TAX_FREE'},
+    ledger.apply({'data_environment': 'SYNTHETIC', 'account': {'id': 'ira', 'name': 'Synthetic', 'tax_status': 'TAX_FREE'},
                   'positions': [{'security': 'SYN', 'asset_type': 'STOCK', 'quantity': '1',
                                  'price': '100', 'market_value': '100',
                                  'displayed_price_precision': 0,

@@ -21,7 +21,7 @@ def ctx(tmp_path):
 
 
 def snapshot(account='a', asset='OTHER', quantity='10', basis='800', date='2026-10-08'):
-    return {'account': {'id': account, 'name': 'Synthetic IRA', 'tax_status': 'TAX_FREE',
+    return {'data_environment': 'SYNTHETIC', 'account': {'id': account, 'name': 'Synthetic IRA', 'tax_status': 'TAX_FREE',
                         'currency': 'USD', 'history_complete': True},
         'positions': [{'security': 'VTI', 'asset_type': asset, 'quantity': quantity,
                        'price': '100', 'market_value': str(int(quantity) * 100),

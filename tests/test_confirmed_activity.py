@@ -17,6 +17,7 @@ def ctx(tmp_path):
 @given('a dated taxable position with two lots')
 def accepted(ctx):
     ctx['ledger'].apply({
+        'data_environment': 'SYNTHETIC',
         'account': {'id': 'a', 'name': 'Synthetic'},
         'positions': [{'security': 'AAA', 'quantity': '10', 'market_value': '1000',
                        'price': '100', 'cost_basis': '800', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],

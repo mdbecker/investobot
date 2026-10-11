@@ -97,6 +97,7 @@ def transfers(ctx):
 def household(ctx):
     ledger = Ledger(ctx["path"])
     ledger.apply({
+        "data_environment": "SYNTHETIC",
         "account": {"id": "ira", "name": "Synthetic IRA", "tax_status": "TAX_FREE",
                     "history_complete": True},
         "positions": [

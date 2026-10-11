@@ -38,7 +38,7 @@ def alternative(identity, state):
 @given('a disposable schema three household with two saved alternatives')
 def household(ctx):
     ledger = ctx['ledger']
-    ledger.apply({'account': {'id': '00123', 'name': 'Synthetic IRA',
+    ledger.apply({'data_environment': 'SYNTHETIC', 'account': {'id': '00123', 'name': 'Synthetic IRA',
                              'tax_status': 'TAX_FREE'},
                   'positions': [], 'cash': '100', 'source_hash': 'accepted',
                   'source_timestamp': '2026-10-08'})

@@ -30,6 +30,7 @@ def household(ctx):
              "market_value": "300", "as_of": "2026-10-08", 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
         ],
         "cash": "100", "cash_known": True, "source_hash": "synthetic-target-household",
+        "data_environment": "SYNTHETIC",
         "source_timestamp": "2026-10-08", "positions_complete": True,
     })
     ctx["aaa"] = ledger.resolve("AAA")["id"]

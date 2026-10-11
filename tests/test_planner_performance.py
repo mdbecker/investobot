@@ -43,6 +43,7 @@ def mixed_household(planning):
                       'remaining_quantity': qty, 'cost_basis': cost,
                       'acquisition_date': '2024-01-01'} for lid, qty, cost in lots],
             'cash': '0', 'source_hash': f'planner-fixture-{account}',
+            'data_environment': 'SYNTHETIC',
             'source_timestamp': '2026-10-08', 'positions_complete': True,
             'lots_complete': True,
         })

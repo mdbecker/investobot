@@ -24,6 +24,7 @@ def ctx(tmp_path):
 
 def snapshot(quantity, source_hash, source_date):
     return {
+        'data_environment': 'SYNTHETIC',
         "account": {"id": "ira", "name": "Synthetic IRA", "tax_status": "TAX_FREE"},
         "positions": [{"security": "SYN", "asset_type": "STOCK", "quantity": str(quantity),
                        "price": "100", "market_value": str(quantity * 100),

@@ -194,6 +194,18 @@ class Ledger:
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
         issues = []
+        environment = snap['data_environment']
+        if environment is None:
+            issues.append(_issue('UNKNOWN_DATA_ENVIRONMENT',
+                'Confirm REAL or SYNTHETIC provenance before accepting observations'))
+        elif any(row.get('data_environment') not in (None, environment)
+                 for row in snap['positions'] + snap['lots']):
+            issues.append(_issue('MIXED_DATA_ENVIRONMENT',
+                'Observation rows must share the explicitly confirmed source environment'))
+        accepted = next((row for row in self.rows('accounts') if row['id'] == account_id), None)
+        if accepted and accepted.get('data_environment') not in (None, environment):
+            issues.append(_issue('MIXED_DATA_ENVIRONMENT',
+                'Observation provenance conflicts with the accepted account environment'))
         value_checks = []
         for position in snap['positions']:
             precisions = [position.get(name) for name in
@@ -382,7 +394,7 @@ class Ledger:
                         fingerprint=fingerprint, status='EVIDENCE_ONLY'))
                 return dict(status='REVIEW_REQUIRED', committed=False, snapshot_id=audit_id,
                             issues=reconciliation['issues'])
-            error = DomainError('Observation cannot replace confirmed activity', 3)
+            error = DomainError('Observation requires resolution of acceptance issues', 3)
             error.result = reconciliation
             raise error
         if allow_older and (not justification or not justification.strip()):
@@ -420,7 +432,8 @@ class Ledger:
                 sid = existing["id"] if existing else str(uuid.uuid4())
                 observed_ids.add(sid)
                 security = dict(existing) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
-                    asset_type=p["asset_type"], currency=(account or snap["account"])["currency"], cusip=None, isin=None, figi=None)
+                    asset_type=p["asset_type"], currency=(account or snap["account"])["currency"], cusip=None, isin=None, figi=None,
+                    data_environment=snap['data_environment'])
                 security.update(ticker=p["security"], **supplied)
                 accepted_type = security.get("asset_type", "OTHER")
                 if accepted_type != "OTHER" and p["asset_type"] not in {"OTHER", accepted_type}:
@@ -429,7 +442,7 @@ class Ledger:
                 # Established OTHER corrections require classify_security().
                 self.put("securities", sid, security)
                 p = dict(p, asset_type=security["asset_type"], id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
-                         source_timestamp=snap["source_timestamp"])
+                         source_timestamp=snap["source_timestamp"], data_environment=snap['data_environment'])
                 prior_position = next((row for row in self.rows("positions") if row["id"] == p["id"]), None)
                 if (p.get("cost_basis") is None and prior_position and not snap["lots_complete"]
                         and decimal(p["quantity"]) == decimal(prior_position["quantity"])
@@ -454,7 +467,8 @@ class Ledger:
                 prior = next((l for l in self.rows("lots") if l["id"] == lot["id"]), None)
                 if prior and (prior["account_id"] != account_id or prior["security_id"] != sid):
                     raise DomainError("Lot identifier belongs to another account/security", 3)
-                self.put("lots", lot["id"], dict(lot, account_id=account_id, security_id=sid))
+                self.put("lots", lot["id"], dict(lot, account_id=account_id, security_id=sid,
+                    data_environment=snap['data_environment']))
             for p in self.rows("positions"):
                 if p["account_id"] == account_id:
                     remaining = sum((decimal(l["remaining_quantity"]) for l in self.rows("lots")
@@ -463,7 +477,8 @@ class Ledger:
                     self.put("positions", p["id"], p)
             if snap["cash_known"]:
                 self.put("cash_balances", account_id, dict(id=account_id, account_id=account_id,
-                    amount=snap["cash"], as_of=snap["source_timestamp"], imported_at=snap["imported_at"]))
+                    amount=snap["cash"], as_of=snap["source_timestamp"], imported_at=snap["imported_at"],
+                    data_environment=snap['data_environment']))
             audit_id = str(uuid.uuid4())
             self.put("snapshots", audit_id, dict(snap, id=audit_id, fingerprint=fingerprint,
                 override_justification=justification if allow_older else None,

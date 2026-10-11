@@ -20,7 +20,7 @@ def ctx(tmp_path):
 @given('a disposable household with large historical observations')
 def household(ctx):
     ledger = ctx['ledger']
-    ledger.apply({'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE'},
+    ledger.apply({'data_environment': 'SYNTHETIC', 'account': {'id': 'ira', 'name': 'IRA', 'tax_status': 'TAX_FREE'},
                   'positions': [], 'cash': '100', 'source_hash': 'accepted',
                   'source_timestamp': '2026-10-08'})
     with ledger.connection:

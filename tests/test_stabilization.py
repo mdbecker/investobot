@@ -35,6 +35,7 @@ def snapshot(account='a', source='2026-10-08'):
                       'remaining_quantity': '10', 'cost_basis': '800',
                       'acquisition_date': '2024-01-01'}],
             'cash': '100', 'source_hash': f'{account}-{source}', 'source_timestamp': source,
+            'data_environment': 'SYNTHETIC',
             'positions_complete': True, 'lots_complete': True}
 
 

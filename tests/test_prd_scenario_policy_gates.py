@@ -31,8 +31,17 @@ def setup(tmp_path, monkeypatch, *, baseline='SYNTHETIC', target_environment='SY
                       for ticker, quantity, value in [('OLD', '10', '1000'), ('NEW', '0', '0')]],
         'lots': [], 'cash': '0', 'cash_known': True, 'positions_complete': True,
         'lots_complete': False, 'source_timestamp': '2026-10-09',
-        'source_hash': 'fictional-scenario-original-source', 'data_environment': baseline,
+        'source_hash': 'fictional-scenario-original-source', 'data_environment': baseline or 'SYNTHETIC',
     })
+    if baseline is None:
+        # Model a historical ledger whose source environment was never recorded.
+        # New acceptance must not permit this missing provenance.
+        with ledger.connection:
+            for table in ('accounts', 'securities', 'positions', 'cash_balances'):
+                for row in ledger.rows(table):
+                    ledger.put(table, row['id'], dict(row, data_environment=None))
+            ledger.connection.execute("UPDATE snapshot_observations SET data_environment=NULL, "
+                "payload_json=json_set(payload_json, '$.data_environment', NULL)")
     old, new = ledger.resolve('OLD')['id'], ledger.resolve('NEW')['id']
     target = save(ledger, {'name': 'Fictional replacement scenario',
                           'data_environment': target_environment,

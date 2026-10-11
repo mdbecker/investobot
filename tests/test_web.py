@@ -83,7 +83,7 @@ def preview_only(context):
 
 @when("I reconcile and explicitly apply the preview")
 def apply(context):
-    snapshot = context["preview"][1]
+    snapshot = dict(context["preview"][1], data_environment='SYNTHETIC')
     assert request(context, "/api/reconcile", {"snapshot": snapshot})[1]["changes"]
     assert request(context, "/api/apply", {"snapshot": snapshot})[0] == 400
     assert request(context, "/api/apply", {"snapshot": snapshot, "confirm": True})[0] == 200
@@ -188,6 +188,7 @@ def cash_funded(context):
             "account_id": "synthetic",
         },
     )[1]
+    snapshot['data_environment'] = 'SYNTHETIC'
     assert request(context, "/api/apply", {"snapshot": snapshot, "confirm": True})[0] == 200
     context["before_bytes"] = context["path"].read_bytes()
 
@@ -239,6 +240,7 @@ def mixed_currency(context):
                 "positions": [],
                 "cash": "100",
                 "source_hash": "SYNTHETIC",
+                "data_environment": "SYNTHETIC",
             }
         )
     ledger.connection.close()

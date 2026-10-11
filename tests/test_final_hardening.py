@@ -34,7 +34,7 @@ def ctx(tmp_path, monkeypatch):
 
 @given('a fully known dated synthetic taxable account')
 def taxable(ctx):
-    ctx['snap'] = {'account': {'id': 'tax', 'name': 'Synthetic', 'tax_status': 'TAXABLE', 'history_complete': True},
+    ctx['snap'] = {'data_environment': 'SYNTHETIC', 'account': {'id': 'tax', 'name': 'Synthetic', 'tax_status': 'TAXABLE', 'history_complete': True},
         'positions': [{'security': 'AAA', 'cusip': 'SYNTH-C1', 'asset_type': 'STOCK', 'quantity': '10',
                        'price': '100', 'market_value': '1000', 'cost_basis': '800', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0},
                       {'security': 'BBB', 'asset_type': 'STOCK', 'quantity': '0', 'price': '100',

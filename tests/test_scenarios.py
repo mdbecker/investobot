@@ -54,6 +54,7 @@ def setup(ctx, tax_status):
         ],
         "cash": "500",
         "source_hash": "synthetic",
+        "data_environment": "SYNTHETIC",
         "source_timestamp": "2026-10-08",
     }
     ctx["ledger"].apply(snapshot)
@@ -79,6 +80,7 @@ def setup(ctx, tax_status):
             ],
             "cash": "0",
             "source_hash": "synthetic2",
+            "data_environment": "SYNTHETIC",
         }
     )
     ctx["before"] = ctx["ledger"].path.read_bytes()

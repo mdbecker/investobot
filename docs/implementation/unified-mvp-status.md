@@ -6,7 +6,7 @@ Historical PRDs retain their original contents.
 
 ## Current completion assessment — October 11
 
-Estimated **85% of offline MVP delivery** is complete. This is a qualitative
+Estimated **95% of offline MVP delivery** is complete. This is a qualitative
 full-specification assessment, not a test-count-derived completion measure.
 Entries below this section are historical checkpoints and retain their original
 pending-work statements; this section supersedes those statements.
@@ -30,11 +30,17 @@ pending-work statements; this section supersedes those statements.
   seconds, with Ruff passing. Their observed-red checkpoints precede production
   implementation. Fresh exact-commit image verification remains a release gate.
 
-Remaining software work includes the accepted linked
-household cash-transfer lifecycle, further verified-lot/identity lifecycle
-checks, consolidated political reporting, compatible semantic-search filtering
-and public CLI access, and final documentation,
-packaging, recovery demonstrations and exact-release-commit verification.
+Linked household transfers, verified lot/alias lifecycles, consolidated political
+reporting, compatible semantic search, public policy approval, module extraction,
+and the ordered synthetic household recovery demonstration are implemented.
+The exact committed `08b9ea2` image passed **1,195 tests in 41.18 seconds**
+with locked dependencies, no network and no mounted source. The subsequent
+typed unapproved-scenario policy gates passed the full mounted-source Docker
+suite: **1,202 tests in 41.36 seconds**, with Ruff passing, committed `a331d55`.
+
+Remaining software work is the explicit accepted-observation provenance gate
+and its fixture verification, final current documentation and exact-release
+image/package checks. The standalone recovery demonstration already passes.
 The remaining audit may identify additional cases; no package is declared
 complete solely because its minimum B01–B66 scenarios pass.
 
