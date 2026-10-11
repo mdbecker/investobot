@@ -72,3 +72,55 @@ def test_explicit_environment_control_is_accepted(tmp_path, environment):
         assert ledger.rows('snapshots')[0]['data_environment'] == environment
     finally:
         ledger.connection.close()
+
+
+def invested_source():
+    payload = source()
+    payload['positions'] = [dict(security='FICT', quantity='1', price='10',
+        market_value='10', cost_basis='8', displayed_price_precision=2,
+        displayed_market_value_precision=2)]
+    payload['lots'] = [dict(id='fictional-lot', security='FICT',
+        acquisition_date='2026-01-01', quantity='1', remaining_quantity='1', cost_basis='8')]
+    return payload
+
+
+def test_accepted_financial_rows_inherit_explicit_source_environment(tmp_path):
+    ledger = Ledger(tmp_path / 'inherit.db')
+    try:
+        ledger.apply(invested_source())
+        for table in ('accounts', 'positions', 'lots', 'cash_balances', 'securities'):
+            assert ledger.rows(table)[0]['data_environment'] == 'SYNTHETIC'
+    finally:
+        ledger.connection.close()
+
+
+@pytest.mark.parametrize('table', ['positions', 'lots'])
+def test_mixed_child_source_is_rejected_without_writes(tmp_path, table):
+    ledger = Ledger(tmp_path / 'mixed.db')
+    try:
+        payload = invested_source()
+        payload[table][0]['data_environment'] = 'REAL'
+        before = ledger.state()
+        with pytest.raises(DomainError) as failure:
+            ledger.apply(payload)
+        assert failure.value.code == 3
+        assert any(i['code'] == 'MIXED_DATA_ENVIRONMENT' for i in failure.value.result['issues'])
+        assert ledger.state() == before
+    finally:
+        ledger.connection.close()
+
+
+def test_synthetic_observation_cannot_replace_real_account(tmp_path):
+    ledger = Ledger(tmp_path / 'real.db')
+    try:
+        ledger.apply(source('REAL'))
+        payload = source('SYNTHETIC')
+        payload.update(source_timestamp='2026-03-02', source_hash='fictional-new-source')
+        before = ledger.state()
+        with pytest.raises(DomainError) as failure:
+            ledger.apply(payload)
+        assert failure.value.code == 3
+        assert any(i['code'] == 'MIXED_DATA_ENVIRONMENT' for i in failure.value.result['issues'])
+        assert ledger.state() == before
+    finally:
+        ledger.connection.close()
