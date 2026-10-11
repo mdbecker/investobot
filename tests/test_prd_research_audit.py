@@ -114,7 +114,7 @@ def test_native_specialty_cli_accepts_strict_envelope_preserving_provenance(tmp_
         assert stored['envelope']['skill_name'] == SPECIALTIES[kind][1]
         assert stored['envelope']['package']['research_type'] == payload['package']['research_type']
         if kind == 'POLITICAL':
-            assert stored['envelope']['package']['contributions'][0]['amount_usd'] == '1000'
+            assert stored['envelope']['package']['contributions'][0]['amount_usd'] == payload['package']['contributions'][0]['amount_usd']
     finally:
         ledger.connection.close()
 
