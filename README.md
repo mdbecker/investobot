@@ -1,9 +1,10 @@
 # Investobot
 
 The [October 10 unified MVP rebuild specification](docs/PRD-unified-mvp-2026-10-10.md)
-is preserved in this repository. The rebuild is in its red-first specification
-phase; new acceptance tests intentionally fail and the new capabilities are not
-implemented yet. See [implementation evidence and remaining gates](docs/implementation/unified-mvp-status.md).
+is preserved in this repository. The rebuild has passed its global red gate;
+storage/recovery and selected domain capabilities are implemented. Integration
+and remaining acceptance cases are still in progress. See
+[implementation evidence and remaining gates](docs/implementation/unified-mvp-status.md).
 Treat the current app as a development preview, with provisional institution
 adapters and an unverified live-provider gate.
 

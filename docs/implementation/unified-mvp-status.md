@@ -91,6 +91,16 @@ See [look-through](../lookthrough.md). These checks do not claim CLI integration
 or complete policy/planning acceptance. Backtest storage is reserved for immutable
 runs; its engine remains outstanding.
 
+Additional domain checkpoint: strict observation timestamp/unknown-field and
+independent provenance cases pass (three). Annual budget/household harvest cases
+pass (eleven) using immutable confirmed sale allocations and explicit provenance.
+All 870 preserved/recovery cases still pass, 21.19 seconds. Hypothetical immutable
+backtests pass seven existing cases plus a new quarterly-session scenario. Its
+red was observed against `25dedc4` without the uncommitted engine, then committed
+at `9e025c7`. This closes a quarterly coverage gap found during implementation;
+historical performance remains hypothetical, not evidence of actual returns.
+Ruff passes. See [tax policy](../tax-policy.md) and [backtests](../backtests.md).
+
 Remaining domain implementation, integrated full-suite green, locked offline fresh-image
 verification, recovery roundtrip, synthetic CLI demonstration, performance
 measurements and current operations docs are outstanding. No new-design ledger

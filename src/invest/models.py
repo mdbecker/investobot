@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
 
 class DomainError(Exception):
@@ -77,6 +77,7 @@ class Lot(BaseModel):
 
 
 class Snapshot(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     account: Account
     positions: list[Position]
     lots: list[Lot] = []
@@ -89,6 +90,22 @@ class Snapshot(BaseModel):
     source_hash: str
     warnings: list[str] = []
     status: str = "PARSED"
+    data_environment: Literal['REAL', 'SYNTHETIC'] | None = None
+    provenance: dict[str, dict] | None = None
+    issues: list[dict] = []
+    institution_status: Literal['PROVISIONAL', 'VERIFIED'] | None = None
+
+    @field_validator('source_timestamp')
+    @classmethod
+    def valid_source_timestamp(cls, value):
+        if value is not None:
+            if len(value) == 10:
+                date.fromisoformat(value)
+            else:
+                parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                if parsed.tzinfo is None:
+                    raise ValueError('Source datetime requires a timezone')
+        return value
 
     @model_validator(mode="before")
     @classmethod

@@ -322,7 +322,8 @@ class Ledger:
                 raise DomainError("Lot quantities exceed imported position", 3)
         with self.connection:
             account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
-            self.put("accounts", account_id, account or snap["account"])
+            accepted_account = account or dict(snap['account'], data_environment=snap['data_environment'])
+            self.put("accounts", account_id, accepted_account)
             observed_ids = set()
             for p in snap["positions"]:
                 existing, supplied = self._snapshot_security(p, account_id)
@@ -391,6 +392,9 @@ class Ledger:
             raise DomainError("Every confirmed activity requires a unique activity_id")
         prior = next((a for a in self.rows("activities") if a.get("activity_id") == aid), None)
         content = {k: v for k, v in activity.items() if k not in {"id", "recorded_at"}}
+        account = next((row for row in self.rows('accounts') if row['id'] == activity['account_id']), None)
+        if account and account.get('data_environment'):
+            content['data_environment'] = account['data_environment']
         if prior:
             original = {k: v for k, v in prior.items() if k not in {"id", "recorded_at"}}
             if original.get('lot_allocations'):
