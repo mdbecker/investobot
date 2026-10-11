@@ -871,3 +871,37 @@ def funds_summary(run_id: str):
 def funds_holdings(run_id: str):
     from invest.fund_diligence_queries import holdings
     emit(lambda: political_query(holdings, run_id))
+
+
+database = typer.Typer()
+app.add_typer(database, name='db')
+
+
+@database.command('status')
+def database_status():
+    from invest.db import status
+    emit(lambda: status(database_path()))
+
+
+@database.command('backup')
+def database_backup(output: str = typer.Option(...)):
+    from invest.backup import create
+    emit(lambda: create(database_path(), output))
+
+
+@database.command('verify')
+def database_verify(file: str):
+    from invest.backup import verify
+    emit(lambda: verify(file))
+
+
+@database.command('restore')
+def database_restore(file: str, dry_run: bool = False, confirm: bool = False):
+    from invest.backup import restore
+    emit(lambda: restore(file, database_path(), dry_run=dry_run, confirm=confirm))
+
+
+@database.command('migrate')
+def database_migrate():
+    from invest.migrations import migrate
+    emit(lambda: migrate(database_path()))

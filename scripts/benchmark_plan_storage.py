@@ -15,10 +15,10 @@ from decimal import Decimal
 from pathlib import Path
 from time import perf_counter
 
+from invest import plan_storage
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import SecurityInput, Snapshot
-from invest import plan_storage
 from invest.plans import compare, generate, list_plans, show
 from invest.reports import export
 from invest.targets import save
@@ -26,7 +26,7 @@ from invest.targets import save
 
 def build_fixture(ledger):
     """Seed 10 accounts, 1000 positions, 2000 lots and 200 dated snapshots."""
-    if any(ledger.state().values()) or ledger.connection.execute("SELECT id FROM plans LIMIT 1").fetchone():
+    if any(ledger.state().values()) or ledger.connection.execute("SELECT id FROM plan_runs LIMIT 1").fetchone():
         raise ValueError("Benchmark requires an empty disposable ledger")
     security_ids = [f"synthetic-security-{i:03d}" for i in range(100)]
     account_ids = [f"synthetic-account-{i:02d}" for i in range(10)]
@@ -64,6 +64,8 @@ def build_fixture(ledger):
                     k: v for k, v in payload.items() if k not in {"imported_at", "status", "warnings"}
                 }, sort_keys=True).encode()).hexdigest()
                 identity = f"{account_id}:snapshot:{observation:02d}"
+                if observation == 0:
+                    ledger.put("accounts", account_id, payload["account"])
                 ledger.put("snapshots", identity, dict(payload, id=identity, fingerprint=fingerprint,
                                                        override_justification=None))
                 latest = payload
@@ -126,7 +128,7 @@ def measure(ledger, fixture, directory):
     after = ledger.path.stat().st_size
     count, average, average_summary = ledger.connection.execute(
         "SELECT COUNT(*), AVG(LENGTH(CAST(details_json AS BLOB))), "
-        "AVG(LENGTH(CAST(summary_json AS BLOB))) FROM plans"
+        "AVG(LENGTH(CAST(summary_json AS BLOB))) FROM plan_runs"
     ).fetchone()
     baseline_count, average_baseline = ledger.connection.execute(
         "SELECT COUNT(*), AVG(LENGTH(CAST(state_json AS BLOB))) FROM plan_baselines"
@@ -151,20 +153,20 @@ def measure(ledger, fixture, directory):
     export(retrieved, directory / "benchmark-report.md")
     export_seconds = perf_counter() - started
     baseline_id = ledger.connection.execute(
-        "SELECT baseline_id FROM plans WHERE id=?", (first_id,)).fetchone()[0]
+        "SELECT baseline_id FROM plan_runs WHERE id=?", (first_id,)).fetchone()[0]
 
     def query_plan(sql, parameters=()):
         return [row[3] for row in ledger.connection.execute(
             "EXPLAIN QUERY PLAN " + sql, parameters)]
 
     query_plans = {
-        "list": query_plan("SELECT summary_json, baseline_id FROM plans "
+        "list": query_plan("SELECT summary_json, baseline_id FROM plan_runs "
                            "ORDER BY created_at DESC, id DESC"),
         "compare": query_plan("SELECT summary_json, baseline_id, as_of, "
-                              "price_assumptions_hash, tax_assumptions_hash FROM plans "
+                              "price_assumptions_hash, tax_assumptions_hash FROM plan_runs "
                               "WHERE id IN (" + ",".join("?" for _ in plan_ids) + ") "
                               "ORDER BY created_at DESC, id DESC", plan_ids),
-        "plan_lookup": query_plan("SELECT details_json, baseline_id FROM plans WHERE id=?",
+        "plan_lookup": query_plan("SELECT details_json, baseline_id FROM plan_runs WHERE id=?",
                                   (first_id,)),
         "baseline_lookup": query_plan("SELECT state_json FROM plan_baselines WHERE id=?",
                                       (baseline_id,)),

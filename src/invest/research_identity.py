@@ -1,7 +1,5 @@
 """Research may reference sourced canonical identities, never create them."""
 
-import json
-import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,11 +26,9 @@ def same_research_company(first, second):
 def read_ledger(path):
     """Read existing research without creating a selected database on disk."""
     if Path(path).exists():
-        connection = sqlite3.connect(Path(path).absolute().as_uri() + '?mode=ro', uri=True)
+        from invest.db import connect
+        connection = connect(path, readonly=True)
         try:
-            if connection.execute('PRAGMA user_version').fetchone()[0] != 10:
-                raise DomainError('Incompatible database schema; select a fresh schema 10 database; '
-                                  'back up existing data (see docs/development.md)', 3)
             yield SimpleNamespace(connection=connection)
         finally:
             connection.close()
@@ -50,11 +46,10 @@ def verify_company(ledger, company):
     security_id = company.get('security_id')
     if not security_id:
         return
-    row = ledger.connection.execute('SELECT data FROM securities WHERE id=?',
-                                    (security_id,)).fetchone()
-    if row is None:
+    from invest.db import rows
+    security = next(iter(rows(ledger.connection, 'securities', security_id)), None)
+    if security is None:
         raise DomainError('Research references an unknown canonical security ID', 3)
-    security = json.loads(row[0])
     ticker = company.get('ticker')
     accepted = {security.get('ticker')}
     accepted.update(alias['ticker'] for alias in security.get('ticker_aliases') or []

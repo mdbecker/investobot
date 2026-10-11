@@ -24,7 +24,7 @@ def save_plan(ledger, plan):
     with ledger.connection:
         ledger.connection.execute('INSERT OR IGNORE INTO plan_baselines VALUES (?, ?)',
                                   (baseline_id, _json(state)))
-        ledger.connection.execute('INSERT INTO plans VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (
+        ledger.connection.execute('INSERT INTO plan_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (
             plan['id'], baseline_id, plan['created_at'], plan['as_of'], plan['status'],
             _json(plan_summary(plan)), _json(details), _hash(assumptions.get('prices')),
             _hash(assumptions.get('tax_rates'))))
@@ -32,7 +32,7 @@ def save_plan(ledger, plan):
 
 def load_plan(ledger, plan_id):
     row = ledger.connection.execute('''SELECT p.details_json, p.baseline_id, b.state_json
-        FROM plans p JOIN plan_baselines b ON b.id=p.baseline_id WHERE p.id=?''',
+        FROM plan_runs p JOIN plan_baselines b ON b.id=p.baseline_id WHERE p.id=?''',
         (plan_id,)).fetchone()
     if row is None:
         raise DomainError('Plan does not exist')
@@ -44,7 +44,7 @@ def summaries(ledger, plan_ids=None):
     fields = 'summary_json, baseline_id'
     if plan_ids:
         fields += ', as_of, price_assumptions_hash, tax_assumptions_hash'
-    rows = ledger.connection.execute('SELECT ' + fields + ' FROM plans' + where +
+    rows = ledger.connection.execute('SELECT ' + fields + ' FROM plan_runs' + where +
         ' ORDER BY created_at DESC, id DESC', plan_ids or ())
     result = []
     for row in rows:

@@ -1,5 +1,14 @@
 # Investobot project rules
 
+## Verified implementation lessons
+
+- Schema 1 identity includes the foundation migration checksum, not just SQLite
+  user_version. Legacy schema 1 must remain byte-preserved and rejected.
+- All application database connections hold the shared restore lock until close;
+  close write handles before announcing completion to local HTTP clients.
+- Disposable benchmark builders must insert parent accounts before observation
+  rows and query plan_runs. Keep foreign keys enabled during fixture creation.
+
 ## Active specification and work order
 
 - The active rebuild specification is `docs/PRD-unified-mvp-2026-10-10.md`.

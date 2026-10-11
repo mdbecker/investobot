@@ -81,11 +81,9 @@ def verify_fund(ledger, fund):
     """Reuse canonical security linkage; series/class provenance stays fund-specific."""
     verify_company(ledger, dict(fund, cik=fund['registrant_cik']))
     if fund.get('security_id') and fund.get('isin'):
+        from invest.db import rows
         from invest.models import DomainError
-
-        row = ledger.connection.execute('SELECT data FROM securities WHERE id=?',
-                                        (fund['security_id'],)).fetchone()
-        security = json.loads(row[0])
+        security = rows(ledger.connection, 'securities', fund['security_id'])[0]
         if security.get('isin') and security['isin'] != fund['isin']:
             raise DomainError('Research ISIN contradicts the canonical security identity', 3)
 

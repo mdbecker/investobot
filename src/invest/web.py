@@ -302,6 +302,8 @@ def create_server(db_path, host="127.0.0.1", port=8765):
                 else:
                     self.reply(404, {"error": "Route not found", "code": 1})
                     return
+                ledger.connection.close()
+                ledger = None
                 self.reply(200, result)
             except DomainError as error:
                 self.reply(

@@ -56,17 +56,35 @@ separate from hypothetical proposals; actual consumption derives from confirmed
 events. A real synthetic Parquet fixture was prepared in a disposable Docker
 container with DuckDB 1.4.1 before any project dependency changes.
 
-No production, schema, runtime dependency or bundled skill implementation has
-changed in this phase. This checkpoint is specification evidence, not delivery
-of the unified MVP. Start implementation with WP01's shared relational storage
-and recovery contract, followed by the PRD dependency order.
+The global red phase preceded all production changes. Schema-identity tests
+were committed at `72d6b7c`; preserved regression fixtures now reference the
+new physical tables at `18cfeda` without changing their behavioral checks.
+
+## Storage and recovery foundation
+
+Fresh ledgers now use checksum-identified schema 1, typed relational financial
+columns, exact decimal text, foreign keys and indexed current balances. Existing
+development ledgers are rejected before writer settings or initialization.
+Immutable observation evidence remains separate from authoritative balances.
+Database commands provide status, online backup, verification, staged restore
+with explicit confirmation, and transactional future migrations guarded by a
+verified current backup. Application connections share a restore exclusion lock.
+See [operations](../operations.md) and [migrations](../migrations.md).
+
+Offline Docker checkpoint: **870 passed**, 20.14 seconds (862 preserved tests
+and eight recovery acceptance cases); Ruff passed for source, tests and scripts.
+The four later MVP acceptance modules were excluded from this domain checkpoint
+because their implementations remain outstanding; this is not full-suite green.
+Recovery also passed real disposable artifact corruption and restoration checks.
+No private ledger was reset or migrated. Runtime dependencies and skills are
+unchanged at this checkpoint.
 
 ## Remaining delivery gates
 
-WP01–WP12 implementation, integrated full-suite green, locked offline fresh-image
+Remaining domain implementation, integrated full-suite green, locked offline fresh-image
 verification, recovery roundtrip, synthetic CLI demonstration, performance
 measurements and current operations docs are outstanding. No new-design ledger
-is claimed available yet. No existing ledger has been reset or migrated.
+is claimed release-ready yet. No existing ledger has been reset or migrated.
 
 Vanguard, Fidelity NetBenefits and PNC require reviewed redacted original HTML;
 synthetic pages cannot establish institution support. FMP entitlement/endpoints

@@ -3,7 +3,6 @@
 import copy
 import hashlib
 import json
-import sqlite3
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -46,73 +45,29 @@ def snapshot_fingerprint(snap):
 
 class Ledger:
     def __init__(self, path):
+        from invest.db import connect
+
         self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.connection = sqlite3.connect(self.path)
-        self.connection.execute("PRAGMA foreign_keys=ON")
-        version = self.connection.execute("PRAGMA user_version").fetchone()[0]
-        self.connection.execute("PRAGMA busy_timeout=5000")
-        if version not in {0, 10}:
-            self.connection.close()
-            raise DomainError("Incompatible database schema; stop Investobot and deliberately reset the database (see docs/development.md)", 3)
-        if version == 0:
-            if self.connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchone():
-                self.connection.close()
-                raise DomainError("Unversioned database is not empty; deliberate reset required", 3)
-            with self.connection:
-                for table in TABLES:
-                    self.connection.execute(f"CREATE TABLE {table} (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
-                self.connection.execute("CREATE TABLE plan_baselines (id TEXT PRIMARY KEY, state_json TEXT NOT NULL)")
-                self.connection.execute("""CREATE TABLE plans (
-                    id TEXT PRIMARY KEY, baseline_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL, as_of TEXT NOT NULL, generated_status TEXT NOT NULL,
-                    summary_json TEXT NOT NULL, details_json TEXT NOT NULL,
-                    price_assumptions_hash TEXT NOT NULL, tax_assumptions_hash TEXT NOT NULL,
-                    FOREIGN KEY (baseline_id) REFERENCES plan_baselines(id))""")
-                self.connection.execute("CREATE INDEX plans_created_idx ON plans (created_at DESC, id DESC)")
-                from invest.political import create_tables
-
-                create_tables(self.connection)
-                from invest.earnings import create_tables as create_earnings_tables
-                from invest.research_storage import create_tables as create_research_tables
-
-                create_research_tables(self.connection)
-                create_earnings_tables(self.connection)
-                from invest.news import create_tables as create_news_tables
-
-                create_news_tables(self.connection)
-                from invest.competitive import create_tables as create_competitive_tables
-
-                create_competitive_tables(self.connection)
-                from invest.insiders import create_tables as create_insider_tables
-
-                create_insider_tables(self.connection)
-                from invest.fund_diligence import create_tables as create_fund_tables
-
-                create_fund_tables(self.connection)
-                self.connection.execute("PRAGMA user_version=10")
+        self.connection = connect(path)
 
     def rows(self, table):
+        from invest.db import rows
+
         if table not in TABLES:
             raise ValueError("Unknown table")
-        rows = [
-            json.loads(r[0])
-            for r in self.connection.execute(f"SELECT data FROM {table} ORDER BY id")
-        ]
-        # JSON extensions need no destructive schema migration. Legacy records
-        # expose safe defaults without a read operation writing to the ledger.
+        result = rows(self.connection, table)
         history = {"accounts": "metadata_history", "securities": "classification_history"}.get(table)
         if history:
-            for row in rows:
+            for row in result:
                 row.setdefault(history, [])
-        return rows
+        return result
 
     def put(self, table, key, data):
+        from invest.db import put
+
         if table not in TABLES:
             raise ValueError("Unknown table")
-        self.connection.execute(
-            f"INSERT OR REPLACE INTO {table} VALUES (?, ?)", (key, json.dumps(data, default=str))
-        )
+        put(self.connection, table, key, data)
 
     def state(self):
         return {
@@ -137,15 +92,11 @@ class Ledger:
                 row.pop(field, None)
         query = """SELECT id, account_id, imported_at, source_timestamp, source_hash,
                           positions_complete, lots_complete FROM (
-            SELECT id, json_extract(data, '$.account.id') AS account_id,
-                json_extract(data, '$.imported_at') AS imported_at,
-                json_extract(data, '$.source_timestamp') AS source_timestamp,
-                json_extract(data, '$.source_hash') AS source_hash,
-                json_extract(data, '$.positions_complete') AS positions_complete,
-                json_extract(data, '$.lots_complete') AS lots_complete,
-                ROW_NUMBER() OVER (PARTITION BY json_extract(data, '$.account.id')
-                    ORDER BY json_extract(data, '$.imported_at') DESC, id DESC) AS ordinal
-            FROM snapshots) WHERE ordinal=1 ORDER BY account_id"""
+            SELECT id,account_id,imported_at,source_timestamp,source_hash,
+                positions_complete,lots_complete,
+                ROW_NUMBER() OVER (PARTITION BY account_id
+                    ORDER BY imported_at DESC,id DESC) AS ordinal
+            FROM snapshot_observations) WHERE ordinal=1 ORDER BY account_id"""
         state['snapshots'] = [dict(id=r[0], account={'id': r[1]}, imported_at=r[2],
             source_timestamp=r[3], source_hash=r[4], positions_complete=bool(r[5]),
             lots_complete=bool(r[6])) for r in self.connection.execute(query)]
@@ -397,14 +348,14 @@ class Ledger:
             if snap["positions_complete"]:
                 for p in self.rows("positions"):
                     if p["account_id"] == account_id and p["security_id"] not in observed_ids:
-                        self.connection.execute("DELETE FROM positions WHERE id=?", (p["id"],))
+                        self.connection.execute("DELETE FROM position_balances WHERE id=?", (p["id"],))
                         for l in self.rows("lots"):
                             if l["account_id"] == account_id and l["security_id"] == p["security_id"]:
-                                self.connection.execute("DELETE FROM lots WHERE id=?", (l["id"],))
+                                self.connection.execute("DELETE FROM tax_lots WHERE id=?", (l["id"],))
             if snap["lots_complete"]:
                 for lot in self.rows("lots"):
                     if lot["account_id"] == account_id:
-                        self.connection.execute("DELETE FROM lots WHERE id=?", (lot["id"],))
+                        self.connection.execute("DELETE FROM tax_lots WHERE id=?", (lot["id"],))
             for lot in snap["lots"]:
                 sid = self.resolve(lot["security"])["id"]
                 prior = next((l for l in self.rows("lots") if l["id"] == lot["id"]), None)
