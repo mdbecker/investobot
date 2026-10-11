@@ -65,7 +65,7 @@ def accepted_household(ctx, source_date='2026-10-10', price='100', cash='2000',
                   'identity_status': 'VERIFIED',
                   'identity_source': 'Reviewed fictional immutable broker lot reference',
                   'acquisition_date': '2024-01-01'}],
-        'cash': cash, 'source_hash': 'fictional-source-' + source_date,
+        'cash': cash, 'cash_known': True, 'source_hash': 'fictional-source-' + source_date,
         'source_timestamp': source_date, 'positions_complete': True,
         'lots_complete': True, 'data_environment': 'SYNTHETIC'}
     ledger.apply(snapshot)
@@ -207,6 +207,7 @@ def intent(research_ctx, workflow, monkeypatch):
     research_ctx['policy'] = {
         'id': 'approved-synthetic', 'version': 'approved-synthetic',
         'data_environment': 'SYNTHETIC', 'minimum_notional': '25',
+        'fee_per_trade': '0',
         'quarterly_months': [3, 6, 9, 12], 'drift_trigger': '0.05',
         'max_position_age_days': 120, 'cash_floors': {'synthetic': '0'},
         'permissions': {'synthetic': {security: {'can_buy': True, 'can_sell': False,
@@ -216,7 +217,8 @@ def intent(research_ctx, workflow, monkeypatch):
         'source': 'Explicit fictional human policy approval; no claimed executed consumption',
     }
     inputs = {
-        'sync': {'account': {'id': 'synthetic'}, 'positions': [], 'lots': [],
+        'sync': {'account': {'id': 'synthetic', 'name': 'Fictional household'},
+                 'positions': [], 'lots': [], 'source_hash': 'fictional-undated-observation',
                  'source_timestamp': None, 'data_environment': 'SYNTHETIC'},
         'screening': {'expense_ratio_max': '0.002', 'fund_type': 'ETF'},
         'research': {'manifest_id': 'synthetic-universe', 'as_of': '2026-10-10',
@@ -230,7 +232,11 @@ def intent(research_ctx, workflow, monkeypatch):
         'mode': 'contributions-only', 'account_id': 'synthetic',
         'policy_id': 'approved-synthetic',
         'target': {'id': 'target-synthetic', 'weights': {security: '1'}},
-        'prices': {security: '100'}, 'manifest_ids': ['price-synthetic-2026-10-10'],
+        'prices': {security: {'price': '100', 'as_of': '2026-10-10', 'currency': 'USD',
+                              'data_environment': 'SYNTHETIC',
+                              'source': 'Reviewed fictional dated market observation',
+                              'manifest_id': 'price-synthetic-2026-10-10'}},
+        'manifest_ids': ['price-synthetic-2026-10-10'],
     }
     inputs['research']['issuers'] = [
         {'issuer_id': 'fictional-00', 'exposure_weight': '0.6'},
@@ -250,6 +256,13 @@ def intent(research_ctx, workflow, monkeypatch):
         'rebalancing': 'NONE', 'mode': 'HYPOTHETICAL_CURRENT_ALLOCATION',
     })
     research_ctx['file'].write_text(json.dumps(inputs.get(workflow, {})))
+    initial_market = write_input(research_ctx, 'initial-market.json', {
+        'data_environment': 'SYNTHETIC',
+        'screen': [{'symbol': 'FUND-A', 'isEtf': True, 'isFund': False}],
+        'metadata': {'FUND-A': [{'symbol': 'FUND-A', 'isEtf': True,
+                                'issuer': 'Fictional fund issuer'}]},
+    })
+    monkeypatch.setenv('INVEST_FIXTURES', initial_market)
 
 
 @when('its installed skill is followed by a scripted CLI driver')
@@ -751,7 +764,16 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
         'metadata': {'FUND-A': [{'symbol': 'FUND-A', 'expenseRatio': '0.001',
                                 'issuer': 'Fictional issuer', 'aum': '1000000', 'isEtf': True}]},
         'holdings': {'FUND-A': [{'asset': 'FICT-A', 'name': 'Fictional Operating Company',
-                                'weightPercentage': '100', 'updated': '2026-10-01'}]},
+                                'weightPercentage': '100', 'updated': '2026-10-01',
+                                'isin': 'USFICT000001', 'cusip': 'FICT00001',
+                                'assetType': 'STOCK', 'cik': '0000123456',
+                                'issuer_id': 'CIK:0000123456', 'issuer_verified': True,
+                                'issuer_identity_evidence': {
+                                    'source_id': 'fictional-reviewed-issuer-register',
+                                    'source_url': 'https://example.invalid/fictional-issuer-register',
+                                    'as_of': '2026-10-01', 'data_environment': 'SYNTHETIC',
+                                    'reviewed_by': 'Explicit fictional human source review'},
+                                }]},
         'history': {'FUND-A': [{'date': '2020-01-02', 'total_return_index': '100'},
                               {'date': '2020-01-03', 'total_return_index': '105'},
                               {'date': '2020-01-06', 'total_return_index': '110'}]},
@@ -795,6 +817,22 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
                        'date': '2026-09-20', 'quantity': '1'}],
     })
     research_ctx['news_file'] = write_input(research_ctx, 'news.json', fictional_news_package())
+    if workflow == 'research':
+        ledger = Ledger(research_ctx['path'])
+        try:
+            stock = ledger.register_security({
+                'ticker': 'FICT-A', 'name': 'Fictional Operating Company',
+                'asset_type': 'STOCK', 'currency': 'USD',
+                'isin': 'USFICT000001', 'cusip': 'FICT00001',
+                'source': 'Explicit fictional human review of original issuer registration; '
+                          'CIK 0000123456, ISIN USFICT000001, CUSIP FICT00001'})
+            research_ctx['research_security'] = stock['id']
+            research_ctx['financial_before'] = copy.deepcopy(ledger.planning_state())
+        finally:
+            ledger.connection.close()
+        package = fictional_news_package()
+        package['company'].update(cik='0000123456', security_id=stock['id'])
+        research_ctx['news_file'] = write_input(research_ctx, 'news.json', package)
 
 
 def workflow_step(ctx, args):
