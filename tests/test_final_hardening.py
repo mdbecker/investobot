@@ -180,7 +180,8 @@ def replacement(ctx):
 
 @then('the plan is ready for human review with zero taxable gain')
 def ready(ctx):
-    assert ctx['plan']['status'] == 'READY_FOR_HUMAN_REVIEW'
+    assert ctx['plan']['status'] == 'REVIEW_REQUIRED'
+    assert ctx['plan']['issues'][0]['code'] == 'UNAPPROVED_TRADING_POLICY'
     assert Decimal(ctx['plan']['tax_analysis']['realized_gain_loss']) == 0
     assert ctx['ledger'].state() == ctx['before']
 

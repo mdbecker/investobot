@@ -46,7 +46,7 @@ def plan_summary(plan, current_state_hash=None):
                    if row.get('difference_weight') is not None]
     tolerance = ((plan.get('target') or {}).get('planning_constraints') or {}).get('target_tolerance')
     warnings = plan.get('warnings') or []
-    return dict(
+    result = dict(
         **{key: plan.get(key) for key in ('id', 'name', 'target_version_id', 'created_at',
                                          'as_of', 'trade_count')},
         status=status, generated_status=original_status,
@@ -58,6 +58,8 @@ def plan_summary(plan, current_state_hash=None):
                            positions_outside_tolerance=sum(value > decimal(tolerance) for value in differences)
                            if tolerance is not None else None),
         warning_count=plan.get('_warning_count', len(warnings)), warnings_preview=warnings[:5])
+    result.update({key: plan[key] for key in ('mode', 'data_environment', 'issues') if key in plan})
+    return result
 
 
 def _projected(ledger, plan_ids=None):

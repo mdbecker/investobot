@@ -89,6 +89,23 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
     household_currency(state)
     target = target_show(ledger, target_id, version=version)
     target = {k: v for k, v in target.items() if k != 'versions'}
+    environments = {row.get('data_environment') for row in state['accounts']}
+    environments.add(target.get('data_environment'))
+    environments.update(row.get('data_environment') for row in (prices or {}).values()
+                        if isinstance(row, dict))
+    policy_issue = {'code': 'UNAPPROVED_TRADING_POLICY', 'blocks_calculation': False,
+        'blocks_proposals': True, 'blocks_execution_review': True,
+        'message': 'Unapproved scenario only; use plan propose with an explicitly approved policy for production'}
+    if 'REAL' in environments:
+        return {'status': 'BLOCKED', 'mode': 'HYPOTHETICAL', 'proposed_actions': [],
+                'executed': False, 'issues': [dict(policy_issue, blocks_calculation=True)],
+                'as_of': as_of.isoformat()}
+    issues = [policy_issue]
+    environment = 'SYNTHETIC' if environments == {'SYNTHETIC'} else None
+    if environment is None:
+        issues.append({'code': 'UNKNOWN_DATA_ENVIRONMENT', 'blocks_calculation': False,
+            'blocks_proposals': True, 'blocks_execution_review': True,
+            'message': 'Legacy scenario provenance is unknown; it cannot establish actionable evidence'})
     constraints = target['planning_constraints']
     working = copy.deepcopy(state)
     accounts = {a['id']: a for a in state['accounts']}
@@ -277,10 +294,6 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
     for analysis in tax_analysis['analyses']:
         if analysis.get('potential_wash_sale_conflict'):
             warnings.append('Potential household wash-sale conflict requires human review')
-    # Qualitative exposure limitations alone do not turn known retirement trades into unknown tax data.
-    critical = bool(remaining or any(any(word in w.lower() for word in
-                    ('unknown', 'unresolved', 'stale', 'conflict', 'incomplete', 'below the required'))
-                    for w in warnings))
     latest = {}
     for snap in state['snapshots']:
         account_id = snap['account']['id']
@@ -303,7 +316,8 @@ def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rate
         remaining_target_drift=proposed['allocations'], cash_before=initial_cash, cash_after=_cash(final),
         turnover=_number(sum((decimal(a['quantity']) * decimal(a['price']) for a in actions), ZERO)),
         trade_count=len(actions), warnings=list(dict.fromkeys(warnings)),
-        status='REVIEW_REQUIRED' if critical else 'READY_FOR_HUMAN_REVIEW')
+        status='REVIEW_REQUIRED', mode='HYPOTHETICAL', data_environment=environment,
+        issues=issues)
     from invest.plan_storage import save_plan
     save_plan(ledger, plan)
     return plan

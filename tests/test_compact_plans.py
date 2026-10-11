@@ -195,7 +195,9 @@ def generated_cli(ctx):
 def generated_summary(ctx):
     assert set(ctx['result']) == {'plan'}
     summary = ctx['result']['plan']
-    assert set(summary) == SUMMARY_KEYS
+    assert set(summary) == SUMMARY_KEYS | {'mode', 'data_environment', 'issues'}
+    assert summary['mode'] == 'HYPOTHETICAL'
+    assert summary['issues'][0]['code'] == 'UNAPPROVED_TRADING_POLICY'
     saved = plans.persisted(ctx['ledger'], summary['id'])
     assert summary['trade_count'] == len(saved['proposed_actions'])
     assert saved['source_state']['snapshots']

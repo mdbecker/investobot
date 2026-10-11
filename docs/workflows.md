@@ -220,12 +220,14 @@ history. These operations do not execute trades or change actual account state.
 ## Generate, compare and export manual trade plans
 
 ```sh
-docker compose run --rm -T app invest plan generate --target CONSERVATIVE_TARGET_ID \
-  --as-of 2026-10-08 --name "Conservative review"
-docker compose run --rm -T app invest plan generate --target BALANCED_TARGET_ID \
-  --as-of 2026-10-08 --name "Balanced review"
-docker compose run --rm -T app invest plan generate --target GROWTH_TARGET_ID \
-  --as-of 2026-10-08 --name "Growth review"
+docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json
+docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json --confirm
+docker compose run --rm -T app invest plan propose --file /app/local-data/conservative-request.json \
+  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
+docker compose run --rm -T app invest plan propose --file /app/local-data/balanced-request.json \
+  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
+docker compose run --rm -T app invest plan propose --file /app/local-data/growth-request.json \
+  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
 docker compose run --rm -T app invest plan list
 docker compose run --rm -T app invest plan show PLAN_A
 docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C
@@ -251,14 +253,18 @@ use it when detailed actions or assumptions are needed. Prefer the Markdown expo
 above for human review without loading complete portfolio histories into the
 agent's conversation. Full warnings and analyses remain in show/report outputs.
 
-The deterministic heuristic considers eligible retirement accounts first,
-known taxable lots next, then purchases funded by same-account cash/proceeds.
-It respects permitted investments, excluded positions, cash floors, explicit
-increments and positive ST/LT gain caps separately. Losses do not increase caps.
-Review exact lots, estimated tax, wash-sale limits, fees assumed zero and remaining
-drift. Missing eligibility/basis/prices can leave `REVIEW_REQUIRED`; the heuristic
-is not globally optimal. Every plan requires human review even when status is
-`READY_FOR_HUMAN_REVIEW`.
+Each request includes a saved `target_id` and explicit sourced `prices`; inspect
+`tools describe plan.propose` and [trading policy](trading-policy.md) before filling
+the request. Contribution-only planning uses confirmed same-account cash and
+never sells. Quarterly rebalancing requires an approved window and sufficient
+drift, prioritizes permitted retirement sales, and bounds taxable sales by annual
+positive estimated tax-cost headroom. Known losses do not replenish headroom.
+Review exact lots, fees, permissions, unknowns and remaining drift. Every proposal
+requires a human decision and manual execution.
+
+The preserved `plan generate` command is an unapproved hypothetical scenario
+primitive. Its synthetic outputs always require typed policy review; REAL inputs
+are blocked without actions or saving. It cannot substitute for policy approval.
 
 Report export returns a JSON path/content-hash confirmation. Exports reproduce
 saved inputs and calculations without recomputation; status in an old report is

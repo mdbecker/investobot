@@ -98,7 +98,7 @@ PURPOSES = {
     "target.activate": "Explicitly select one active target without placing trades.",
     "target.archive": "Archive a target while preserving historical plans.",
     "target.diff": "Compare accepted household allocation with target allocation.",
-    "plan.generate": "Persist a hypothetical plan and return its compact summary for human review.",
+    "plan.generate": "Persist an unapproved hypothetical scenario requiring policy review; block REAL inputs.",
     "plan.list": "List compact saved plan summaries with current review or stale status.",
     "plan.show": "Retrieve a complete saved plan; potentially large JSON. Prefer report.export for review.",
     "plan.compare": "Compare compact saved financial summaries and disclose incompatible assumptions.",

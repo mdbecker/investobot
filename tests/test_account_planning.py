@@ -80,7 +80,8 @@ def generated(ctx):
 @then('it sells and buys in the IRA with zero taxable gain and no actual mutation')
 def retirement_plan(ctx):
     p = ctx['plan']
-    assert p['status'] == 'READY_FOR_HUMAN_REVIEW'
+    assert p['status'] == 'REVIEW_REQUIRED'
+    assert p['issues'][0]['code'] == 'UNAPPROVED_TRADING_POLICY'
     assert [(a['type'], a['account_id']) for a in p['proposed_actions']] == [('SELL', 'ira'), ('BUY', 'ira')]
     assert Decimal(p['tax_analysis']['realized_gain_loss']) == 0
     assert Decimal(p['cash_after']['ira']) == 0

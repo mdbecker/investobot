@@ -12,11 +12,26 @@ No report executes trades. Every plan requires a human decision and manual broke
 
 ## Generate and compare
 
-`invest plan generate --target TARGET_ID --as-of YYYY-MM-DD` saves a new immutable plan. Use `--version N` to pin an older target version, `--name LABEL`, or `--prices prices.json` for explicit dated price assumptions keyed by canonical security ID: `{"SECURITY_ID":{"price":"100","as_of":"2026-10-08","currency":"USD","source":"verified public quote"}}`. Accepted snapshot prices are the default. Dates, currencies and price age are checked; no cached quote silently replaces accepted prices. Generation never updates actual prices or writes public-data caches.
+Use `invest plan propose --file request.json --policy APPROVED_POLICY_ID --mode
+contribution_only --as-of YYYY-MM-DD` for policy-controlled production proposals.
+The request identifies a saved `target_id` and explicit dated `prices` keyed by
+canonical security IDs, including currency, source and REAL/SYNTHETIC provenance.
+Approve the separate policy through `policy approve --confirm` after preview.
+See [trading policy](trading-policy.md) for cadence, permissions and annual allowance.
+
+`invest plan generate --target TARGET_ID --as-of YYYY-MM-DD` is a preserved
+unapproved hypothetical scenario primitive, not a production policy bypass.
+SYNTHETIC scenarios retain simulation/storage behavior but always return
+`REVIEW_REQUIRED` with typed `UNAPPROVED_TRADING_POLICY` gates. Legacy unknown
+provenance remains explicitly unknown and requires review. Any REAL input returns
+`BLOCKED` without actions or a saved plan. Optional dated scenario price assumptions
+never update accepted marks or caches. Warning wording never controls readiness.
 
 The deterministic heuristic sells overweight eligible retirement positions first, then known taxable lots (MIN_TAX with configured rates, HIFO otherwise), then buys underweight securities with each account's own cash. Positive short-term and long-term gains are capped separately; losses do not increase a budget. Cash floors, household cash targets, excluded positions and permitted investments constrain trades. Stocks, ETFs and mutual funds default to whole units; explicitly verified per-account increments permit fractional units. Individual bonds receive no automatic instructions. Generated trades assume zero fees; check broker fees before manual execution.
 
-`invest plan generate` returns `{"plan": SUMMARY}`; `invest plan list` returns
+`invest plan generate` returns `{"plan": SUMMARY}` (or a structured blocked
+outcome); its scenario summary includes mode, environment and typed issues.
+`invest plan list` returns
 `{"plans": [SUMMARY, ...]}`. `invest plan compare PLAN_A PLAN_B` returns those
 same compact summaries plus compatibility flags for source snapshot, price
 assumptions, tax assumptions and analysis date, comparison warnings and

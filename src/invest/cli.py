@@ -513,9 +513,14 @@ def plan_generate(
     from invest.config import load_config
     from invest.plans import generate, plan_summary
 
-    emit(lambda: {'plan': plan_summary(generate(ledger(), client(), target, as_of=as_of,
-                          prices=read_json(prices) if prices else None, name=name,
-                          rates=load_config().get("tax"), version=version))})
+    def result():
+        selected = ledger()
+        with closing(selected.connection):
+            generated = generate(selected, client(), target, as_of=as_of,
+                prices=read_json(prices) if prices else None, name=name,
+                rates=load_config().get('tax'), version=version)
+            return {'plan': generated if generated['status'] == 'BLOCKED' else plan_summary(generated)}
+    emit(result)
 
 
 @plan.command("list")
