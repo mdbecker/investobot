@@ -7,6 +7,7 @@ import socket
 import tempfile
 import time
 import uuid
+from copy import deepcopy
 from pathlib import Path
 
 from benchmarks import gates, runner, scaling
@@ -37,12 +38,46 @@ def checkpoint(output, state):
             temporary.unlink(missing_ok=True)
 
 
+def certification_plan(definitions):
+    """Absolute budgets refer to named medium sizes, except 100k-vector workloads."""
+    plan = []
+    for case in definitions['cases']:
+        stat = 'p95' if case['id'] == 'P02.apply' else case['budget_stat']
+        observations = max(case['repetitions']['extended'], 21 if stat == 'p95' else 3)
+        plan.append({'id': case['id'], 'budget_ns': case['budget_ns'], 'budget_stat': stat,
+                     'mode': 'extended_retrieval' if observations == 21 else 'extended_bulk',
+                     'observations': observations,
+                     'dimensions': dict(definitions['profiles'][
+                         'stress' if case['id'].startswith('P14.') else 'medium'])})
+    return plan
+
+
+def certification_report(stress, pairs, definitions):
+    """Reuse native observations without substituting stress for named-size evidence."""
+    small = {pair['case_id']: pair['small_native'] for pair in pairs}
+    report = {'commit': stress['commit'], 'runner': deepcopy(stress['runner']), 'cases': {}}
+    for contract in certification_plan(definitions):
+        identity = contract['id']
+        native = stress if identity.startswith('P14.') else small.get(identity)
+        if (not native or native.get('commit') != stress['commit']
+                or native.get('runner') != stress['runner']
+                or native.get('fixture', {}).get('dimensions') != contract['dimensions']
+                or identity not in native.get('cases', {})):
+            raise ValueError('Missing or incompatible native absolute-budget evidence: ' + identity)
+        case = deepcopy(native['cases'][identity])
+        case['fixture_dimensions'] = dict(contract['dimensions'])
+        report['cases'][identity] = case
+    return report
+
+
 def scaling_plan(definitions):
     """One candidate revision, medium logical input and its matched fourfold slice."""
     base = definitions['profiles']['medium']
+    budgets = {row['id']: row for row in certification_plan(definitions)}
     return [{'case': case, 'small': dict(base),
              'large': scaling.dimensions(case['id'], base),
-             'revisions': ['candidate'], 'observations': case['repetitions']['extended'],
+             'revisions': ['candidate'], 'observations': max(
+                 case['repetitions']['extended'], budgets[case['id']]['observations']),
              'evidence_kind': scaling.evidence_kind(case['id']),
              'bounded_control': scaling.evidence_kind(case['id']) == 'bounded_control',
              'reason': (case['id'] + ' consumes fixed-size evidence; ordinary latency/resource gates apply.'
@@ -287,9 +322,7 @@ def _run(images, commits, host_root, suite, output, pool, state):
         pool.clear()
         if measured_ns > (1200 if suite == 'pr' else 3600) * 1_000_000_000:
             raise RuntimeError('Measurement job budget exceeded; preparation/build recorded separately')
-    budgets = [{'id': case['id'], 'mode': 'extended_retrieval' if case['repetitions']['extended'] == 21
-                else 'extended_bulk', 'budget_ns': case['budget_ns'], 'budget_stat': case['budget_stat']}
-               for case in definitions['cases']]
+    budgets = certification_plan(definitions)
     if suite != 'pr':
         for planned in scaling_plan(definitions):
             case = planned['case']
@@ -327,11 +360,14 @@ def _run(images, commits, host_root, suite, output, pool, state):
                 raise RuntimeError('Extended measurement job budget exceeded during matched scaling')
     scaling_result = gates.compare_scaling([pair for pair in scaling_reports
         if not pair['bounded_control']]) if suite != 'pr' else None
-    certification = gates.certify(reports['candidate'], budgets) if suite != 'pr' else None
+    absolute_report = certification_report(reports['candidate'], scaling_reports, definitions) \
+        if suite != 'pr' else None
+    certification = gates.certify(absolute_report, budgets) if absolute_report else None
     result = {'status': 'FAIL' if any(row['status'] == 'FAIL' for row in comparisons)
               or (certification and certification['status'] == 'FAIL')
               or (scaling_result and scaling_result['status'] == 'FAIL') else 'PASS',
               'reports': reports, 'comparisons': comparisons, 'certification': certification,
+              'absolute_budget_report': absolute_report,
               'scaling': scaling_result, 'scaling_reports': scaling_reports,
               'measurement_wall_seconds': time.monotonic() - started,
               'timed_operation_seconds': measured_ns / 1_000_000_000,

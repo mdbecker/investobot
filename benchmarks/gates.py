@@ -224,6 +224,10 @@ def certify(report, cases):
     for definition in cases:
         identity = definition["id"]
         case = report.get("cases", {}).get(identity)
+        if ("dimensions" in definition and (case or {}).get(
+                "fixture_dimensions", report.get("fixture", {}).get("dimensions"))
+                != definition["dimensions"]):
+            issues.append({"code": "ABSOLUTE_WORKLOAD_MISMATCH", "case_id": identity})
         mode = definition.get("mode") or _case_mode({"suite": "extended", "cases": [definition]}, identity)
         failures = _validate_case(case, mode)
         if failures:

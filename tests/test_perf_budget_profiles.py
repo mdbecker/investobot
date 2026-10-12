@@ -15,7 +15,9 @@ def test_absolute_plan_preserves_named_sizes_and_import_p95():
     for row in plan:
         expected = definitions['profiles']['stress' if row['id'].startswith('P14.') else 'medium']
         assert row['dimensions'] == expected
-        assert row['observations'] == (21 if row['budget_stat'] == 'p95' else 3)
+        case = next(case for case in definitions['cases'] if case['id'] == row['id'])
+        assert row['observations'] == max(case['repetitions']['extended'],
+                                          21 if row['budget_stat'] == 'p95' else 3)
     apply = next(row for row in plan if row['id'] == 'P02.apply')
     assert apply['budget_stat'] == 'p95' and apply['observations'] == 21
     assert apply['budget_ns'] == 5_000_000_000
