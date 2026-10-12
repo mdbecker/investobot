@@ -81,3 +81,13 @@ output defect or confirmed application slow path.
 The coordinator interrupted the following case (SIGINT, exit 130) to repair
 calibration. Original invalid measurements remain retained. Full PR/extended
 acceptance is still incomplete; passing eight cases does not certify the suite.
+
+`ledger-check-batch-after.json` remeasures that same case with candidate
+`5e7a73dd0f4a8ccdc38c9cf76d7b5f393ddf477c` (image `b1ce13ab10da`) and the
+same reference/base. Calibrate from the fastest warm-up to a 400 ms target;
+the resulting common batch has 19 operations. Seven fresh observations per
+revision pass all paired time/RSS/storage/temp gates and the strict 200 ms
+floor. Candidate normalized median is **20.542842 ms** (base **20.334162 ms**,
+reference **20.262612 ms**). Input/output hashes and financial proofs agree.
+This repairs measurement validity, not application speed; complete suite
+acceptance still requires a fresh full capture.

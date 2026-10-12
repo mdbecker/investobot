@@ -119,8 +119,10 @@ separate measured evidence; no GPU acceleration is claimed here.
 Use one warm-up followed by seven observations per revision in PR mode, with
 rotated interleaved revision order. Extended retrieval uses 21 observations and
 nearest-rank p95; slow bulk operations use three observations with `p95: null`.
-A timed operation or common fixed batch must take at least 200 ms. Normalize
-elapsed time by batch repetitions for logical-operation comparisons and budgets;
+A timed operation or common fixed batch must take at least 200 ms.
+Paired calibration targets 400 ms using the fastest warm-up to leave headroom
+for faster repeated calls; short observed samples still fail the 200 ms floor.
+Normalize elapsed time by batch repetitions for logical-operation comparisons and budgets;
 all three revisions use the same batch count. Each timed mutation starts from
 fresh identical state. Peak RSS comes from a fresh observation process. Fixture
 preparation and Docker startup are outside timing unless explicitly named; CLI

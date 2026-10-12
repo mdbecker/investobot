@@ -1,5 +1,21 @@
 # Performance and fuzz addendum status
 
+Latest progress: the native capture's short-batch blocker is corrected at
+`5e7a73d`, after red `9f967fb` (four intended failures and one control).
+Paired and scaling calibration target 400 ms while preserving the strict 200 ms
+validity floor, equal repetition counts and normalized comparisons. Ninety-five
+focused contracts passed; exact archived image `b1ce13ab10da` passed **1,632 tests
+in 247.25 seconds** and Ruff offline without source mounts.
+
+A fresh native three-revision ledger-check capture now **passes**: seven
+observations per revision, 19 operations per shared batch, candidate median
+**20.5428 ms per logical operation**, and every batch above 200 ms. Raw evidence
+is retained as `performance-evidence/m4-2026-10-12/ledger-check-batch-after.json`.
+The original short observations remain in the failed capture. Implementation
+estimate remains about **90%**; complete 114-case medium capture, extended
+stress/scaling/budgets and human reference review remain the highest priority.
+Partial captures cannot be merged into a claimed full passing acceptance run.
+
 Native acceptance follow-up: red checkpoint `b73e70e` records eight intended
 failures for dimension-specific fixture identity. Green `d607b11` hashes the
 actual recipe and dimensions in every native scaling report, instead of
