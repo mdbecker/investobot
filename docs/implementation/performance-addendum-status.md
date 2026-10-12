@@ -76,8 +76,8 @@ remote Git operation or push was performed.
 
 The user's native M4 scope supersedes the preserved attachment's x86-64 runner
 choice. Red checkpoint `9222bd9` records 39 intended failures and seven existing
-controls for the ARM runtime and fixture-reuse follow-up. Implementation and
-final combined green evidence are pending; these reds are not release results.
+controls for the ARM runtime and fixture-reuse follow-up. Implementation is complete at `55f19e7`; exact
+final combined green evidence follows below; these reds are not release results.
 
 Verified Docker facts are engine `aarch64`, image `arm64`, container `aarch64`.
 No GPU/render device paths are exposed (`/dev/dri`, `/dev/nvidia0`, `/dev/kfd`
@@ -113,3 +113,20 @@ packages still need that audit. Broader fuzz adapters and expressly requested
 live campaigns follow performance acceptance. GPU embedding integration is
 outside this change: the current native ARM image has no exposed GPU devices and
 the fixed retrieval workloads invoke no embedding provider.
+
+### Exact ARM committed-source green
+
+Commit `55f19e7a15f4d13a05a7ec7183a56a33e7f77fa6` was archived and built with
+locked dependencies as native `linux/arm64` image `236f854973c1`. Without source
+bind mounts or networking, `uv run --locked pytest -q -x` passed **1,532 tests
+in 246.15 seconds**, and repository Ruff passed. This preserves all MVP and
+specialist research behavior while exercising all fixed workload templates.
+No host installations, remote Git operations, pushes or live AI campaigns ran.
+
+Fixture reuse and ARM runtime support are complete for this checkpoint. Native
+medium/extended performance acceptance remains outstanding; passing reduced
+functional fixtures does not certify their budgets. The next engineering task
+is scaling accuracy, followed by actual same-M4 reference/base/candidate capture
+and human baseline review. Broader fuzz adapters/campaign acceptance remain later
+work; GPU embedding integration is deferred because no embedding provider is
+currently part of the measured search workloads.
