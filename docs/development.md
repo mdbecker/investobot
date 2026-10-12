@@ -133,7 +133,8 @@ optimization. Existing manual institution/provider validation remains separate.
 Isolated Docker measurement on October 8, 2026, with the unchanged workload and
 Python 3.12.12 / Linux 6.12.5-linuxkit aarch64 / glibc 2.36 runtime. The ledger and
 report were disposable; no private volume, live API or competing full-workload
-job was used. [Raw measurements](benchmark-v2.3.json) retain all byte counts,
+job was used. Raw measurements remain in Git history and the ignored archive
+described in [the wrap-up](implementation/wrap-up-status.md), retaining byte counts,
 timings, environment and SQLite query plans.
 
 | Metric | Schema 3 result | Target |

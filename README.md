@@ -100,9 +100,10 @@ Local evidence is not a remote CI result.
 
 Work stays on `main`, with conventional observed red/green commits and no remote
 Git operations. Historical specifications remain unmodified references; the
-unified PRD governs the MVP; the preserved performance addendum strengthens its
-performance gates. See [project rules](AGENTS.md).
+unified PRD governs financial behavior; the [October 12 wrap-up](docs/PRD-mvp-wrap-up-2026-10-12.md)
+supersedes older performance/campaign requirements. Refactors use existing green
+tests; new behavior and confirmed bugs require red-first tests. See [project rules](AGENTS.md).
 
 The [local agent fuzzing guide](docs/agent-fuzzing.md) documents safe data-only
-campaigns, replay and retained novelty history. Fixed harness tests run offline;
-live campaigns require explicit human invocation after performance acceptance.
+adversarial exploration, replay and actionable reports. Fixed regressions run
+offline in CI; generated exploration requires an explicit human request.

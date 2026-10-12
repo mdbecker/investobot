@@ -5,9 +5,11 @@ containers. Install nothing on the host. Use the locked image and offline comman
 in the [quickstart](../README.md); never mount a private ledger for acceptance.
 Set `INVEST_PROMPTS=/data/prompts`. Ruff requires `--config pyproject.toml`.
 
-New or changed behavior gets public-interface tests first, observed intended
+New behavior and confirmed bugs get public-interface tests first, observed intended
 failures and a test-only conventional commit before implementation. Record a
-green conventional commit after the complete integrated suite passes. No skips,
+green conventional commit after verification passes. Pure refactors use existing
+green behavior tests; do not manufacture red failures or test internal read counts.
+No skips,
 expected failures or artificial internal mocks establish acceptance. Only
 external network boundaries may be faked; databases, transactions, CLI, native
 extensions, Parquet and recovery are real.

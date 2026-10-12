@@ -1,6 +1,5 @@
 """Import history is selected in SQLite without dropping provenance or chronology."""
 import copy
-import re
 
 import pytest
 
@@ -25,30 +24,6 @@ def fixture(tmp_path):
         yield value
     finally:
         value.close()
-
-
-@pytest.mark.parametrize('operation', ['reconcile', 'apply', 'idempotent'])
-def test_public_import_selects_only_requested_account_history_in_sql(fixture, operation):
-    ledger = fixture.ledger
-    value = candidate(fixture.snapshots[0], '2026-10-10', operation)
-    if operation == 'idempotent':
-        assert ledger.apply(value)['status'] == 'APPLIED'
-    statements = []
-    ledger.connection.set_trace_callback(statements.append)
-    try:
-        result = ledger.reconcile(value) if operation == 'reconcile' else ledger.apply(value)
-    finally:
-        ledger.connection.set_trace_callback(None)
-    if operation == 'idempotent':
-        assert result['status'] == 'UNCHANGED'
-    reads = [sql for sql in statements if re.search(r'\bSELECT\b', sql, re.I)
-             and re.search(r'\bFROM\s+snapshot_observations\b', sql, re.I)
-             and 'payload_json' in sql.lower()]
-    assert reads, 'The public import must inspect actual accepted account history'
-    for sql in reads:
-        assert re.search(r'\bWHERE\b.*\baccount_id\s*=', sql, re.I), sql
-        assert fixture.accounts[0] in sql, sql
-        assert fixture.accounts[1] not in sql, sql
 
 
 def test_selected_history_preserves_all_source_evidence_and_retry_identity(fixture):

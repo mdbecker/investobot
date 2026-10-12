@@ -16,6 +16,8 @@
 - Fuzzing is an explicitly requested agent activity with offline disposable
   replay and actionable reports; no quotas, novelty scores, providers or CI
   campaigns. CI may run fixed regressions only.
+- Follow `fuzz/SKILL.md` for explicitly requested adversarial review. It is a
+  development skill source, separate from bundled financial workflow skills.
 - Keep generated evidence outside Git with documented retention. Never run
   untrusted PR code on a personal self-hosted runner. Complete the finite
   acceptance checklist and stop; no speculative framework or performance work.
@@ -146,14 +148,12 @@
 
 ## Active specification and work order
 
-- The additive performance specification is
-  `docs/PRD-performance-ai-fuzz-2026-10-10.md`. Its strict paired performance
-  gates supersede the MVP's observational regression policy. Preserve financial
-  behavior; optimize only measured offenders after an additional red checkpoint.
+- The historical additive specification is
+  `docs/PRD-performance-ai-fuzz-2026-10-10.md`; the October 12 wrap-up controls
+  current measurement and fuzz scope. Preserve financial behavior.
 - Fixed performance measurements use offline disposable Docker fixtures and
-  three separately locked revisions. Archived timings are evidence, never a
-  cross-machine comparator. Native ARM64 M4 release validation and human reference
-  review remain explicit gates; test-profile measurements cannot certify them.
+  candidate and one reviewed reference. Archived timings are evidence, never a
+  cross-machine comparator. Check native engine/image ARM64 and same-runner facts.
 - Exploratory AI campaigns require explicit human invocation after performance
   acceptance. CI may test the fixed harness and promoted regressions, but must
   never generate campaigns, launch providers or publish issues automatically.
@@ -164,9 +164,8 @@
 - This checkout starts at `5120897e9e5a314ad50fb242ad1496d976549a92`, after fund
   diligence schema 10, rather than the attachment's earlier review baseline.
   Preserve existing fund diligence and all specialist research behavior as well.
-- Follow WP00's global red gate: specify every new/changed behavior across all
-  packages, observe intended failures, record evidence and commit test-only red
-  before any production, schema, dependency or skill implementation changes.
+- New behavior and confirmed bugs require observed test-only red checkpoints
+  before implementation. Pure refactors use existing green behavioral tests.
   Minimum B01–B66 is not the complete specification. Do not silently replace
   success workflows with blocked-only examples or leave fixture facts unused.
 - Keep `main`. Conventional commits only. No remotes, fetches or pushes.
@@ -298,19 +297,19 @@
   UNVERIFIED until human validation. Synthetic acceptance ships development
   preview only. No secrets are needed for offline acceptance.
 - Benchmark only reproducible disposable synthetic ledgers/corpora. Record
-  hashes/hardware/timings/sizes; never invent measurements. The additive PRD's
-  measurement limits exclude fixture preparation/builds. Recovery and synthetic
+  hashes/hardware/timings/sizes; never invent measurements. Exclude fixture
+  preparation/builds from measured domain operations. Recovery and synthetic
   workflow demonstrations remain required gates.
 - Document actual behavior clearly and concisely, including setup/manual gates
   and outstanding scope. See `docs/implementation/unified-mvp-status.md` for
-  current evidence; do not describe unimplemented requirements as complete.
+  context and `docs/implementation/wrap-up-status.md` for current acceptance;
+  do not describe unimplemented requirements as complete.
 
 ## Performance addendum harness lessons
 
 - Fuzz scenarios are allowlisted JSON data, never executable instructions.
-  Use fresh offline Docker subprocesses, independent exact oracles and retained
-  hash-only novelty history. Explicitly acknowledge absent history; never reset
-  it to manufacture novelty. Fixed campaign fixtures do not authorize live AI.
+  Use fresh offline Docker subprocesses, independent exact oracles and replayable
+  seeds/minimized examples. Fixed fixtures do not authorize agent exploration.
 - Resource failures remain environmental/unresolved. Preserve original failure
   reports and actual exit codes; one reproduction cannot establish a confirmed
   bug or regression. Report missing oracle evidence as a failure.

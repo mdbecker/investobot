@@ -8,9 +8,18 @@ remaining scope. Original PRDs remain historical specifications.
   operations comprising the eight retained workflows passed their existing
   independent financial oracles in the reference image. Application source is
   unchanged since that reference; the same recipe/harness will measure both.
-- B: simplify the runner and safely isolated CI; archive generated evidence.
-- C: simplify explicitly requested adversarial replay and bug reporting.
-- D: focused safety review and concise documentation.
+- B: simplified the runner to eight workflows and isolated hosted ARM CI;
+  archived generated evidence. Retired cases/controllers/scaling/templates and
+  duplicate unified runner are removed. Focused checks: 33 tests and Ruff pass.
+- C: simplified manual adversarial skill and isolated replay/minimization/reports;
+  removed quotas, novelty/history and benchmark promotion machinery. Eleven
+  fixed replay/privacy/rejection/resource tests and Ruff pass. No AI campaign ran.
+- D: reviewed import scoped reads/call-local indexes and retained them: no stale
+  cache or ambiguous identity behavior found. Removed internal read-count checks,
+  preserving financial outcomes: 24 focused import/lifecycle tests and Ruff pass.
+  The referenced `code_review(8).md` / `code_smell_review(9).md` were not present
+  in the repository or supplied attachments; review followed the addendum's
+  stated intent/architecture/implementation/polish and smell categories.
 - E: final Docker correctness, lint, skill, synthetic demo and eight-case pair.
 
 ## Historical rebaseline evidence

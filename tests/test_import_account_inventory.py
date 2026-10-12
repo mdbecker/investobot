@@ -1,6 +1,5 @@
 """Account-local inventory reads preserve exact rows and global lot ownership."""
 import copy
-import re
 
 import pytest
 
@@ -54,32 +53,6 @@ def test_account_filter_rejects_unsupported_storage_tables(fixture, table):
         db.rows(fixture.ledger.connection, table, account_id=fixture.accounts[0])
 
 
-@pytest.mark.parametrize('operation', ['reconcile', 'apply'])
-@pytest.mark.parametrize('complete', [True, False], ids=['complete', 'partial'])
-def test_import_inventory_queries_filter_before_decoding(fixture, operation, complete):
-    ledger = fixture.ledger
-    value = candidate(fixture.snapshots[0], operation + str(complete), complete=complete)
-    statements = []
-    ledger.connection.set_trace_callback(statements.append)
-    try:
-        result = getattr(ledger, operation)(value)
-    finally:
-        ledger.connection.set_trace_callback(None)
-    if operation == 'apply':
-        assert result['status'] == 'APPLIED'
-    reads = [sql for sql in statements if re.search(r'\bSELECT\b', sql, re.I)
-             and re.search(r'\bFROM\s+(position_balances|tax_lots)\b', sql, re.I)]
-    assert reads
-    for sql in reads:
-        assert re.search(r'\bWHERE\b', sql, re.I), sql
-        if re.search(r'\baccount_id\s*=', sql, re.I):
-            assert fixture.accounts[0] in sql, sql
-        else:
-            # Global identity lookups are allowed only for one indexed lot ID.
-            assert re.search(r'\bFROM\s+tax_lots\b', sql, re.I), sql
-            assert re.search(r'\bWHERE\s+id\s*=', sql, re.I), sql
-
-
 def test_cross_account_lot_identity_collision_is_rejected_atomically(fixture):
     ledger = fixture.ledger
     tables = ('accounts', 'positions', 'lots', 'cash_balances', 'snapshots', 'activities')
@@ -92,18 +65,11 @@ def test_cross_account_lot_identity_collision_is_rejected_atomically(fixture):
     assert {table: ledger.rows(table) for table in tables} == before
 
 
-def test_complete_reimport_refreshes_rows_without_requerying_known_account_lot_ids(fixture):
+def test_complete_reimport_preserves_exact_lot_inventory(fixture):
     ledger = fixture.ledger
     value = candidate(fixture.snapshots[0], 'known-ownership')
     before = {row['id']: row for row in ledger.rows('lots')}
-    statements = []
-    ledger.connection.set_trace_callback(statements.append)
-    try:
-        assert ledger.apply(value)['status'] == 'APPLIED'
-    finally:
-        ledger.connection.set_trace_callback(None)
-    assert not any(re.search(r'\bSELECT\b.*\bFROM\s+tax_lots\s+WHERE\s+id\s*=', sql, re.I)
-                   for sql in statements), 'Known account ownership needs no repeated global lookup'
+    assert ledger.apply(value)['status'] == 'APPLIED'
     after = {row['id']: row for row in ledger.rows('lots')}
     assert set(after) == set(before)
     for lot_id, row in after.items():

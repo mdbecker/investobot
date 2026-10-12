@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
       - name: Build Python 3.12 runtime with locked dependencies
@@ -19,4 +19,4 @@ jobs:
       - name: Run offline behavior and regression tests
         run: docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked pytest
       - name: Check explicit project lint configuration
-        run: docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked ruff check --config pyproject.toml src tests
+        run: docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz

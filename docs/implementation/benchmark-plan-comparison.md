@@ -28,12 +28,13 @@ the original table was `plans`, and the normalized implementation used `plan_run
 The hardware fingerprint matched: ARM64, 16 visible CPUs, 8,216,731,648 kernel
 physical memory bytes, Python 3.12.12 and Linux 6.12.5-linuxkit/glibc 2.36.
 Exact image hashes, driver hashes, complete raw reports, query plans and ratios
-are retained in [benchmark-plan-comparison.json](benchmark-plan-comparison.json).
+remain in Git history and the ignored local archive described in the
+[wrap-up record](wrap-up-status.md). This retired comparison is historical
+evidence, not an active release gate.
 
 This is one sequential paired sample per version. Host scheduling and OS cache
 were not controlled; no cold-cache or fixed throughput claim is made. The
 existing original timed-save wrapper was retained unchanged. A preliminary
 concurrent pair was discarded from gate calculations to avoid paired contention.
-Run again on identical hardware/fixtures when storage or planning changes could
-materially affect these workloads. The separate 100,000-chunk search benchmark
-measures a different requirement and is not covered by this gate.
+The current release measurement is the single eight-workflow suite described in
+[performance](../performance.md). No 100,000-chunk certification is required.

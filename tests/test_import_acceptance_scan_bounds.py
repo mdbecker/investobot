@@ -1,8 +1,7 @@
-"""Acceptance reads lot inventory a bounded number of times without losing facts."""
+"""Complete and partial imports preserve exact financial inventory."""
 
 import copy
 import json
-import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -16,9 +15,8 @@ DIMENSIONS = json.loads((ROOT / 'benchmarks/cases.json').read_text())['profiles'
 
 @pytest.mark.parametrize('positions', [4, 16])
 @pytest.mark.parametrize('complete', [True, False], ids=['full', 'partial'])
-@pytest.mark.parametrize('table', ['tax_lots', 'position_balances', 'securities'])
-def test_acceptance_lot_reads_are_bounded_and_preserve_exact_inventory(
-        tmp_path, positions, complete, table):
+def test_complete_and_partial_imports_preserve_exact_inventory(
+        tmp_path, positions, complete):
     fixture = build(tmp_path, dict(DIMENSIONS, accounts=1, positions=positions,
                                   lots=positions*2, accepted_snapshots=1))
     ledger = fixture.ledger
@@ -34,12 +32,7 @@ def test_acceptance_lot_reads_are_bounded_and_preserve_exact_inventory(
             candidate['positions'] = candidate['positions'][:1]
             candidate['positions'][0]['cost_basis'] = None
             candidate['lots'] = []
-        statements = []
-        ledger.connection.set_trace_callback(statements.append)
-        try:
-            result = ledger.apply(candidate)
-        finally:
-            ledger.connection.set_trace_callback(None)
+        result = ledger.apply(candidate)
         assert result['status'] == 'APPLIED'
         after = ledger.planning_state()
         assert len(after['positions']) == positions
@@ -57,8 +50,5 @@ def test_acceptance_lot_reads_are_bounded_and_preserve_exact_inventory(
                    position['lot_state'] == 'RESOLVED' for position in after['positions'])
         assert after['cash_balances'][0]['amount'] == '10000'
         assert after['activities'] == before['activities'] == []
-        reads = [sql for sql in statements if re.match(r'\s*SELECT\b', sql, re.I)
-                 and re.search(r'\bFROM\s+["`\[]?' + table + r'\b', sql, re.I)]
-        assert len(reads) <= 4, f'Acceptance rereads {table} {len(reads)} times: {reads}'
     finally:
         fixture.close()
