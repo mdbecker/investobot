@@ -78,3 +78,16 @@ def test_public_scaled_run_measures_ninety_six_chunks_and_ten_correct_results():
     proof = row['invariant_results']['top10-exact-eligible-results']
     assert proof['passed'] is True and proof['expected'] == proof['observed']
     assert len(proof['observed']) == 10
+
+
+def test_paired_release_scaling_plan_covers_every_case_with_matched_dimensions():
+    from benchmarks import paired, runner
+    definitions = runner.manifest()
+    assert hasattr(paired, 'scaling_plan'), 'Paired release run lacks automatic matched scaling'
+    plan = paired.scaling_plan(definitions)
+    assert {row['case']['id'] for row in plan} == {row['id'] for row in definitions['cases']}
+    for row in plan:
+        assert row['small'] == definitions['profiles']['medium']
+        expected = importlib.import_module('benchmarks.scaling').dimensions(row['case']['id'], row['small'])
+        assert row['large'] == expected
+        assert row['revisions'] == ['candidate'] and row['observations'] >= 3
