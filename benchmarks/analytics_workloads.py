@@ -556,10 +556,20 @@ def _research(ledger, root, dimensions, operation, *, counts=None, stage=None):
         packages_intact = all(isinstance(json.loads(package), dict) and len(checksum) == 64
                               for checksum, package in rows)
         coverage = len(output['runs']) if verb in {'list', 'history-list'} else after_runs
+        coverage_expected = expected_runs if verb in {'list', 'history-list'} else expected
+        primary = {'news': ('events', 'event_count'), 'earnings': ('metrics', 'metric_count'),
+            'political': ('contributions', 'verified_transactions'),
+            'competitive': ('metrics', 'metric_count'), 'insiders': ('transactions', 'transaction_count'),
+            'fund-diligence': ('holdings', 'holding_count')}
+        field, counter = primary[specialty]
+        if verb in {'validate', 'import'}:
+            coverage_expected, coverage = len(payload[field]), output.get(counter)
+        elif verb == 'show':
+            coverage_expected = sorted(row.get('id', row.get('event_key')) for row in payload[field])
+            coverage = sorted(row.get('id', row.get('event_key')) for row in output.get(field, []))
         return {'strict-specialty-validation': [True, packages_intact],
             'atomic-immutable-run-evidence': [expected, after_runs],
-            'complete-requested-research-coverage': [expected_runs if verb in {'list', 'history-list'} else expected,
-                                                      coverage]}
+            'complete-requested-research-coverage': [coverage_expected, coverage]}
     run.preparation = {'payload': payload, 'runs': runs, 'research_plan': research_plan}
     return run, observed
 

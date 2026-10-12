@@ -17,7 +17,7 @@ def scaling_plan(definitions):
              'revisions': ['candidate'], 'observations': case['repetitions']['extended'],
              'evidence_kind': scaling.evidence_kind(case['id']),
              'bounded_control': scaling.evidence_kind(case['id']) == 'bounded_control',
-             'reason': ('One quote is a fixed-size control; ordinary latency/resource gates apply.'
+             'reason': (case['id'] + ' consumes fixed-size evidence; ordinary latency/resource gates apply.'
                         if scaling.evidence_kind(case['id']) == 'bounded_control' else
                         'Fourfold ' + scaling.evidence_kind(case['id']) + '; native evidence retained.')}
             for case in definitions['cases']]

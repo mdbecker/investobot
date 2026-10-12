@@ -216,7 +216,10 @@ records use `processed_constituents`, excluding unselected vintages.
 Reports distinguish `record_growth`, `context_cardinality` and `bounded_control`.
 Context pairs measure the cost of fixed work in a larger database and still face
 the same growth limit; they do not claim fourfold event/output counts. Quote
-controls remain in the full timing inventory and paired reports with identical
+controls and fund summaries remain in the full timing inventory and paired reports with identical
 dimensions, but do not establish a record-growth ratio. Their ordinary latency,
 resource and absolute-budget gates still apply. No nonlinear exemption is added.
+Fund summaries consume metrics/findings rather than the scaled holdings array.
+Specialty validation/import counters and complete show identities are checked
+against the prepared evidence; missing output rows fail even when fast.
 

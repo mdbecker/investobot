@@ -4,7 +4,7 @@ from copy import deepcopy
 
 def evidence_kind(case_id):
     """Distinguish processed records from surrounding stored context."""
-    if case_id.startswith('P09.quote-'):
+    if case_id.startswith('P09.quote-') or case_id == 'P13.fund-diligence-summary':
         return 'bounded_control'
     context = {
         'P01.cli-startup', 'P01.tools-list', 'P01.tools-describe',
@@ -54,6 +54,8 @@ def _driver(case_id):
 def dimensions(case_id, base_dimensions):
     """Scale only the logical driver; retain financial rules and fixed time span."""
     result = deepcopy(base_dimensions)
+    if evidence_kind(case_id) == 'bounded_control':
+        return result
     family = case_id.split('.', 1)[0]
     if family in {'P02', 'P03', 'P06', 'P07', 'P15', 'P01'}:
         fields = ('accounts', 'positions', 'lots', 'accepted_snapshots')

@@ -280,3 +280,6 @@
   schema limits, retaining insider correction links, exact fund weight coverage,
   and comparable metric identities. Keep scale-one fixtures byte-equivalent in
   content for historical revision comparisons.
+- Specialty output coverage checks actual returned counters and row identities,
+  not just stored run totals. Fund summaries do not read holdings; keep them
+  fixed-size controls rather than claiming holdings-growth coverage.
