@@ -210,6 +210,14 @@ steps; no runner or host packages were installed by this implementation. Hosted
 ARM runners on another machine do not establish performance on your M4.
 # Scaling evidence
 
+Absolute certification uses the PRD's medium workloads (1,000 positions and
+500,000 historical rows), separately from extended stress comparisons.
+P14 uses the specified 100,000-chunk workload. The release runner reuses native
+medium scaling observations and stress vector observations, retaining the
+assembled evidence as `absolute_budget_report`. Import acceptance requires
+21 observations for its five-second p95 budget. Other maximum budgets retain
+all existing observations; workload size, revision and runner must match.
+
 Matched history reads and metrics grow actual adjusted-price observations
 (`provider_history_observations`, default 5), rather than fund or constituent
 counts. Specialty package boundaries grow distinct native evidence arrays with

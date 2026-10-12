@@ -1,5 +1,28 @@
 # Performance and fuzz addendum status
 
+Latest priority: finish native M4 medium/extended acceptance. A certification
+audit found that stress results were incorrectly being compared with named
+medium absolute budgets, and import acceptance lacked p95 sampling. Red
+checkpoint `54ff7f1` records eight intended failures; green `bb345f8` separates
+absolute workload contracts, reuses medium scaling/100k-vector evidence and
+requires 21 import observations. All 78 focused contracts pass in Docker.
+Exact committed-source image `e50df4fe811a` passed **1,619 tests in 245.65
+seconds** and Ruff offline, without source bind mounts. Implementation remains about
+**90%**; no full native acceptance or reference approval is claimed.
+
+The corrected candidate's 1,000-position import budget now passes: **1.7724 s
+p95 across 21 fresh constrained native ARM Docker observations** (median
+1.7176 s, maximum 1.7842 s). Identical input/output hashes and all native
+financial invariants were verified. Raw evidence is retained in
+`docs/performance-evidence/m4-2026-10-12/import-acceptance-p95.json`.
+This single-workload result does not certify complete paired/scaling coverage.
+
+After performance acceptance, the next engineering priority is executable fuzz
+slow-path investigation: operation timings, matched 1x/4x saved scenarios and
+repeated confirmation/minimization. Current fixed harness tests and numerical
+triage helpers do not establish that workflow. Live AI campaigns still require
+explicit human invocation after performance acceptance.
+
 The original additive specification is preserved in
 [`PRD-performance-ai-fuzz-2026-10-10.md`](../PRD-performance-ai-fuzz-2026-10-10.md).
 It preserves the unified MVP and strengthens its performance policy.

@@ -1,0 +1,1365 @@
+{
+  "status": "PASS",
+  "report": {
+    "commit": "bb345f857edd7762047a18de6833077a98e7462f",
+    "image_id": "sha256:e50df4fe811a35808e5e169e40aca390ce48bbe4d172e69634da0f57eab973ab",
+    "runner": {
+      "docker": true,
+      "machine": "aarch64",
+      "engine_machine": "aarch64",
+      "hardware": "docker-desktop",
+      "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+      "cpus": 2,
+      "memory_bytes": 4294967296,
+      "network": "none",
+      "documented_laptop_equivalent": true,
+      "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+    },
+    "fixture": {
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      }
+    },
+    "cases": {
+      "P02.apply": {
+        "status": "PASS",
+        "samples": [
+          {
+            "elapsed_ns": 1679851751,
+            "batch_repetitions": 1,
+            "preparation_ns": 171682292,
+            "reset_ns": 21989208,
+            "peak_rss_bytes": 172707840,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 67102084
+          },
+          {
+            "elapsed_ns": 1689656709,
+            "batch_repetitions": 1,
+            "preparation_ns": 175626749,
+            "reset_ns": 22211541,
+            "peak_rss_bytes": 172638208,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 70642416
+          },
+          {
+            "elapsed_ns": 1784248459,
+            "batch_repetitions": 1,
+            "preparation_ns": 171568750,
+            "reset_ns": 22494541,
+            "peak_rss_bytes": 172474368,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 66418500
+          },
+          {
+            "elapsed_ns": 1686983709,
+            "batch_repetitions": 1,
+            "preparation_ns": 177870792,
+            "reset_ns": 23911917,
+            "peak_rss_bytes": 172793856,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 70339625
+          },
+          {
+            "elapsed_ns": 1699867709,
+            "batch_repetitions": 1,
+            "preparation_ns": 176033541,
+            "reset_ns": 23062084,
+            "peak_rss_bytes": 172650496,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 69700541
+          },
+          {
+            "elapsed_ns": 1745144459,
+            "batch_repetitions": 1,
+            "preparation_ns": 180267042,
+            "reset_ns": 22163708,
+            "peak_rss_bytes": 172630016,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 70856792
+          },
+          {
+            "elapsed_ns": 1772366293,
+            "batch_repetitions": 1,
+            "preparation_ns": 180494333,
+            "reset_ns": 22081041,
+            "peak_rss_bytes": 172527616,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 72764083
+          },
+          {
+            "elapsed_ns": 1716121959,
+            "batch_repetitions": 1,
+            "preparation_ns": 174008791,
+            "reset_ns": 22046167,
+            "peak_rss_bytes": 172597248,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 67304291
+          },
+          {
+            "elapsed_ns": 1711644917,
+            "batch_repetitions": 1,
+            "preparation_ns": 181426792,
+            "reset_ns": 22331126,
+            "peak_rss_bytes": 172699648,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 74661959
+          },
+          {
+            "elapsed_ns": 1703808792,
+            "batch_repetitions": 1,
+            "preparation_ns": 179948168,
+            "reset_ns": 23036625,
+            "peak_rss_bytes": 172695552,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 72907709
+          },
+          {
+            "elapsed_ns": 1762430584,
+            "batch_repetitions": 1,
+            "preparation_ns": 176132417,
+            "reset_ns": 22433583,
+            "peak_rss_bytes": 172670976,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 68970625
+          },
+          {
+            "elapsed_ns": 1705497293,
+            "batch_repetitions": 1,
+            "preparation_ns": 179511542,
+            "reset_ns": 22312500,
+            "peak_rss_bytes": 172539904,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 71420750
+          },
+          {
+            "elapsed_ns": 1747785417,
+            "batch_repetitions": 1,
+            "preparation_ns": 178690000,
+            "reset_ns": 21921625,
+            "peak_rss_bytes": 172544000,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 71715333
+          },
+          {
+            "elapsed_ns": 1733055917,
+            "batch_repetitions": 1,
+            "preparation_ns": 171503500,
+            "reset_ns": 22469417,
+            "peak_rss_bytes": 172642304,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 64665583
+          },
+          {
+            "elapsed_ns": 1757453417,
+            "batch_repetitions": 1,
+            "preparation_ns": 175748291,
+            "reset_ns": 22051375,
+            "peak_rss_bytes": 172650496,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 69376250
+          },
+          {
+            "elapsed_ns": 1717629251,
+            "batch_repetitions": 1,
+            "preparation_ns": 176251334,
+            "reset_ns": 22150833,
+            "peak_rss_bytes": 172597248,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 69115667
+          },
+          {
+            "elapsed_ns": 1743051668,
+            "batch_repetitions": 1,
+            "preparation_ns": 178637375,
+            "reset_ns": 23019042,
+            "peak_rss_bytes": 172609536,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 70396083
+          },
+          {
+            "elapsed_ns": 1713183042,
+            "batch_repetitions": 1,
+            "preparation_ns": 176001917,
+            "reset_ns": 23561875,
+            "peak_rss_bytes": 172617728,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 67803667
+          },
+          {
+            "elapsed_ns": 1766363126,
+            "batch_repetitions": 1,
+            "preparation_ns": 175518875,
+            "reset_ns": 21775333,
+            "peak_rss_bytes": 172572672,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 68261625
+          },
+          {
+            "elapsed_ns": 1747890376,
+            "batch_repetitions": 1,
+            "preparation_ns": 175952501,
+            "reset_ns": 22500334,
+            "peak_rss_bytes": 172527616,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 68036584
+          },
+          {
+            "elapsed_ns": 1705707126,
+            "batch_repetitions": 1,
+            "preparation_ns": 180335250,
+            "reset_ns": 22118458,
+            "peak_rss_bytes": 172568576,
+            "persisted_bytes": 43285453,
+            "temp_bytes": 19789768,
+            "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+            "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+            "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+            "counts": {
+              "accounts": 10,
+              "positions": 1000,
+              "lots": 2000,
+              "accepted_snapshots": 200
+            },
+            "invariant_results": {
+              "source-precision-and-provenance-preserved": {
+                "passed": true,
+                "expected": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                },
+                "observed": {
+                  "environments": [
+                    "SYNTHETIC"
+                  ],
+                  "price_precision": [
+                    0
+                  ]
+                }
+              },
+              "positions-lots-cash-match-fixture": {
+                "passed": true,
+                "expected": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                },
+                "observed": {
+                  "positions": 1000,
+                  "lots": 2000,
+                  "cash": "100000"
+                }
+              }
+            },
+            "exit_code": 0,
+            "fresh_process": true,
+            "fixture_reused": true,
+            "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+            "fixture_copy_ns": 72872917
+          }
+        ]
+      }
+    }
+  },
+  "scope": "Single candidate import budget; not full paired release acceptance",
+  "warmup": {
+    "elapsed_ns": 1720526626,
+    "batch_repetitions": 1,
+    "preparation_ns": 176382625,
+    "reset_ns": 23340292,
+    "peak_rss_bytes": 172580864,
+    "persisted_bytes": 43285453,
+    "temp_bytes": 19789768,
+    "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+    "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+    "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+    "counts": {
+      "accounts": 10,
+      "positions": 1000,
+      "lots": 2000,
+      "accepted_snapshots": 200
+    },
+    "invariant_results": {
+      "source-precision-and-provenance-preserved": {
+        "passed": true,
+        "expected": {
+          "environments": [
+            "SYNTHETIC"
+          ],
+          "price_precision": [
+            0
+          ]
+        },
+        "observed": {
+          "environments": [
+            "SYNTHETIC"
+          ],
+          "price_precision": [
+            0
+          ]
+        }
+      },
+      "positions-lots-cash-match-fixture": {
+        "passed": true,
+        "expected": {
+          "positions": 1000,
+          "lots": 2000,
+          "cash": "100000"
+        },
+        "observed": {
+          "positions": 1000,
+          "lots": 2000,
+          "cash": "100000"
+        }
+      }
+    },
+    "exit_code": 0,
+    "fresh_process": true,
+    "fixture_reused": true,
+    "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+    "fixture_copy_ns": 70237750
+  },
+  "fixture_templates": [
+    {
+      "revision": "candidate",
+      "commit": "bb345f857edd7762047a18de6833077a98e7462f",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "00ff0d1e4e586e356dc68b02536d5d1f91b3c963113aea5f064802862db99d14",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "5af99cf39f73a2293011492979e92fef9566e8e5b5da312d1a3a8be3f97d7652",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "e6bb6f544af20d2bc87412b4e26f5d431c7665b78c0d39ccee6bdbf6f94f6a9d",
+          "bytes": 493
+        },
+        "financial.db": {
+          "sha256": "e3afb7c7f1adc590fc2325b3231c204efa97bc0628d849f99b61a763c4ea4dec",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "aa51b46b60d55e8e36e4a719b280659a9a11addd83e430cf3583c2b9a2a22600",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "fa126f5649226b79a52ab44ec7f3b672e9cf8a4361536e2cee218547e7a586a4",
+      "preparation_ns": 1194792167
+    }
+  ],
+  "certification": {
+    "status": "PASS",
+    "issues": []
+  },
+  "statistics": {
+    "median_ns": 1717629251,
+    "max_ns": 1784248459,
+    "p95_ns": 1772366293,
+    "observations": 21
+  }
+}

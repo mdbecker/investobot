@@ -2,6 +2,11 @@
 
 ## Additional verified lifecycle lessons
 
+- Absolute performance budgets use their specified workload sizes, separately
+  from stress regression comparisons. Reuse verified medium scaling observations
+  and 100k-chunk vector observations; require 21 samples for import p95. Reject
+  missing or mismatched revision, runner and workload evidence.
+
 - Dense conventional cash flows with one chronological sign change use a
   uniquely bracketed XIRR root without dropping records. Long nonconventional
   histories retain a typed complexity review. Statistical tolerances never

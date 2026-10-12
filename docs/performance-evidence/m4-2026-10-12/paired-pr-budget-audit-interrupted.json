@@ -1,0 +1,285 @@
+{
+  "status": "FAIL",
+  "reports": {
+    "base": {
+      "commit": "ed0796cf345128ffbe0fc36a7fd9e2cfd237c42b",
+      "fixture": {
+        "recipe_version": "performance-v1",
+        "seed": 271828,
+        "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+        "dimensions": {
+          "accounts": 10,
+          "positions": 1000,
+          "lots": 2000,
+          "accepted_snapshots": 200,
+          "saved_plans": 20,
+          "history_years": 10,
+          "funds": 20,
+          "constituents_per_fund": 1000,
+          "nested_levels": 3,
+          "fund_vintages": 1,
+          "parquet_observations": 500000,
+          "research_chunks": 10000,
+          "vector_dimensions": 384,
+          "backup_fixture_bytes": 209715200
+        }
+      },
+      "runner": {
+        "docker": true,
+        "machine": "aarch64",
+        "engine_machine": "aarch64",
+        "hardware": "docker-desktop",
+        "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+        "cpus": 2,
+        "memory_bytes": 4294967296,
+        "network": "none",
+        "documented_laptop_equivalent": true,
+        "embedding_workload": "prepared synthetic vectors; CPU retrieval",
+        "cache": "warm process; OS cache unknown"
+      },
+      "cases": {}
+    },
+    "reference": {
+      "commit": "7cbf2bed13a0447865403e986662119571217bc6",
+      "fixture": {
+        "recipe_version": "performance-v1",
+        "seed": 271828,
+        "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+        "dimensions": {
+          "accounts": 10,
+          "positions": 1000,
+          "lots": 2000,
+          "accepted_snapshots": 200,
+          "saved_plans": 20,
+          "history_years": 10,
+          "funds": 20,
+          "constituents_per_fund": 1000,
+          "nested_levels": 3,
+          "fund_vintages": 1,
+          "parquet_observations": 500000,
+          "research_chunks": 10000,
+          "vector_dimensions": 384,
+          "backup_fixture_bytes": 209715200
+        }
+      },
+      "runner": {
+        "docker": true,
+        "machine": "aarch64",
+        "engine_machine": "aarch64",
+        "hardware": "docker-desktop",
+        "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+        "cpus": 2,
+        "memory_bytes": 4294967296,
+        "network": "none",
+        "documented_laptop_equivalent": true,
+        "embedding_workload": "prepared synthetic vectors; CPU retrieval",
+        "cache": "warm process; OS cache unknown"
+      },
+      "cases": {}
+    },
+    "candidate": {
+      "commit": "6034f66cf5feb8085ca4ca41b755c3eea16385cd",
+      "fixture": {
+        "recipe_version": "performance-v1",
+        "seed": 271828,
+        "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+        "dimensions": {
+          "accounts": 10,
+          "positions": 1000,
+          "lots": 2000,
+          "accepted_snapshots": 200,
+          "saved_plans": 20,
+          "history_years": 10,
+          "funds": 20,
+          "constituents_per_fund": 1000,
+          "nested_levels": 3,
+          "fund_vintages": 1,
+          "parquet_observations": 500000,
+          "research_chunks": 10000,
+          "vector_dimensions": 384,
+          "backup_fixture_bytes": 209715200
+        }
+      },
+      "runner": {
+        "docker": true,
+        "machine": "aarch64",
+        "engine_machine": "aarch64",
+        "hardware": "docker-desktop",
+        "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+        "cpus": 2,
+        "memory_bytes": 4294967296,
+        "network": "none",
+        "documented_laptop_equivalent": true,
+        "embedding_workload": "prepared synthetic vectors; CPU retrieval",
+        "cache": "warm process; OS cache unknown"
+      },
+      "cases": {}
+    }
+  },
+  "comparisons": [],
+  "scaling_reports": [],
+  "measurement_wall_seconds": 7.920025382190943e-07,
+  "timed_operation_seconds": 0.0,
+  "fixture_preparation_and_reset_seconds": 0.0,
+  "fixture_templates": [
+    {
+      "revision": "reference",
+      "commit": "7cbf2bed13a0447865403e986662119571217bc6",
+      "schema_version": 1,
+      "case": "P01.cli-startup",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "e7ce97d31c8c30211c4a9856f7d5de06a105001bdc32544e1020b66e5883f4f4",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "6198672c28555602d3358c8d3c31d5a0686b7ff848cdd582dc58ab4908b31cdb",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "f6f1c0846ffc2dec966126f9d3a747d7ef47da98838c3c88cd3f259cf15129b8",
+          "bytes": 499
+        },
+        "financial.db": {
+          "sha256": "8c511b0b089011ff8a471db286210e6edde3d72bd785d1176718a26466ef0808",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "1e375646b76a49fb31c328d1dff08fb848d131d785b532c8a9ae10a7fc91b0e2",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "7100abe2aad1b3e7426596ebecb554e124766898bb90cf2e0c373d559f52d0bf",
+      "preparation_ns": 1152601333
+    },
+    {
+      "revision": "base",
+      "commit": "ed0796cf345128ffbe0fc36a7fd9e2cfd237c42b",
+      "schema_version": 1,
+      "case": "P01.cli-startup",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "e7ce97d31c8c30211c4a9856f7d5de06a105001bdc32544e1020b66e5883f4f4",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "76364cc58abf6a4f2dc96ade1f41eabf3ef5d0634fb294af91fc2be3bbd717c1",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "f6f1c0846ffc2dec966126f9d3a747d7ef47da98838c3c88cd3f259cf15129b8",
+          "bytes": 499
+        },
+        "financial.db": {
+          "sha256": "3910bde1c423a792e2303d1c2508bd2622f812d1bfa3f672ed7548ef07e1b9cb",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "08965c1573e521e01fcd07f5472ce15daaa2571f8052028560afa7f3647f99e1",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "5be0038ca22bb15f82831fc5307320ffb220687214de7e7f45b43d385d0878ea",
+      "preparation_ns": 1150253417
+    },
+    {
+      "revision": "candidate",
+      "commit": "6034f66cf5feb8085ca4ca41b755c3eea16385cd",
+      "schema_version": 1,
+      "case": "P01.cli-startup",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "e7ce97d31c8c30211c4a9856f7d5de06a105001bdc32544e1020b66e5883f4f4",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "aa4271fcc654982f3cc6e17b4da305e9eea9b002b037ef72e672bc0585df95d6",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "f6f1c0846ffc2dec966126f9d3a747d7ef47da98838c3c88cd3f259cf15129b8",
+          "bytes": 499
+        },
+        "financial.db": {
+          "sha256": "39b219847d9c794260370cf3b1f1b33c0d8ab2713fbdc1048c30b6619d4b7477",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "6f50cf44c3842d66fe33818a3a0beb3f503dae463bc210052099928224e6ca6e",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "14ad10fb959c05556678e4acc0895152e456a1808df0c3b146428f68fba0eafc",
+      "preparation_ns": 1165657417
+    }
+  ],
+  "fixture_builds": 0,
+  "reference_review_status": "PENDING_HUMAN_REVIEW",
+  "failure": {
+    "kind": "KeyboardInterrupt",
+    "message": ""
+  }
+}

@@ -40,3 +40,28 @@ imports below the 5-second target; they do not establish a 21-observation p95 or
 complete same-runner reference/base/candidate acceptance. Full medium/extended
 captures, matched scaling, budget certification and human reference review remain
 the next priority. Preserve these original reports alongside later captures.
+
+## Named-size budget verification
+
+`import-acceptance-p95.json` records candidate `bb345f857edd7762047a18de6833077a98e7462f`
+in native image `e50df4fe811a`: one warm-up and 21 fresh Docker workers, each
+using the same checksummed medium template. Median **1.717629251 s**, p95
+**1.772366293 s**, maximum **1.784248459 s**. The five-second import p95 budget
+passes. Inputs, outputs, counts and native financial invariants agree across
+all observations. This certifies only that candidate workload's absolute budget.
+
+Reproduce the workload offline in the constrained image with:
+
+```sh
+python scripts/perf.py run --profile medium --case P02.apply --observations 21 --batch-repetitions 1 --output /results/import.json
+```
+
+Use the documented two-CPU/four-GiB limits and single numerical threads.
+Full `paired --suite extended` additionally certifies the named-size budgets from medium scaling
+and 100k-vector observations, separately from stress comparisons.
+
+`paired-pr-budget-audit-interrupted.json` preserves another deliberate SIGINT
+(exit 130) during startup measurements at `6034f66`, before any full case
+completed. It was stopped to apply the certification audit's correction;
+this is not a confirmed application bug. No completed-case acceptance is
+claimed from that run.
