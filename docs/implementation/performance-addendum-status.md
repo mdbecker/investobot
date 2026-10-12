@@ -48,12 +48,9 @@ manual gates listed in the unified MVP status; this addendum does not bypass the
 - Final combined verification follows this checkpoint. This remains development
   evidence, not native release certification.
 
-Remaining engineering review: deterministic benchmark fixtures are currently
-rebuilt outside the measured interval in each fresh worker, rather than prepared
-once as reusable templates. Confirm preparation cost and complete template reuse
-before asserting the PRD's fixture-reuse and total-job acceptance requirements.
-Review actual scaling drivers against timed work (especially bounded provider and
-specialty inputs), then retain native paired/extended reports. The current fuzz
+Fixture reuse and the provider/specialty scaling follow-ups are recorded below.
+Retain native paired/extended reports before asserting performance acceptance.
+The current fuzz
 operation adapters cover the fixed campaign; additional adapters are needed for
 full P01–P15 exploratory workflow coverage. Five fresh human-invoked campaigns,
 coverage/novelty review, native budgets and baseline approval remain unverified.
@@ -67,7 +64,7 @@ passed. This includes all existing MVP tests, 114 fixed workload boundaries,
 paired scaling-plan contracts and 40 fixed fuzz contracts. These ARM64 diagnostic
 results certify functional behavior for that tree, not paired native performance budgets.
 
-Estimated implementation progress: approximately **85%**, a scope estimate rather
+Earlier implementation estimate: approximately **85%**, a scope estimate rather
 than a measured acceptance score. Remaining engineering and human gates above
 prevent describing this PRD as complete. No live AI campaign, host installation,
 remote Git operation or push was performed.
@@ -130,3 +127,38 @@ is scaling accuracy, followed by actual same-M4 reference/base/candidate capture
 and human baseline review. Broader fuzz adapters/campaign acceptance remain later
 work; GPU embedding integration is deferred because no embedding provider is
 currently part of the measured search workloads.
+
+### Scaling accuracy follow-up
+
+Red checkpoints `44740d2`, `36ca9b6` and `b9f8acd` recorded 43, 19 and two
+intended failures respectively. Green checkpoints `4ba9fca`, `0efa11e` and
+`0c365ea` correct history/evidence growth, native output coverage and replacement
+candidate counts. Seventy focused tests and repository lint passed in Docker.
+
+- Provider history scales actual adjusted-price rows; replacement counts exclude
+  the subject fund. Selected look-through counts exclude unused vintages.
+- Six native specialties scale distinct fictional evidence within legal bounds,
+  preserving exact fund coverage and insider correction/duplicate relationships.
+  Validation/import counters and complete show identities independently check
+  returned coverage, including rejection of missing or incorrect results.
+- Reports distinguish processed record growth, larger database context and
+  fixed-size controls. Single quotes and fund summaries retain ordinary
+  latency/resource/budget checks; their unchanged inputs cannot establish a
+  fourfold record-growth ratio. Context pairs retain the existing growth limit.
+
+Estimated implementation progress is now approximately **88%**. This is a scope
+estimate, not a percentage of performance gates passed. Native M4 medium and
+extended reference/base/candidate measurements are the next most important
+unmet requirement: capture actual reports, resolve measured failures, and obtain
+human reference review. Broader fuzz adapters and five explicitly invoked fresh
+campaigns follow performance acceptance. No live campaign or remote CI result is
+claimed, and the provisional real-data/manual gates remain unchanged.
+
+Exact committed-source verification: `0c365eaaf8c0a36a710ab5632ea2eb196686db3a`
+was archived and built with locked dependencies into native ARM64 image
+`72cac66706d9`. Without source mounts or networking, the full suite passed
+**1,596 tests in 245.45 seconds**; repository Ruff passed. Public scaled runner
+smokes also passed with 20 history observations and 40 insider evidence rows,
+reusing closed templates in fresh workers. These remain functional diagnostics,
+not medium/extended budget certification. All work stays on `main`; no host
+installations, remote Git operations, pushes or live AI campaigns occurred.
