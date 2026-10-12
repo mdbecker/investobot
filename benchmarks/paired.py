@@ -5,7 +5,16 @@ import json
 import socket
 import time
 
-from benchmarks import gates, runner
+from benchmarks import gates, runner, scaling
+
+
+def scaling_plan(definitions):
+    """One candidate revision, medium logical input and its matched fourfold slice."""
+    base = definitions['profiles']['medium']
+    return [{'case': case, 'small': dict(base),
+             'large': scaling.dimensions(case['id'], base),
+             'revisions': ['candidate'], 'observations': case['repetitions']['extended']}
+            for case in definitions['cases']]
 
 # Rebaseline requires a reviewed source change, never an approval field in JSON.
 REFERENCE_COMMIT = '7cbf2bed13a0447865403e986662119571217bc6'
@@ -156,10 +165,43 @@ def run(images, commits, host_root, suite='pr', output=None):
     budgets = [{'id': case['id'], 'mode': 'extended_retrieval' if case['repetitions']['extended'] == 21
                 else 'extended_bulk', 'budget_ns': case['budget_ns'], 'budget_stat': case['budget_stat']}
                for case in definitions['cases']]
+    scaling_reports = []
+    if suite != 'pr':
+        for planned in scaling_plan(definitions):
+            case = planned['case']
+            pair = {'case_id': case['id'], 'expected_complexity': 'linear'}
+            warmups = {}
+            for size in ('small', 'large'):
+                sample = observation(images['candidate'], commits['candidate'], host_root,
+                                     case, planned[size], warmup=True)
+                warmups[size] = {case['id']: sample['elapsed_ns']}
+                measured_ns += sample['elapsed_ns']
+                prepared_ns += sample['preparation_ns'] + sample['reset_ns']
+            batch = runner.common_batch_counts(warmups)[case['id']]
+            samples = {'small': [], 'large': []}
+            for index in range(planned['observations']):
+                for size in (('small', 'large') if index % 2 == 0 else ('large', 'small')):
+                    sample = observation(images['candidate'], commits['candidate'], host_root,
+                                         case, planned[size], batch)
+                    samples[size].append(sample)
+                    measured_ns += sample['elapsed_ns']
+                    prepared_ns += sample['preparation_ns'] + sample['reset_ns']
+            for size in ('small', 'large'):
+                raw = {'commit': commits['candidate'], 'runner': runtime,
+                       'fixture': dict(fixture, dimensions=planned[size]),
+                       'cases': {case['id']: {'status': 'PASS', 'samples': samples[size]}}}
+                pair[size] = scaling.project(raw, case['id'])
+                pair[size + '_native'] = raw
+            scaling_reports.append(pair)
+            if measured_ns > 3600 * 1_000_000_000:
+                raise RuntimeError('Extended measurement job budget exceeded during matched scaling')
+    scaling_result = gates.compare_scaling(scaling_reports) if suite != 'pr' else None
     certification = gates.certify(reports['candidate'], budgets) if suite != 'pr' else None
     result = {'status': 'FAIL' if any(row['status'] == 'FAIL' for row in comparisons)
-              or (certification and certification['status'] == 'FAIL') else 'PASS',
+              or (certification and certification['status'] == 'FAIL')
+              or (scaling_result and scaling_result['status'] == 'FAIL') else 'PASS',
               'reports': reports, 'comparisons': comparisons, 'certification': certification,
+              'scaling': scaling_result, 'scaling_reports': scaling_reports,
               'measurement_wall_seconds': time.monotonic() - started,
               'timed_operation_seconds': measured_ns / 1_000_000_000,
               'fixture_preparation_and_reset_seconds': prepared_ns / 1_000_000_000,
