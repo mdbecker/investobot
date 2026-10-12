@@ -162,3 +162,34 @@ smokes also passed with 20 history observations and 40 insider evidence rows,
 reusing closed templates in fresh workers. These remain functional diagnostics,
 not medium/extended budget certification. All work stays on `main`; no host
 installations, remote Git operations, pushes or live AI campaigns occurred.
+
+### First actual M4 measurements and import optimization
+
+The first constrained native three-revision capture completed six cases without
+regressions, then was deliberately interrupted during import acceptance for
+investigation. Atomic checkpoint support (`1a89a4c` red, `9881546` green) retains
+the completed evidence and original failure on interruption/cleanup. Partial
+coverage never certifies acceptance.
+
+An isolated 1,000-position import measured a 29.5569-second median. Profiling
+identified 10,130 repeated inventory reads. After additional red checkpoint
+`a009b47` (ten intended failures, two controls), `2e38c4a` reuses transaction-local
+inventories while preserving canonical identity resolution, protected exhausted
+lots, partial basis and exact accumulation order. Three fresh constrained ARM
+observations measured **1.6351 seconds median, 1.6458 seconds maximum**, with
+identical logical input/output hashes, processed counts and persisted bytes.
+This is about 18x faster, with all three imports below the 5-second target;
+it is not complete p95 or release certification.
+
+Original reports and revision/image identities are retained in
+[`performance-evidence/m4-2026-10-12`](../performance-evidence/m4-2026-10-12/README.md).
+The implementation estimate is now approximately **90%**; full medium/extended
+three-revision captures, matched scaling and human reference approval remain
+the most important unmet requirement. Broader fuzz coverage/campaign acceptance
+follows. No thresholds or approvals were relaxed.
+
+Exact committed-source green: `2e38c4af64ca7bb75e5470ae2e5b3275c5d283aa`
+was archived and built as native ARM64 image `46bc149bcf60`. With no source
+mounts or networking, **1,611 tests passed in 246.57 seconds**, and repository
+Ruff passed. Red/green checkpoints are committed on `main`; no host installs,
+Git remote operations, pushes or live AI campaigns ran.

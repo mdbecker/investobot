@@ -286,3 +286,7 @@
 - Publish paired-run evidence atomically after each completed case/scaling pair.
   Interruptions, budget and cleanup failures must retain completed measurements
   and the original failure; partial reports never establish full acceptance.
+- Profile measured offenders before optimizing. Import acceptance uses call-local
+  inventories; update indexes after actual writes and refresh lots after guarded
+  deletes. Keep ambiguity checks, protected historical lots, exact Decimal
+  accumulation order and partial basis; never cache across commands.
