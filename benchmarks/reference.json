@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "reference_commit": "7cbf2bed13a0447865403e986662119571217bc6",
+  "seed": 271828,
+  "recipe_sha256": "b26a21352e5862bace3b03a001233c35cffc7920ed1d3b9c92eaf14eda26cb89",
+  "recipe_version": "performance-v1",
+  "legacy_timings_are_gate": false,
+  "approval": {
+    "procedure": "explicit-reviewed-rebaseline",
+    "status": "PENDING_HUMAN_REVIEW"
+  },
+  "capture_status": "PENDING_CONSTRAINED_RUNNER",
+  "measurements": []
+}

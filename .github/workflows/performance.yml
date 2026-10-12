@@ -1,0 +1,83 @@
+name: Fixed offline performance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+    inputs:
+      suite:
+        type: choice
+        options: [pr, extended]
+        default: extended
+
+permissions:
+  contents: read
+
+jobs:
+  performance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+          fetch-depth: 2
+      - name: Resolve immutable reference and current target or prior main
+        id: revisions
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          reference=$(docker run --rm --network none -v "$PWD/candidate:/source:ro" python:3.12-slim python -c 'import json; print(json.load(open("/source/benchmarks/reference.json"))["reference_commit"])')
+          base="$TARGET"
+          if [ -z "$base" ]; then base="$BEFORE"; fi
+          if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ]; then base=$(git -C candidate rev-parse HEAD^); fi
+          echo "reference=$reference" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "candidate=$(git -C candidate rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revisions.outputs.reference }}
+          path: reference
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.revisions.outputs.base }}
+          path: base
+      - name: Build each revision with its own locked dependencies
+        run: |
+          for revision in reference base candidate; do
+            docker build --platform linux/amd64 --tag "invest-perf-$revision" "$revision"
+          done
+      - name: Fixed synthetic three-revision measurements
+        env:
+          REFERENCE: ${{ steps.revisions.outputs.reference }}
+          BASE: ${{ steps.revisions.outputs.base }}
+          CANDIDATE: ${{ steps.revisions.outputs.candidate }}
+          EVENT: ${{ github.event_name }}
+          REQUESTED_SUITE: ${{ inputs.suite }}
+        run: |
+          suite=pr
+          if [ "$EVENT" = schedule ] || [ "$REQUESTED_SUITE" = extended ]; then suite=extended; fi
+          mkdir -p results
+          docker run --rm --network none --cpus=2 --memory=4g \
+            -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/candidate:/harness:ro" -v "$PWD/results:/results" \
+            invest-perf-candidate python /harness/scripts/perf.py paired --suite "$suite" \
+            --images '{"reference":"invest-perf-reference","base":"invest-perf-base","candidate":"invest-perf-candidate"}' \
+            --commits "{\"reference\":\"$REFERENCE\",\"base\":\"$BASE\",\"candidate\":\"$CANDIDATE\"}" \
+            --host-root "$PWD/candidate" --output /results/performance.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fixed-performance-evidence
+          path: results
+          retention-days: 90

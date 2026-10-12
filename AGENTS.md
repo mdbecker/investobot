@@ -2,6 +2,16 @@
 
 ## Additional verified lifecycle lessons
 
+- Dense conventional cash flows with one chronological sign change use a
+  uniquely bracketed XIRR root without dropping records. Long nonconventional
+  histories retain a typed complexity review. Statistical tolerances never
+  round stored financial values or excuse missing flows.
+- Benchmark fixtures use validated deterministic synthetic identities. Verify
+  full native outputs before projecting incidental generated IDs/timestamps;
+  preserve all financial, source, policy and relationship evidence. Report
+  processed counts separately from recipe parameters and keep oracle work
+  outside timed operations.
+
 - Confirmed cash and adjusted lot effects must reconcile independently from
   position quantities. Later fixtures must preserve actual recorded lot IDs and
   cash, rather than inventing balancing changes to produce a desired return.
@@ -80,6 +90,18 @@
   remain unavailable; fixed redemption scenarios do not price embedded options.
 
 ## Active specification and work order
+
+- The additive performance specification is
+  `docs/PRD-performance-ai-fuzz-2026-10-10.md`. Its strict paired performance
+  gates supersede the MVP's observational regression policy. Preserve financial
+  behavior; optimize only measured offenders after an additional red checkpoint.
+- Fixed performance measurements use offline disposable Docker fixtures and
+  three separately locked revisions. Archived timings are evidence, never a
+  cross-machine comparator. Native x86-64 release validation and human reference
+  review remain explicit gates; test-profile measurements cannot certify them.
+- Exploratory AI campaigns require explicit human invocation after performance
+  acceptance. CI may test the fixed harness and promoted regressions, but must
+  never generate campaigns, launch providers or publish issues automatically.
 
 - The active rebuild specification is `docs/PRD-unified-mvp-2026-10-10.md`.
   Historical PRDs/addenda remain unmodified reference documents. Conflicting
@@ -221,8 +243,9 @@
   UNVERIFIED until human validation. Synthetic acceptance ships development
   preview only. No secrets are needed for offline acceptance.
 - Benchmark only reproducible disposable synthetic ledgers/corpora. Record
-  hashes/hardware/timings/sizes, never invent measurements or make CI wall-clock
-  limits. Recovery and synthetic workflow demonstrations are required gates.
+  hashes/hardware/timings/sizes; never invent measurements. The additive PRD's
+  measurement limits exclude fixture preparation/builds. Recovery and synthetic
+  workflow demonstrations remain required gates.
 - Document actual behavior clearly and concisely, including setup/manual gates
   and outstanding scope. See `docs/implementation/unified-mvp-status.md` for
   current evidence; do not describe unimplemented requirements as complete.

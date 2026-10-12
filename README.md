@@ -95,7 +95,10 @@ Local evidence is not a remote CI result.
 [Data contracts](docs/data-contracts.md) · [Workflows](docs/workflows.md) ·
 [Testing](docs/testing.md) · [Skills](docs/skills.md) ·
 [Operations](docs/operations.md) · [Tax limitations](docs/tax-limitations.md).
+[Performance](docs/performance.md) ·
+[Addendum status](docs/implementation/performance-addendum-status.md).
 
 Work stays on `main`, with conventional observed red/green commits and no remote
 Git operations. Historical specifications remain unmodified references; the
-unified PRD governs current implementation. See [project rules](AGENTS.md).
+unified PRD governs the MVP; the preserved performance addendum strengthens its
+performance gates. See [project rules](AGENTS.md).
