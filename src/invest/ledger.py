@@ -183,12 +183,15 @@ class Ledger:
             result.update(status="APPLIED", committed=True)
         return result
 
-    def _snapshot_security(self, position, account_id):
+    def _snapshot_security(self, position, account_id, *, securities=None, held=None):
         """Resolve source identities consistently for review and atomic acceptance."""
         from invest.security_identity import resolve_observation
 
-        held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
-        return resolve_observation(self.rows('securities'), position, held)
+        if held is None:
+            held = {row["security_id"] for row in self.rows("positions") if row["account_id"] == account_id}
+        if securities is None:
+            securities = self.rows('securities')
+        return resolve_observation(securities, position, held)
 
     def reconcile(self, snapshot):
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
@@ -229,7 +232,10 @@ class Ledger:
                 if discrepancy > tolerance:
                     issues.append(_issue('INCONSISTENT_POSITION_VALUE',
                         'Reported value exceeds source rounding tolerance', security=position['security']))
-        old = {p["security"]: p for p in self.rows("positions") if p["account_id"] == account_id}
+        existing_positions = self.rows('positions')
+        securities = self.rows('securities')
+        held = {p['security_id'] for p in existing_positions if p['account_id'] == account_id}
+        old = {p["security"]: p for p in existing_positions if p["account_id"] == account_id}
         incoming = {p["security"]: p for p in snap["positions"]}
         changes, observations = [], []
         for symbol in sorted(old.keys() | incoming.keys()):
@@ -299,7 +305,7 @@ class Ledger:
         classification_reviews = []
         for position in snap["positions"]:
             try:
-                security, _ = self._snapshot_security(position, account_id)
+                security, _ = self._snapshot_security(position, account_id, securities=securities, held=held)
             except DomainError as error:
                 issues.append(_issue('SECURITY_IDENTITY_CONFLICT', str(error), security=position['security']))
                 continue
@@ -312,7 +318,7 @@ class Ledger:
                     "canonical OTHER is preserved. Verify provenance, then use "
                     f"invest security classify {security['id']} --asset-type {position['asset_type']} "
                     '--source "VERIFIED_SOURCE" --confirm for an explicit audited correction')
-        known = {s["ticker"] for s in self.rows("securities")}
+        known = {s["ticker"] for s in securities}
         events = [row for row in self.rows('activities') if row['account_id'] == account_id]
         if events:
             source = snap['source_timestamp']
@@ -327,12 +333,12 @@ class Ledger:
                 issues.append(_issue('OBSERVATION_PRECEDES_CONFIRMED_ACTIVITY',
                     'Dated observation precedes the confirmed activity'))
             else:
-                canonical_old = {row['security_id']: row for row in self.rows('positions')
+                canonical_old = {row['security_id']: row for row in existing_positions
                                  if row['account_id'] == account_id}
                 canonical_incoming = {}
                 for symbol, position in incoming.items():
                     try:
-                        security, _ = self._snapshot_security(position, account_id)
+                        security, _ = self._snapshot_security(position, account_id, securities=securities, held=held)
                     except DomainError:
                         # The identity review pass above already records its typed blocker.
                         continue
@@ -426,9 +432,16 @@ class Ledger:
             account = next((a for a in self.rows("accounts") if a["id"] == account_id), None)
             accepted_account = account or dict(snap['account'], data_environment=snap['data_environment'])
             self.put("accounts", account_id, accepted_account)
+            # Call-local writer indexes retain canonical identities and are updated
+            # after writes. Resolution still uses the shared ambiguity checks.
+            positions_by_id = {p['id']: p for p in self.rows('positions')}
+            securities_by_id = {s['id']: s for s in self.rows('securities')}
+            held = {p['security_id'] for p in positions_by_id.values() if p['account_id'] == account_id}
+            original_lots = self.rows('lots')
             observed_ids = set()
             for p in snap["positions"]:
-                existing, supplied = self._snapshot_security(p, account_id)
+                existing, supplied = self._snapshot_security(p, account_id,
+                    securities=securities_by_id.values(), held=held)
                 sid = existing["id"] if existing else str(uuid.uuid4())
                 observed_ids.add(sid)
                 security = dict(existing) if existing else dict(id=sid, ticker=p["security"], name=p["name"],
@@ -441,38 +454,52 @@ class Ledger:
                 # An observed type is initial metadata only for a new security.
                 # Established OTHER corrections require classify_security().
                 self.put("securities", sid, security)
+                securities_by_id[sid] = security
                 p = dict(p, asset_type=security["asset_type"], id=f"{account_id}:{sid}", account_id=account_id, security_id=sid,
                          source_timestamp=snap["source_timestamp"], data_environment=snap['data_environment'])
-                prior_position = next((row for row in self.rows("positions") if row["id"] == p["id"]), None)
+                prior_position = positions_by_id.get(p['id'])
                 if (p.get("cost_basis") is None and prior_position and not snap["lots_complete"]
                         and decimal(p["quantity"]) == decimal(prior_position["quantity"])
                         and prior_position.get("lot_state") == "RESOLVED"):
                     p["cost_basis"] = prior_position.get("cost_basis")
                 self.put("positions", p["id"], p)
+                positions_by_id[p['id']] = p
+                held.add(sid)
             if snap["positions_complete"]:
-                for p in self.rows("positions"):
+                for p in list(positions_by_id.values()):
                     if p["account_id"] == account_id and p["security_id"] not in observed_ids:
                         self.connection.execute("DELETE FROM position_balances WHERE id=?", (p["id"],))
-                        for l in self.rows("lots"):
+                        del positions_by_id[p['id']]
+                        for l in original_lots:
                             if l["account_id"] == account_id and l["security_id"] == p["security_id"]:
                                 self.connection.execute("DELETE FROM tax_lots WHERE id=? AND NOT EXISTS "
                                     "(SELECT 1 FROM activity_lot_allocations WHERE lot_id=tax_lots.id)", (l["id"],))
             if snap["lots_complete"]:
-                for lot in self.rows("lots"):
+                for lot in original_lots:
                     if lot["account_id"] == account_id:
                         self.connection.execute("DELETE FROM tax_lots WHERE id=? AND NOT EXISTS "
                             "(SELECT 1 FROM activity_lot_allocations WHERE lot_id=tax_lots.id)", (lot["id"],))
+            # Refresh after guarded deletes: allocation-protected historical lots
+            # remain visible, while genuinely deleted lots have no current row.
+            lots_by_id = {lot['id']: lot for lot in self.rows('lots')}
+            from invest.security_identity import resolve
             for lot in snap["lots"]:
-                sid = self.resolve(lot["security"])["id"]
-                prior = next((l for l in self.rows("lots") if l["id"] == lot["id"]), None)
+                sid = resolve(securities_by_id.values(), lot["security"])["id"]
+                prior = lots_by_id.get(lot['id'])
                 if prior and (prior["account_id"] != account_id or prior["security_id"] != sid):
                     raise DomainError("Lot identifier belongs to another account/security", 3)
-                self.put("lots", lot["id"], dict(lot, account_id=account_id, security_id=sid,
-                    data_environment=snap['data_environment']))
-            for p in self.rows("positions"):
+                accepted_lot = dict(lot, account_id=account_id, security_id=sid,
+                    data_environment=snap['data_environment'])
+                self.put("lots", lot["id"], accepted_lot)
+                lots_by_id[lot['id']] = accepted_lot
+            remaining_by_security = {}
+            for lot in sorted(lots_by_id.values(), key=lambda row: row['id']):
+                if lot['account_id'] == account_id:
+                    sid = lot['security_id']
+                    remaining_by_security[sid] = remaining_by_security.get(sid, Decimal('0')) + decimal(lot['remaining_quantity'])
+            for p in positions_by_id.values():
                 if p["account_id"] == account_id:
-                    remaining = sum((decimal(l["remaining_quantity"]) for l in self.rows("lots")
-                        if l["account_id"] == account_id and l["security_id"] == p["security_id"]), Decimal("0"))
+                    remaining = remaining_by_security.get(p['security_id'], Decimal('0'))
                     p["lot_state"] = "RESOLVED" if remaining == decimal(p["quantity"]) else "UNRESOLVED"
                     self.put("positions", p["id"], p)
             if snap["cash_known"]:
