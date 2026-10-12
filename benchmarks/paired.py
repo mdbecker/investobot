@@ -45,6 +45,11 @@ def fixture_identity(definitions, dimensions):
             'dimensions': deepcopy(dimensions)}
 
 
+def measurement_batch(warmups):
+    """Target twice the 200ms validity floor; faster repeated calls need headroom."""
+    return runner.common_batch_counts(warmups, minimum_ns=400_000_000)
+
+
 def certification_plan(definitions):
     """Absolute budgets refer to named medium sizes, except 100k-vector workloads."""
     plan = []
@@ -292,7 +297,7 @@ def _run(images, commits, host_root, suite, output, pool, state):
             warmups[revision] = {case['id']: sample['elapsed_ns']}
             prepared_ns += sample['preparation_ns'] + sample['reset_ns']
             measured_ns += sample['elapsed_ns']
-        batch = runner.common_batch_counts(warmups)[case['id']]
+        batch = measurement_batch(warmups)[case['id']]
         mode = 'pr' if suite == 'pr' else ('extended_retrieval' if count == 21 else 'extended_bulk')
         contract = {'mode': mode, 'required_cases': [case['id']], 'fixture': fixture,
                     'runner': runtime, 'reference_commit': commits['reference'],
@@ -342,7 +347,7 @@ def _run(images, commits, host_root, suite, output, pool, state):
                 warmups[size] = {case['id']: sample['elapsed_ns']}
                 measured_ns += sample['elapsed_ns']
                 prepared_ns += sample['preparation_ns'] + sample['reset_ns']
-            batch = runner.common_batch_counts(warmups)[case['id']]
+            batch = measurement_batch(warmups)[case['id']]
             samples = {'small': [], 'large': []}
             for index in range(planned['observations']):
                 for size in (('small', 'large') if index % 2 == 0 else ('large', 'small')):
