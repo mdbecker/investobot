@@ -12,6 +12,7 @@
     "scope": "Eight retained workflows only; not release readiness",
     "authorization": "docs/PRD-mvp-wrap-up-2026-10-12.md section 2"
   },
-  "capture_status": "PENDING_EIGHT_WORKFLOW_PAIR",
-  "measurements": []
+  "capture_status": "LOCAL_EIGHT_WORKFLOW_PAIR_PASS",
+  "capture_summary": "docs/implementation/wrap-up-status.md",
+  "remote_required_check": "UNVERIFIED"
 }

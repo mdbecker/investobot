@@ -20,7 +20,73 @@ remaining scope. Original PRDs remain historical specifications.
   The referenced `code_review(8).md` / `code_smell_review(9).md` were not present
   in the repository or supplied attachments; review followed the addendum's
   stated intent/architecture/implementation/polish and smell categories.
-- E: final Docker correctness, lint, skill, synthetic demo and eight-case pair.
+- E: final committed ARM image passes correctness, lint, synthetic workflows,
+  installed-wheel skills and all eight paired workflows. Finite wrap-up complete.
+
+## Final acceptance and handoff
+
+Tested code commit `34ca5bc7045bd020eb482da58c3e2713d020115d`, ARM64 image
+`fedae15fab72`, offline Docker with no private ledger or credentials:
+
+- `uv run --locked pytest -q`: **1,314 passed in 45.88 s**. Retired timing,
+  quota and internal read-count contracts are removed; financial BDD remains.
+- `uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz`:
+  all checks passed.
+- `uv run --locked python scripts/demo_unified_mvp.py`: **34 actual CLI steps**,
+  no external calls, exact lot conservation, immutable hypothetical facts,
+  verified archive/artifact restoration and restored corpus retrieval. Financial
+  fingerprints match: `e80cee513356e0fc5a528e90d6d10afd3fc19d73e82e2ecc027bde270c10463c`.
+- Offline wheel build/install in the disposable container: all **13 bundled
+  financial skills** discovered with their packaged instructions. The manual
+  development fuzz skill lives separately at `fuzz/SKILL.md`.
+
+Removed `benchmarks/paired.py`, `scaling.py`, `templates.py`, the duplicate
+`scripts/benchmark_unified_mvp.py`, obsolete broad certification tests,
+`fuzz/novelty.py` and generated benchmark reports. Consolidated runner/gates,
+replay/minimization and current status docs. The existing plan-storage helper
+remains for ordinary functional storage tests. No financial application source
+or dependencies changed; existing import optimizations pass safety checks.
+
+Commits remain local on `main`; no host installs, pushes, private-volume tests,
+live campaigns or automated trading occurred. Documentation/capture metadata
+recorded after acceptance do not alter the tested runtime or fixture recipe.
+
+## Native paired results
+
+Reference: `d0940a12c44831095492efcd7091fb7b937ad6b3`; candidate:
+`34ca5bc7045bd020eb482da58c3e2713d020115d`, image `fedae15fab72`.
+Both used the same harness, native ARM64 Docker Desktop engine, 2 CPUs,
+4 GiB, network disabled, one warm-up and five samples per workflow.
+The smallest raw sample was 367.396 ms. Fixture inputs, outputs and processed
+counts matched; no confirmation was needed. The fixed 26% repeated-regression
+contract returns FAIL, while an unconfirmed increase requests a complete repeat.
+
+| Workflow | Reference median ms | Candidate median ms | Ratio |
+|---|---:|---:|---:|
+| TWR/XIRR and linked flows | 1.2253 | 1.2213 | 0.9967 |
+| Tax lots / annual budget | 0.6885 | 0.6948 | 1.0091 |
+| Contribution / saved plans | 9.6998 | 9.8488 | 1.0154 |
+| Household TLH | 0.1363 | 0.1343 | 0.9852 |
+| Recursive look-through | 4.4611 | 4.3571 | 0.9767 |
+| Ten-year backtest | 87.2724 | 84.2883 | 0.9658 |
+| Historical analytical join | 71.8603 | 74.2901 | 1.0338 |
+| Text/vector corpus retrieval | 2.7292 | 2.6967 | 0.9881 |
+
+Medians are normalized by shared batch counts; preparation/reset/oracle work is
+outside the financial operation boundary. Raw reports, including earlier invalid
+short samples and superseded incomplete fingerprints, are retained in ignored
+`benchmark-results/2026-10-12`. A 600 ms batching target replaces 300 ms cold
+warm-up calibration; the strict 200 ms floor and 25% guard are unchanged.
+SHA-256 reference / candidate / comparison reports:
+
+```text
+264d3d54f692e7e7c45b42fc6dc6571ac74aa1e2c577bc1ff6cf69b6b66dc820
+486f8188aed04c97c5aaa710cfbc6a54d35a3d3eb0dd948dd965b8017c1bcca6
+c1f2dd66ab6002250e8d9ebd2149aaf45e9fb404becb6ae3767441195c7c875e
+```
+
+Remote CI execution and required-check enforcement remain UNVERIFIED. No push
+or repository settings change was performed.
 
 ## Historical rebaseline evidence
 
