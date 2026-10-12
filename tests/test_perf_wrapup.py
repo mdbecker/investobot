@@ -20,6 +20,16 @@ def test_wrapup_has_exactly_eight_representative_boundaries():
     assert all(case['boundary'] and case['operations'] for case in definitions)
 
 
+def test_fixed_workflows_use_representative_single_user_inputs():
+    definitions = runner.manifest()
+    dimensions = definitions['profiles'][definitions.get('profile', 'test')]
+    assert dimensions['positions'] == 200
+    assert dimensions['lots'] == 400
+    assert dimensions['parquet_observations'] == 4000
+    assert dimensions['research_chunks'] == 1000
+    assert dimensions['history_years'] == 10
+
+
 def test_one_slow_measurement_requires_complete_confirmation():
     assert gates.compare_pair(report(), report(1.26))['status'] == 'CONFIRM'
     assert gates.compare_pair(report(), report(1.26), confirmation=(report(), report()))['status'] == 'PASS'

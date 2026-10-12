@@ -114,3 +114,23 @@ def test_workflows_never_launch_ai_fuzz_campaigns():
     yaml = '\n'.join(path.read_text() for path in (ROOT / '.github/workflows').glob('*.y*ml'))
     assert 'scripts/fuzz.py run' not in yaml
     assert not any(key in yaml for key in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'FUZZ_API_KEY'])
+
+
+def test_saved_case_json_is_complete_replay_input_without_unused_seed(tmp_path):
+    """A reviewed sequence replays from its exact retained JSON, not a fake seed."""
+    case = campaign()['cases'][3]
+    case.pop('seed', None)
+    case['operations'][0]['params']['amount'] = '17.25'
+    assert scenario.validate_case(case)['status'] == 'VALID'
+    source = tmp_path / 'case.json'
+    source.write_text(json.dumps(case))
+    result = invoke(['replay', source, '--output-dir', tmp_path / 'report'])
+    assert result.returncode == 0, result.stderr
+    report = read_report(tmp_path / 'report')
+    observed = report['cases'][0]
+    assert 'seed' not in observed
+    saved = tmp_path / 'report' / observed['saved_fixture']
+    assert json.loads(saved.read_text()) == case
+    repeated = invoke(['replay', saved, '--output-dir', tmp_path / 'repeated'])
+    assert repeated.returncode == 0, repeated.stderr
+    assert read_report(tmp_path / 'repeated')['cases'][0]['input_hash'] == observed['input_hash']
