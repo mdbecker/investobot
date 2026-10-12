@@ -23,13 +23,22 @@ def _day(value):
         raise DomainError('Performance dates must be ISO dates') from None
 
 
-def _roots(terms):
-    """Isolate exponential-polynomial roots using its recursively reduced derivative."""
-    merged = defaultdict(float)
+def _merged_terms(terms):
+    merged = defaultdict(list)
     for exponent, coefficient in terms:
-        merged[exponent] += coefficient
-    terms = sorted((exponent, coefficient) for exponent, coefficient in merged.items()
-                   if coefficient)
+        merged[exponent].append(coefficient)
+    return sorted((exponent, coefficient) for exponent, values in merged.items()
+                  if (coefficient := math.fsum(values)))
+
+
+def _single_sign_change(terms):
+    signs = [coefficient > 0 for _, coefficient in _merged_terms(terms)]
+    return sum(left != right for left, right in zip(signs, signs[1:])) == 1
+
+
+def _roots(terms):
+    """Isolate roots; one cash-flow sign change proves at most one positive root."""
+    terms = _merged_terms(terms)
     if len(terms) < 2:
         return []
     origin = terms[0][0]
@@ -42,6 +51,19 @@ def _roots(terms):
         return math.fsum(coefficient * math.exp(power - scale)
                          for power, (_, coefficient) in zip(powers, terms, strict=True))
 
+    # Generalized Descartes' rule gives uniqueness for one chronological sign
+    # change. Bracketing this case is linear in retained flows and needs neither
+    # recursion nor a record-count exception that drops valid contributions.
+    if _single_sign_change(terms):
+        left, right = value(-700.0), value(700.0)
+        if left == 0:
+            return [-700.0]
+        if right == 0:
+            return [700.0]
+        if (left < 0 < right) or (right < 0 < left):
+            return [brentq(value, -700.0, 700.0, xtol=1e-12)]
+        return []
+
     stationary = _roots([(exponent, -exponent * coefficient)
                          for exponent, coefficient in terms if exponent])
     boundaries = [-700.0, *stationary, 700.0]
@@ -52,7 +74,7 @@ def _roots(terms):
             roots.append(y)
     for left, right in zip(boundaries, boundaries[1:]):
         a, b = value(left), value(right)
-        if a * b < 0:
+        if (a < 0 < b) or (b < 0 < a):
             roots.append(brentq(value, left, right, xtol=1e-12))
     distinct = []
     for root in sorted(roots):
@@ -219,7 +241,7 @@ def _calculate(payload):
     scale = scale or Decimal(1)
     amounts = [(float((_day(row['date']) - first).days) / 365.25,
                 float(decimal(row['amount']) / scale)) for row in investor_flows]
-    if len(amounts) > 128:
+    if len(amounts) > 128 and not _single_sign_change(amounts):
         issue('XIRR_UNAVAILABLE_COMPLEXITY', 'More than 128 investor flow records require review')
     else:
         roots = _roots(amounts)
