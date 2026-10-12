@@ -57,12 +57,12 @@ class Ledger:
         self.path = Path(path)
         self.connection = connect(path)
 
-    def rows(self, table):
+    def rows(self, table, *, account_id=None):
         from invest.db import rows
 
         if table not in TABLES:
             raise ValueError("Unknown table")
-        result = rows(self.connection, table)
+        result = rows(self.connection, table, account_id=account_id)
         history = {"accounts": "metadata_history", "securities": "classification_history"}.get(table)
         if history:
             for row in result:
@@ -77,7 +77,7 @@ class Ledger:
         put(self.connection, table, key, data)
 
     def _account_snapshots(self, account_id):
-        """Read complete account history without decoding other households' evidence."""
+        """Read complete account history without decoding unrelated account evidence."""
         return [json.loads(row[0]) for row in self.connection.execute(
             'SELECT payload_json FROM snapshot_observations WHERE account_id=? ORDER BY id',
             (account_id,))]
@@ -238,7 +238,7 @@ class Ledger:
                 if discrepancy > tolerance:
                     issues.append(_issue('INCONSISTENT_POSITION_VALUE',
                         'Reported value exceeds source rounding tolerance', security=position['security']))
-        existing_positions = self.rows('positions')
+        existing_positions = self.rows('positions', account_id=account_id)
         securities = self.rows('securities')
         held = {p['security_id'] for p in existing_positions if p['account_id'] == account_id}
         old = {p["security"]: p for p in existing_positions if p["account_id"] == account_id}
@@ -272,7 +272,7 @@ class Ledger:
         elif not snap["cash_known"]:
             observations.append(dict(kind="cash", status="UNKNOWN_VALUE"))
         old_lots = [{k: v for k, v in lot.items() if k not in {"account_id", "security_id"}}
-                    for lot in self.rows("lots") if lot["account_id"] == account_id]
+                    for lot in self.rows("lots", account_id=account_id)]
         if snap["lots"] and sorted(old_lots, key=lambda l: l["id"]) != sorted(snap["lots"], key=lambda l: l["id"]):
             changes.append(dict(kind="lots", status="CHANGED_VALUE"))
         elif snap["lots_complete"] and old_lots != snap["lots"]:
@@ -423,7 +423,7 @@ class Ledger:
         for symbol in {l["security"] for l in snap["lots"]}:
             pos = next((p for p in snap["positions"] if p["security"] == symbol), None)
             if pos is None and not snap["positions_complete"]:
-                pos = next((p for p in self.rows("positions") if p["account_id"] == account_id and p["security"] == symbol), None)
+                pos = next((p for p in self.rows("positions", account_id=account_id) if p["security"] == symbol), None)
             remaining = sum((decimal(l["remaining_quantity"]) for l in snap["lots"] if l["security"] == symbol), Decimal("0"))
             if (pos is not None and snap["lots_complete"] and remaining == decimal(pos["quantity"])
                     and pos.get("cost_basis") is not None):
@@ -440,10 +440,10 @@ class Ledger:
             self.put("accounts", account_id, accepted_account)
             # Call-local writer indexes retain canonical identities and are updated
             # after writes. Resolution still uses the shared ambiguity checks.
-            positions_by_id = {p['id']: p for p in self.rows('positions')}
+            positions_by_id = {p['id']: p for p in self.rows('positions', account_id=account_id)}
             securities_by_id = {s['id']: s for s in self.rows('securities')}
             held = {p['security_id'] for p in positions_by_id.values() if p['account_id'] == account_id}
-            original_lots = self.rows('lots')
+            original_lots = self.rows('lots', account_id=account_id)
             observed_ids = set()
             for p in snap["positions"]:
                 existing, supplied = self._snapshot_security(p, account_id,
@@ -487,11 +487,16 @@ class Ledger:
                             "(SELECT 1 FROM activity_lot_allocations WHERE lot_id=tax_lots.id)", (lot["id"],))
             # Refresh after guarded deletes: allocation-protected historical lots
             # remain visible, while genuinely deleted lots have no current row.
-            lots_by_id = {lot['id']: lot for lot in self.rows('lots')}
+            lots_by_id = {lot['id']: lot for lot in self.rows('lots', account_id=account_id)}
+            from invest.db import rows as database_rows
             from invest.security_identity import resolve
             for lot in snap["lots"]:
                 sid = resolve(securities_by_id.values(), lot["security"])["id"]
                 prior = lots_by_id.get(lot['id'])
+                if prior is None:
+                    # Lot IDs are globally unique, even when inventory reads are local.
+                    matches = database_rows(self.connection, 'lots', key=lot['id'])
+                    prior = matches[0] if matches else None
                 if prior and (prior["account_id"] != account_id or prior["security_id"] != sid):
                     raise DomainError("Lot identifier belongs to another account/security", 3)
                 accepted_lot = dict(lot, account_id=account_id, security_id=sid,

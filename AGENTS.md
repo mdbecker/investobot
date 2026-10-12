@@ -6,6 +6,10 @@
   decoding snapshot payloads. Preserve every selected historical observation,
   fingerprint and source lexeme, including existing status behavior. Read fresh
   on every command; do not introduce cross-command caches or schema changes.
+- Account-scoped inventory reads preserve normalized presence bits and exact
+  ID ordering. Lot IDs remain globally unique: a missing local lot requires an
+  indexed global ID lookup before acceptance. Keep protected historical lots,
+  independent other-account cash and atomic collision rejection intact.
 
 - Pure P05 performance fixtures may reuse verified immutable inventory only
   under SQLite query_only, total_changes and data_version guards. Verify every

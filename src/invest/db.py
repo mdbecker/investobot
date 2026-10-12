@@ -313,7 +313,10 @@ def connect(path, readonly=False, initialize=True):
     return connection
 
 
-def rows(connection, table, key=None):
+def rows(connection, table, key=None, *, account_id=None):
+    if account_id is not None and (table in PAYLOAD_TABLES or
+                                  'account_id' not in FIELDS.get(table, {})):
+        raise ValueError('Account filter is unsupported for this storage table')
     physical = TABLE_NAMES.get(table, table)
     if table in PAYLOAD_TABLES:
         return [json.loads(row[0]) for row in connection.execute(
@@ -322,9 +325,16 @@ def rows(connection, table, key=None):
     fields = FIELDS[table]
     keys = list(fields)
     result = []
-    where = ' WHERE id=?' if key is not None else ''
+    predicates, parameters = [], []
+    if key is not None:
+        predicates.append('id=?')
+        parameters.append(key)
+    if account_id is not None:
+        predicates.append('account_id=?')
+        parameters.append(account_id)
+    where = ' WHERE ' + ' AND '.join(predicates) if predicates else ''
     for record in connection.execute(f'SELECT {",".join(keys)},present FROM {physical}' + where +
-                                     ' ORDER BY id', (key,) if key is not None else ()):
+                                     ' ORDER BY id', parameters):
         value = {}
         for index, key in enumerate(keys):
             if not record[-1] & (1 << index):

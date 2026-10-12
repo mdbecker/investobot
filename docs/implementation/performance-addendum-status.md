@@ -33,6 +33,14 @@
 - Next: verify matched import scaling and the integrated image once, then resolve
   reference scheduling before another full capture. Reference metadata remains
   unchanged; no automatic rebaseline or timing-limit relaxation is authorized.
+- Matched three-observation diagnostics confirm history filtering alone is
+  insufficient: 1,000/4,000-position medians improve from 1.713/23.784 seconds
+  (13.88x) to 0.702/5.854 seconds (8.34x), still failing the 6x growth gate.
+  Exact `50fdd82` image passes 1,654 tests in 241.74 seconds and Ruff offline.
+  A second profile identifies whole-household inventory decoding as the remaining
+  offender. Red `eea9743` records 11 intended failures and two financial controls.
+  Account-filtered inventory reads and indexed global lot collision checks now
+  pass 18 focused tests and Ruff; final scaling/integrated evidence follows.
 - Pending: complete native medium/extended/scaling/absolute-budget acceptance;
   independently reviewed reference; executable fuzz slow-path investigation;
   explicitly human-invoked campaigns; remote runner/protection setup.
