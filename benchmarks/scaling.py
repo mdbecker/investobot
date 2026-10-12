@@ -25,6 +25,8 @@ def _driver(case_id):
     if family == 'P05':
         return 'positions' if operation == 'hypothetical-risk' else 'history_checkpoints'
     if family == 'P09':
+        if operation.startswith('replacements-'):
+            return 'processed_replacement_candidates'
         if operation.startswith('history-'):
             return 'processed_history_observations'
         if operation.startswith('quote-'):
@@ -72,6 +74,9 @@ def dimensions(case_id, base_dimensions):
     elif family == 'P08':
         fields = ('saved_plans',)
     elif family == 'P09':
+        if case_id.startswith('P09.replacements-'):
+            result['funds'] = (base_dimensions['funds'] - 1) * 4 + 1
+            return result
         if case_id.startswith('P09.quote-'):
             return result
         if case_id.startswith('P09.history-'):

@@ -171,6 +171,8 @@ def _provider(ledger, root, dimensions, operation, counts, *, stage=None):
         counts['processed_history_observations'] = len(payload['history'][ticker])
     if name == 'quote':
         counts['processed_quote_observations'] = len(payload['quote'][ticker])
+    if name == 'replacements':
+        counts['processed_replacement_candidates'] = len(payload['metadata']) - 1
 
     def history_metrics():
         history = client.history(ticker, refresh=temperature == 'miss')
