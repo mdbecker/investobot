@@ -117,17 +117,11 @@ def validate(payload, large=False):
         if type(payload['schema_version']) is not int or payload['schema_version'] != 1 or not _identifier(payload['campaign_id']):
             raise ValueError('Invalid campaign version/identity')
         cases = payload['cases']
-        if not isinstance(cases, list) or not 12 <= len(cases) <= 100:
-            raise ValueError('Campaign requires 12 to 100 distinct cases')
+        if not isinstance(cases, list) or not 1 <= len(cases) <= 100:
+            raise ValueError('Explicit run requires 1 to 100 bounded cases')
         identities = [_case(case, large) for case in cases]
         if len({row['id'] for row in identities}) != len(cases) or len({row['input_hash'] for row in identities}) != len(cases):
             raise ValueError('Duplicate case or executable input')
-        if len({row['family'] for row in identities}) < 5:
-            raise ValueError('At least five workflow families required')
-        if sum(len(case['operations']) > 1 for case in cases) < 4:
-            raise ValueError('At least four stateful sequences required')
-        if sum(case['performance_dimension'] is not None for case in cases) < 2:
-            raise ValueError('At least two performance cases required')
         return {'status': 'VALID', 'case_hashes': identities, 'limits': limits(large)}
     except (ValueError, TypeError, KeyError, OverflowError) as error:
         return {'status': 'INVALID', 'issues': [{'code': 'INVALID_CAMPAIGN', 'message': str(error)}],

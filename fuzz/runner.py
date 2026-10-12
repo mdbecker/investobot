@@ -1,5 +1,4 @@
 """Offline, disposable subprocess execution; no provider or selected private ledger."""
-import fcntl
 import hashlib
 import json
 import math
@@ -13,7 +12,7 @@ import threading
 import time
 from pathlib import Path
 
-from fuzz import novelty, scenario
+from fuzz import scenario
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -136,39 +135,38 @@ def execute_case(case, *, large=False, timeout=None):
 
 
 def report(cases, fixture, output):
-    from benchmarks.runner import source_hash
-    fingerprint = source_hash()
+    source = hashlib.sha256()
+    for path in sorted([*ROOT.glob('src/**/*.py'), *ROOT.glob('fuzz/*.py'), ROOT / 'scripts/fuzz.py']):
+        source.update(str(path.relative_to(ROOT)).encode())
+        source.update(path.read_bytes())
+    fingerprint = source.hexdigest()
     value = {'status': 'PASSED' if all(row['classification'] in {'PASSED', 'EXPECTED_REJECTION'} for row in cases) else 'FAILED',
         'cases': cases, 'source_commit': os.environ.get('INVEST_SOURCE_COMMIT', 'SOURCE_HASH:' + fingerprint),
         'dirty_tree_fingerprint': fingerprint, 'dependency_lock_hash': hashlib.sha256((ROOT / 'uv.lock').read_bytes()).hexdigest(),
         'fixture_hash': scenario.digest(fixture), 'network': 'NONE', 'synthetic_only': True,
         'external_requests': 0, 'publishing': 'LOCAL_ONLY'}
     output = Path(output)
+    value['exercised_operations'] = sorted({operation['name'] for case in fixture.get('cases', [fixture]) for operation in case['operations']})
+    value['conclusion'] = 'No defect confirmed; fixed synthetic sequences exercised.' if value['status'] == 'PASSED' else 'Unresolved findings require reproduction and review.'
     for row, case in zip(cases, fixture.get('cases', [fixture]), strict=True):
         relative = 'cases/' + row['input_hash'] + '.json'
         write_json(output / relative, case)
-        row.update(saved_fixture=relative, replay_command=f'python scripts/fuzz.py replay {relative} --output-dir replay')
+        row.update(saved_fixture=relative, severity='NOT_ASSESSED' if row['classification'] not in {'PASSED', 'EXPECTED_REJECTION'} else 'NONE',
+                   replay_command=f'uv run --no-sync python scripts/fuzz.py replay {output / relative} --output-dir replay')
     write_json(output / 'fuzz-report.json', value)
-    (output / 'fuzz-report.md').write_text('# Local synthetic fuzz report\n\n' + value['status'] + '\n\n' + '\n'.join(
-        f"- {row['id']}: {row['classification']}" for row in cases) + '\n')
+    (output / 'fuzz-report.md').write_text('# Local synthetic fuzz report\n\n' + value['status'] + '\n\n'
+        + value['conclusion'] + '\nExercised: ' + ', '.join(value['exercised_operations']) + '\n\n' + '\n'.join(
+        f"- {row['id']}: {row['classification']}; expected {row['expected_result']}, observed {row['observed_result']}; seed {row['seed']}; severity {row['severity']}\n"
+        f"  Replay: `{row['replay_command']}`\n"
+        f"  Invariants: {json.dumps(row.get('invariant_results', {}), sort_keys=True)}"
+        for row in cases) + '\n\nSource: ' + value['source_commit'] + '\n'
+        + 'Failed invariants are unconfirmed findings; human reproduction and severity review are required.\n')
     return value
 
 
-def run(payload, output, history, *, bootstrap=False, acknowledge_missing=False, large=False, timeout=None):
+def run(payload, output, *, large=False, timeout=None):
     validation = scenario.validate(payload, large=large)
     if validation['status'] != 'VALID':
         raise ValueError('INVALID: ' + json.dumps(validation))
-    history = Path(history)
-    history.parent.mkdir(parents=True, exist_ok=True)
-    with history.with_suffix('.lock').open('a') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        prior = read_json(history) if history.exists() else None
-        assessment = novelty.assess(payload, prior, acknowledge_missing=bootstrap or acknowledge_missing, large=large)
-        if assessment['status'] != 'ACCEPTED':
-            raise ValueError(json.dumps(assessment))
-        cases = [execute_case(case, large=large, timeout=timeout) for case in payload['cases']]
-        value = report(cases, payload, output)
-        retained = novelty.validate_history(prior) if prior is not None else {'schema_version': 1, 'bootstrap': True, 'campaigns': []}
-        retained['campaigns'].append({'campaign_id': payload['campaign_id'], 'case_hashes': assessment['case_hashes']})
-        write_json(history, retained)
-        return value
+    cases = [execute_case(case, large=large, timeout=timeout) for case in payload['cases']]
+    return report(cases, payload, output)
