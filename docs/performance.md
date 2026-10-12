@@ -190,7 +190,11 @@ checksummed file manifest. Warm-up, measured observations and a retry each copy
 that verified template into a fresh worker directory, reopen independent SQLite
 handles and reconstruct the operation. Accepted lots, research runs, Parquet,
 caches and vector indexes are reused. Each iteration restores its local frozen
-baseline. No live connection, pickled closure or writable template is shared.
+baseline, except four pure P05 performance calculations. Those reuse verified
+inventory under SQLite read-only/change guards, independently verify every raw
+result and recheck full inventory/FKs before closing. Hypothetical risk and all
+mutation fixtures keep their resets. No live connection, pickled closure or
+writable template is shared.
 Changed source, dimensions, corrupt files and symlinks reject reuse before opening
 an observation database. Copy/hash/hydration and initial construction times are
 recorded separately from timed operations. Normal cache TTLs remain authoritative;

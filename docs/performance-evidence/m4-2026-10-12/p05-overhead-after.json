@@ -1,0 +1,59 @@
+{
+  "commit": "77a8515",
+  "case_id": "P05.household-performance",
+  "iterations": 30,
+  "runtime": {
+    "docker": true,
+    "machine": "aarch64",
+    "cpus": 2.0,
+    "memory_bytes": 4294967296,
+    "network": "none",
+    "gpu_devices": [],
+    "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+  },
+  "counts": {
+    "accounts": 10,
+    "positions": 1000,
+    "lots": 2000,
+    "accepted_snapshots": 200,
+    "history_checkpoints": 121,
+    "history_flows": 0,
+    "history_years": 10
+  },
+  "input_state_hash": "2be9f55b1f3dea548e83563f8a39c21272983b1dd15a8d651577c365bee6496d",
+  "output_hashes": [
+    "09eb026c92a2d8743d7eb15b740589ca5bacfa2a9e01ea6bea46e291fca58d7c"
+  ],
+  "proofs": {
+    "independent-dated-flow-results": {
+      "passed": true,
+      "expected": {
+        "twr": "0",
+        "zero_xirr_within_1e-12": true,
+        "cagr": 0.0,
+        "net_contributions": "0"
+      },
+      "observed": {
+        "twr": "0",
+        "zero_xirr_within_1e-12": true,
+        "cagr": 0.0,
+        "net_contributions": "0"
+      },
+      "absolute_statistical_tolerance": 1e-12,
+      "raw_xirr": 0.0
+    },
+    "account-scope-correct": {
+      "passed": true,
+      "expected": "HOUSEHOLD",
+      "observed": "HOUSEHOLD"
+    },
+    "missing-coverage-typed": {
+      "passed": true,
+      "expected": [],
+      "observed": []
+    }
+  },
+  "reset_ns": 100751,
+  "operation_ns": 4639041,
+  "verify_ns": 501542
+}

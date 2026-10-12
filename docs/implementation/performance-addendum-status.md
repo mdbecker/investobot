@@ -14,8 +14,14 @@
   passing. Preserve its original exit 130 and report; this is not full acceptance.
   The P05 before-profile records 30 operations: 7.7 ms calculation, 588 ms reset,
   1,194 ms verification. Source/input/output hashes and native proofs are retained.
-- Next: measure the guarded P05 overhead, run one integrated suite, and check
-  the pinned reference's stress import cost before another full capture.
+- Done: exact committed `77a8515` ARM64 image `f8132ea11179` passes **1,649
+  tests in 242.57 seconds** and Ruff offline, with locked dependencies and no
+  source mount. The matched 30-operation profile reduces reset/verification
+  overhead from 1.78 seconds to 0.60 ms; financial input/output hashes, counts
+  and all native proofs are identical. Retained profile reports are diagnostic,
+  not full paired acceptance.
+- Next: check the pinned reference's stress import cost before another full
+  capture; retain actual measurements instead of relying on extrapolation.
 - Pending: complete native medium/extended/scaling/absolute-budget acceptance;
   independently reviewed reference; executable fuzz slow-path investigation;
   explicitly human-invoked campaigns; remote runner/protection setup.
