@@ -92,6 +92,27 @@ def test_cross_account_lot_identity_collision_is_rejected_atomically(fixture):
     assert {table: ledger.rows(table) for table in tables} == before
 
 
+def test_complete_reimport_refreshes_rows_without_requerying_known_account_lot_ids(fixture):
+    ledger = fixture.ledger
+    value = candidate(fixture.snapshots[0], 'known-ownership')
+    before = {row['id']: row for row in ledger.rows('lots')}
+    statements = []
+    ledger.connection.set_trace_callback(statements.append)
+    try:
+        assert ledger.apply(value)['status'] == 'APPLIED'
+    finally:
+        ledger.connection.set_trace_callback(None)
+    assert not any(re.search(r'\bSELECT\b.*\bFROM\s+tax_lots\s+WHERE\s+id\s*=', sql, re.I)
+                   for sql in statements), 'Known account ownership needs no repeated global lookup'
+    after = {row['id']: row for row in ledger.rows('lots')}
+    assert set(after) == set(before)
+    for lot_id, row in after.items():
+        expected = dict(before[lot_id])
+        if row['account_id'] == fixture.accounts[0]:
+            expected['data_environment'] = 'SYNTHETIC'
+        assert row == expected
+
+
 def test_repeated_complete_and_partial_imports_preserve_inventory_and_other_account(fixture):
     ledger = fixture.ledger
     original = {table: ledger.rows(table) for table in ('positions', 'lots', 'cash_balances')}
