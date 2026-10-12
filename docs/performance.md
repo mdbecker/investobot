@@ -195,6 +195,11 @@ inventory under SQLite read-only/change guards, independently verify every raw
 result and recheck full inventory/FKs before closing. Hypothetical risk and all
 mutation fixtures keep their resets. No live connection, pickled closure or
 writable template is shared.
+Financial imports filter account history and inventory before decoding rows.
+Global lot identities remain checked with indexed lookups for unknown IDs;
+known own IDs avoid redundant lookups within the same writer transaction.
+Actual lot rows refresh after guarded deletes, preserving protected history,
+exact basis and collision rejection.
 Changed source, dimensions, corrupt files and symlinks reject reuse before opening
 an observation database. Copy/hash/hydration and initial construction times are
 recorded separately from timed operations. Normal cache TTLs remain authoritative;

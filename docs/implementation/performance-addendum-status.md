@@ -41,6 +41,26 @@
   offender. Red `eea9743` records 11 intended failures and two financial controls.
   Account-filtered inventory reads and indexed global lot collision checks now
   pass 18 focused tests and Ruff; final scaling/integrated evidence follows.
+- Native account-local inventory measurements pass the **6x growth gate**:
+  `df2f4b0` medians 0.464/1.879 seconds, 4.05x. Its full suite then identified
+  two existing read-count failures (1,665 passed); retain that failure rather
+  than calling the intermediate source fully green. Red `bd4112d` records the
+  redundant known-ownership lookup failure plus those two existing failures;
+  green `d0940a1` passes 31 focused tests and Ruff. Final fresh native bulk
+  measurements are **0.470/1.885 seconds**, **4.01x**, with identical hashes,
+  counts and financial proofs. The final integrated result follows below.
+- Next decision: review the pending
+  [local reference proposal](../performance-evidence/m4-2026-10-12/reference-review-proposal.md).
+  It preserves original evidence and all workload/statistical/budget gates;
+  the baseline remains unchanged pending explicit human approval. Complete
+  114-case paired acceptance, import p95 and extended certification are still
+  outstanding, not inferred from this focused three-observation bulk measurement.
+- Final integrated checkpoint: exact `d0940a1` native ARM64 image
+  `447ff8d5596a` passes **1,668 tests in 243.60 seconds** and Ruff offline,
+  with locked dependencies, no source mounts and no private application volume.
+  The measured import-growth blocker is resolved. Overall remains about **90%**:
+  full paired acceptance and independent reference review remain open. Worktree
+  stays on `main`; all implementation changes have red/green commits; no pushes.
 - Pending: complete native medium/extended/scaling/absolute-budget acceptance;
   independently reviewed reference; executable fuzz slow-path investigation;
   explicitly human-invoked campaigns; remote runner/protection setup.

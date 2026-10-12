@@ -10,6 +10,9 @@
   ID ordering. Lot IDs remain globally unique: a missing local lot requires an
   indexed global ID lookup before acceptance. Keep protected historical lots,
   independent other-account cash and atomic collision rejection intact.
+  Existing own lot IDs remain known within the writer transaction; avoid
+  redundant global lookups after deletes, but refresh actual remaining rows.
+  Identity membership is not permission to reuse stale financial lot values.
 
 - Pure P05 performance fixtures may reuse verified immutable inventory only
   under SQLite query_only, total_changes and data_version guards. Verify every

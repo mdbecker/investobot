@@ -1,0 +1,1103 @@
+{
+  "status": "DIAGNOSTIC",
+  "case_id": "P02.apply",
+  "reports": {
+    "before": {
+      "small": {
+        "commit": "50fdd826147b969eb515214aac2603a074811e1a",
+        "runner": {
+          "docker": true,
+          "machine": "aarch64",
+          "engine_machine": "aarch64",
+          "hardware": "docker-desktop",
+          "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+          "cpus": 2,
+          "memory_bytes": 4294967296,
+          "network": "none",
+          "documented_laptop_equivalent": true,
+          "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+        },
+        "fixture": {
+          "recipe_version": "performance-v1",
+          "seed": 271828,
+          "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+          "dimensions": {
+            "accounts": 10,
+            "positions": 1000,
+            "lots": 2000,
+            "accepted_snapshots": 200,
+            "saved_plans": 20,
+            "history_years": 10,
+            "funds": 20,
+            "constituents_per_fund": 1000,
+            "nested_levels": 3,
+            "fund_vintages": 1,
+            "parquet_observations": 500000,
+            "research_chunks": 10000,
+            "vector_dimensions": 384,
+            "backup_fixture_bytes": 209715200
+          }
+        },
+        "cases": {
+          "P02.apply": {
+            "status": "PASS",
+            "samples": [
+              {
+                "elapsed_ns": 683921459,
+                "batch_repetitions": 1,
+                "preparation_ns": 171891709,
+                "reset_ns": 22584750,
+                "peak_rss_bytes": 160149504,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "c3e9d311f18a233420168ddceece17c73110416712b47a1a5ccf8f37ab09b833",
+                "fixture_copy_ns": 69863750
+              },
+              {
+                "elapsed_ns": 697339125,
+                "batch_repetitions": 1,
+                "preparation_ns": 174177583,
+                "reset_ns": 24165500,
+                "peak_rss_bytes": 160174080,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "c3e9d311f18a233420168ddceece17c73110416712b47a1a5ccf8f37ab09b833",
+                "fixture_copy_ns": 70727375
+              },
+              {
+                "elapsed_ns": 735162459,
+                "batch_repetitions": 1,
+                "preparation_ns": 181442208,
+                "reset_ns": 22166041,
+                "peak_rss_bytes": 160129024,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "c3e9d311f18a233420168ddceece17c73110416712b47a1a5ccf8f37ab09b833",
+                "fixture_copy_ns": 76978208
+              }
+            ]
+          }
+        }
+      },
+      "large": {
+        "commit": "50fdd826147b969eb515214aac2603a074811e1a",
+        "runner": {
+          "docker": true,
+          "machine": "aarch64",
+          "engine_machine": "aarch64",
+          "hardware": "docker-desktop",
+          "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+          "cpus": 2,
+          "memory_bytes": 4294967296,
+          "network": "none",
+          "documented_laptop_equivalent": true,
+          "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+        },
+        "fixture": {
+          "recipe_version": "performance-v1",
+          "seed": 271828,
+          "hash": "43a2a7657e0e441d2d3430c9eafa8fabdccc48705065d200a1cc0684823bdcfe",
+          "dimensions": {
+            "accounts": 40,
+            "positions": 4000,
+            "lots": 8000,
+            "accepted_snapshots": 800,
+            "saved_plans": 20,
+            "history_years": 10,
+            "funds": 20,
+            "constituents_per_fund": 1000,
+            "nested_levels": 3,
+            "fund_vintages": 1,
+            "parquet_observations": 500000,
+            "research_chunks": 10000,
+            "vector_dimensions": 384,
+            "backup_fixture_bytes": 209715200
+          }
+        },
+        "cases": {
+          "P02.apply": {
+            "status": "PASS",
+            "samples": [
+              {
+                "elapsed_ns": 5819771336,
+                "batch_repetitions": 1,
+                "preparation_ns": 621546667,
+                "reset_ns": 83438541,
+                "peak_rss_bytes": 332218368,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "1cb408cd8dcae6b14e49dff22bea0a86664f0dba3bdfdf71beeb76f493d5c180",
+                "fixture_copy_ns": 199686167
+              },
+              {
+                "elapsed_ns": 5743599169,
+                "batch_repetitions": 1,
+                "preparation_ns": 667696500,
+                "reset_ns": 81204750,
+                "peak_rss_bytes": 332156928,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "1cb408cd8dcae6b14e49dff22bea0a86664f0dba3bdfdf71beeb76f493d5c180",
+                "fixture_copy_ns": 246619750
+              },
+              {
+                "elapsed_ns": 5806955628,
+                "batch_repetitions": 1,
+                "preparation_ns": 616187375,
+                "reset_ns": 80728042,
+                "peak_rss_bytes": 332218368,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "1cb408cd8dcae6b14e49dff22bea0a86664f0dba3bdfdf71beeb76f493d5c180",
+                "fixture_copy_ns": 199418167
+              }
+            ]
+          }
+        }
+      }
+    },
+    "after": {
+      "small": {
+        "commit": "df2f4b084fb7c78eb5b31c70c01886d7a63a53a6",
+        "runner": {
+          "docker": true,
+          "machine": "aarch64",
+          "engine_machine": "aarch64",
+          "hardware": "docker-desktop",
+          "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+          "cpus": 2,
+          "memory_bytes": 4294967296,
+          "network": "none",
+          "documented_laptop_equivalent": true,
+          "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+        },
+        "fixture": {
+          "recipe_version": "performance-v1",
+          "seed": 271828,
+          "hash": "2da741ff25b5a2fff769c88419bba58d5a51d787addf7c3f1eac66dcd4dc71f3",
+          "dimensions": {
+            "accounts": 10,
+            "positions": 1000,
+            "lots": 2000,
+            "accepted_snapshots": 200,
+            "saved_plans": 20,
+            "history_years": 10,
+            "funds": 20,
+            "constituents_per_fund": 1000,
+            "nested_levels": 3,
+            "fund_vintages": 1,
+            "parquet_observations": 500000,
+            "research_chunks": 10000,
+            "vector_dimensions": 384,
+            "backup_fixture_bytes": 209715200
+          }
+        },
+        "cases": {
+          "P02.apply": {
+            "status": "PASS",
+            "samples": [
+              {
+                "elapsed_ns": 461183500,
+                "batch_repetitions": 1,
+                "preparation_ns": 173558333,
+                "reset_ns": 22824958,
+                "peak_rss_bytes": 160161792,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "3d104c12e7a0e89b0c44fdd0a0d8dec482eb6703a3dd05dfae4f393ab7ebe209",
+                "fixture_copy_ns": 70152917
+              },
+              {
+                "elapsed_ns": 464122292,
+                "batch_repetitions": 1,
+                "preparation_ns": 177013834,
+                "reset_ns": 22247042,
+                "peak_rss_bytes": 160141312,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "3d104c12e7a0e89b0c44fdd0a0d8dec482eb6703a3dd05dfae4f393ab7ebe209",
+                "fixture_copy_ns": 73224167
+              },
+              {
+                "elapsed_ns": 467272917,
+                "batch_repetitions": 1,
+                "preparation_ns": 176492458,
+                "reset_ns": 22341208,
+                "peak_rss_bytes": 160301056,
+                "persisted_bytes": 43285453,
+                "temp_bytes": 19789768,
+                "input_hash": "f31b419af73923a4db52e127abbca7130d30d083e7be4b7b5afb1bdf49410606",
+                "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+                "output_hash": "4c73b4931ded2d3250068a39673221c11c8ba76756dcacf6260239d4e84454f0",
+                "counts": {
+                  "accounts": 10,
+                  "positions": 1000,
+                  "lots": 2000,
+                  "accepted_snapshots": 200
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    },
+                    "observed": {
+                      "positions": 1000,
+                      "lots": 2000,
+                      "cash": "100000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "3d104c12e7a0e89b0c44fdd0a0d8dec482eb6703a3dd05dfae4f393ab7ebe209",
+                "fixture_copy_ns": 71088833
+              }
+            ]
+          }
+        }
+      },
+      "large": {
+        "commit": "df2f4b084fb7c78eb5b31c70c01886d7a63a53a6",
+        "runner": {
+          "docker": true,
+          "machine": "aarch64",
+          "engine_machine": "aarch64",
+          "hardware": "docker-desktop",
+          "engine_id": "1ecf4be8-ed70-4537-a8c0-557720f8f234",
+          "cpus": 2,
+          "memory_bytes": 4294967296,
+          "network": "none",
+          "documented_laptop_equivalent": true,
+          "embedding_workload": "prepared synthetic vectors; CPU retrieval"
+        },
+        "fixture": {
+          "recipe_version": "performance-v1",
+          "seed": 271828,
+          "hash": "43a2a7657e0e441d2d3430c9eafa8fabdccc48705065d200a1cc0684823bdcfe",
+          "dimensions": {
+            "accounts": 40,
+            "positions": 4000,
+            "lots": 8000,
+            "accepted_snapshots": 800,
+            "saved_plans": 20,
+            "history_years": 10,
+            "funds": 20,
+            "constituents_per_fund": 1000,
+            "nested_levels": 3,
+            "fund_vintages": 1,
+            "parquet_observations": 500000,
+            "research_chunks": 10000,
+            "vector_dimensions": 384,
+            "backup_fixture_bytes": 209715200
+          }
+        },
+        "cases": {
+          "P02.apply": {
+            "status": "PASS",
+            "samples": [
+              {
+                "elapsed_ns": 1873880834,
+                "batch_repetitions": 1,
+                "preparation_ns": 615681125,
+                "reset_ns": 81036834,
+                "peak_rss_bytes": 332218368,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "47dcf9faa941eb9a46da0e05fdde438d4fe3fc2c54e0ea349d6e5bf188dc7984",
+                "fixture_copy_ns": 196952917
+              },
+              {
+                "elapsed_ns": 1879440876,
+                "batch_repetitions": 1,
+                "preparation_ns": 619802625,
+                "reset_ns": 80963167,
+                "peak_rss_bytes": 332152832,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "47dcf9faa941eb9a46da0e05fdde438d4fe3fc2c54e0ea349d6e5bf188dc7984",
+                "fixture_copy_ns": 198452000
+              },
+              {
+                "elapsed_ns": 1980199834,
+                "batch_repetitions": 1,
+                "preparation_ns": 618008251,
+                "reset_ns": 80851875,
+                "peak_rss_bytes": 332242944,
+                "persisted_bytes": 168903859,
+                "temp_bytes": 80908184,
+                "input_hash": "dd256dbb00a6b79cb4e01d57ed05023103ac008cf2fe9d218c89544db986c2df",
+                "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+                "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+                "counts": {
+                  "accounts": 40,
+                  "positions": 4000,
+                  "lots": 8000,
+                  "accepted_snapshots": 800
+                },
+                "invariant_results": {
+                  "source-precision-and-provenance-preserved": {
+                    "passed": true,
+                    "expected": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    },
+                    "observed": {
+                      "environments": [
+                        "SYNTHETIC"
+                      ],
+                      "price_precision": [
+                        0
+                      ]
+                    }
+                  },
+                  "positions-lots-cash-match-fixture": {
+                    "passed": true,
+                    "expected": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    },
+                    "observed": {
+                      "positions": 4000,
+                      "lots": 8000,
+                      "cash": "400000"
+                    }
+                  }
+                },
+                "exit_code": 0,
+                "fresh_process": true,
+                "fixture_reused": true,
+                "template_hash": "47dcf9faa941eb9a46da0e05fdde438d4fe3fc2c54e0ea349d6e5bf188dc7984",
+                "fixture_copy_ns": 197970417
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "results": {
+    "before": {
+      "gate": {
+        "status": "FAIL",
+        "issues": [
+          {
+            "code": "SUPERLINEAR_GROWTH",
+            "case_id": "P02.apply",
+            "ratio": 8.327305065523177
+          }
+        ]
+      },
+      "medians_seconds": {
+        "small": 0.697339125,
+        "large": 5.806955628
+      },
+      "ratio": 8.327305065523177
+    },
+    "after": {
+      "gate": {
+        "status": "PASS",
+        "issues": []
+      },
+      "medians_seconds": {
+        "small": 0.464122292,
+        "large": 1.879440876
+      },
+      "ratio": 4.049451854383241
+    }
+  },
+  "templates": [
+    {
+      "revision": "before",
+      "commit": "50fdd826147b969eb515214aac2603a074811e1a",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "c29d34a50363c1160b1a068297f8bc36ba5d5600b1b6cb230e12adbabeb2a7ea",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "a246f3c43f8c05d30fea24c0c5aada0484247f6b05a80a2d23f42b44be21726c",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "e6bb6f544af20d2bc87412b4e26f5d431c7665b78c0d39ccee6bdbf6f94f6a9d",
+          "bytes": 493
+        },
+        "financial.db": {
+          "sha256": "e1d680368c00313f85610a92c8e3cc35d8d28ab6c366c5fafd1bfc8337b3d74b",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "a6cc2667fad0e1f136ef8141c59906162ff2ef7e7b8a3b8053aca01591d0c37b",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "c3e9d311f18a233420168ddceece17c73110416712b47a1a5ccf8f37ab09b833",
+      "preparation_ns": 1196581834
+    },
+    {
+      "revision": "after",
+      "commit": "df2f4b084fb7c78eb5b31c70c01886d7a63a53a6",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 10,
+        "positions": 1000,
+        "lots": 2000,
+        "accepted_snapshots": 200,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "c29d34a50363c1160b1a068297f8bc36ba5d5600b1b6cb230e12adbabeb2a7ea",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "bce86db2236eaf0ab71d8ba4e6d48c62380fcb4c9dbaf3876ab323a6ce87de03",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "5c169f09025d83564eb94bdb1ba0c9bec8db03ef18e61192d46ab21d7d3adb3b",
+          "bytes": 1066151
+        },
+        "financial-workload.json": {
+          "sha256": "e6bb6f544af20d2bc87412b4e26f5d431c7665b78c0d39ccee6bdbf6f94f6a9d",
+          "bytes": 493
+        },
+        "financial.db": {
+          "sha256": "9cdee3543ad64c263bc36b45f6e48d4dfdf62445fce6c86298d95cc142d2a911",
+          "bytes": 20606976
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "8792f8be6e9bbf7e2ec5daa8afd40ce9f609070bedf7088b81e7b8d929f5b274",
+          "bytes": 20606976
+        }
+      },
+      "template_hash": "3d104c12e7a0e89b0c44fdd0a0d8dec482eb6703a3dd05dfae4f393ab7ebe209",
+      "preparation_ns": 1182736250
+    },
+    {
+      "revision": "before",
+      "commit": "50fdd826147b969eb515214aac2603a074811e1a",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 40,
+        "positions": 4000,
+        "lots": 8000,
+        "accepted_snapshots": 800,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "c29d34a50363c1160b1a068297f8bc36ba5d5600b1b6cb230e12adbabeb2a7ea",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "c2f9add0f200dfe2c2af9fbc9257a5d35b4590a597154819b78a372b6e6777ec",
+          "bytes": 4210061
+        },
+        "financial-workload.json": {
+          "sha256": "22a8704703aa87c2aacfcbc9222456bfb55d859463d60610ed57b4d97ba0033f",
+          "bytes": 493
+        },
+        "financial.db": {
+          "sha256": "e771f4a96ad8d29e8d9c7412208d7fb74b39f65eb3f8b2eedd4f5fe71b8caa62",
+          "bytes": 80367616
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "0af019dcb53e030bacd9e805a29cf985bfd8df48ffdb711c77cba025eb715427",
+          "bytes": 80367616
+        }
+      },
+      "template_hash": "1cb408cd8dcae6b14e49dff22bea0a86664f0dba3bdfdf71beeb76f493d5c180",
+      "preparation_ns": 2226140210
+    },
+    {
+      "revision": "after",
+      "commit": "df2f4b084fb7c78eb5b31c70c01886d7a63a53a6",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 40,
+        "positions": 4000,
+        "lots": 8000,
+        "accepted_snapshots": 800,
+        "saved_plans": 20,
+        "history_years": 10,
+        "funds": 20,
+        "constituents_per_fund": 1000,
+        "nested_levels": 3,
+        "fund_vintages": 1,
+        "parquet_observations": 500000,
+        "research_chunks": 10000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "c29d34a50363c1160b1a068297f8bc36ba5d5600b1b6cb230e12adbabeb2a7ea",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "bdfa132dada778c69e22cb6d733aff5944cb213663d441ed01ac00fe4553ef61",
+          "bytes": 4210061
+        },
+        "financial-workload.json": {
+          "sha256": "22a8704703aa87c2aacfcbc9222456bfb55d859463d60610ed57b4d97ba0033f",
+          "bytes": 493
+        },
+        "financial.db": {
+          "sha256": "ecf57a28ee9ff68a64fa604b69c561dcbb5224f79b0ee08966b5e8ca962a9d28",
+          "bytes": 80367616
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "4dad172ba145a272163d249700c0654ae570db08baf0a05a94dad32dff89ad13",
+          "bytes": 80367616
+        }
+      },
+      "template_hash": "47dcf9faa941eb9a46da0e05fdde438d4fe3fc2c54e0ea349d6e5bf188dc7984",
+      "preparation_ns": 2228230959
+    }
+  ],
+  "caveat": "Three bulk observations per size/revision; not full suite or import p95 certification."
+}
