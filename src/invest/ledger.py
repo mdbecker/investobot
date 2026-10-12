@@ -444,6 +444,7 @@ class Ledger:
             securities_by_id = {s['id']: s for s in self.rows('securities')}
             held = {p['security_id'] for p in positions_by_id.values() if p['account_id'] == account_id}
             original_lots = self.rows('lots', account_id=account_id)
+            known_account_lot_ids = {lot['id'] for lot in original_lots}
             observed_ids = set()
             for p in snap["positions"]:
                 existing, supplied = self._snapshot_security(p, account_id,
@@ -493,7 +494,7 @@ class Ledger:
             for lot in snap["lots"]:
                 sid = resolve(securities_by_id.values(), lot["security"])["id"]
                 prior = lots_by_id.get(lot['id'])
-                if prior is None:
+                if prior is None and lot['id'] not in known_account_lot_ids:
                     # Lot IDs are globally unique, even when inventory reads are local.
                     matches = database_rows(self.connection, 'lots', key=lot['id'])
                     prior = matches[0] if matches else None
