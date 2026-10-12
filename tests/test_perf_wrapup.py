@@ -46,3 +46,20 @@ def test_confirmation_must_cover_the_complete_suite():
     incomplete = report(1.26)
     incomplete['cases'].pop('7')
     assert gates.compare_pair(report(), report(1.26), confirmation=(report(), incomplete))['status'] == 'INVALID'
+
+
+@pytest.mark.parametrize('operation', ['P06.budget', 'P10.recursive-exposure'])
+def test_identical_synthetic_inputs_have_repeatable_financial_hashes(tmp_path, operation):
+    from benchmarks.analytics_workloads import prepare as analytical
+    from benchmarks.financial_workloads import prepare as financial
+    prepare = financial if operation.startswith('P06') else analytical
+    hashes = []
+    for attempt in range(2):
+        fixture = prepare(operation, tmp_path / str(attempt), runner.manifest()['profiles']['test'])
+        try:
+            result = fixture.operation()
+            assert all(proof['passed'] for proof in fixture.verify(result).values())
+            hashes.append(fixture.input_state_hash)
+        finally:
+            fixture.close()
+    assert hashes[0] == hashes[1]
