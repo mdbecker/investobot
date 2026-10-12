@@ -38,6 +38,13 @@ def checkpoint(output, state):
             temporary.unlink(missing_ok=True)
 
 
+def fixture_identity(definitions, dimensions):
+    """Pin the executable recipe and an independent snapshot of the actual slice."""
+    return {'recipe_version': definitions['recipe_version'], 'seed': definitions['seed'],
+            'hash': runner.digest({'recipe': definitions, 'dimensions': dimensions}),
+            'dimensions': deepcopy(dimensions)}
+
+
 def certification_plan(definitions):
     """Absolute budgets refer to named medium sizes, except 100k-vector workloads."""
     plan = []
@@ -248,9 +255,7 @@ def _run(images, commits, host_root, suite, output, pool, state):
         if api('GET', f'/images/{image}/json').get('Architecture') != 'arm64':
             raise ValueError('Every revision image must be native ARM64; emulation is excluded')
     dimensions = definitions['profiles']['medium' if suite == 'pr' else 'stress']
-    fixture = {'recipe_version': definitions['recipe_version'], 'seed': definitions['seed'],
-               'hash': runner.digest({'recipe': definitions, 'dimensions': dimensions}),
-               'dimensions': dimensions}
+    fixture = fixture_identity(definitions, dimensions)
     runtime['cache'] = 'warm process; OS cache unknown'
     reports = {revision: {'commit': commits[revision], 'fixture': fixture,
                          'runner': runtime.copy(), 'cases': {}} for revision in required}
@@ -349,7 +354,7 @@ def _run(images, commits, host_root, suite, output, pool, state):
                     prepared_ns += sample['preparation_ns'] + sample['reset_ns']
             for size in ('small', 'large'):
                 raw = {'commit': commits['candidate'], 'runner': runtime,
-                       'fixture': dict(fixture, dimensions=planned[size]),
+                       'fixture': fixture_identity(definitions, planned[size]),
                        'cases': {case['id']: {'status': 'PASS', 'samples': samples[size]}}}
                 pair[size] = scaling.project(raw, case['id'])
                 pair[size + '_native'] = raw
