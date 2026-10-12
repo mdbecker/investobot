@@ -53,6 +53,13 @@ expected results, counts and hashes. Preparation, reset and verification are
 outside the measured domain boundary. Corpus vectors are prepared synthetic CPU
 retrieval inputs, with no embedding provider or GPU claim.
 
+The active representative profile uses 4 accounts, 200 positions, 400 tax lots,
+20 saved plans, 4,000 historical Parquet rows and 1,000 corpus chunks at 384
+dimensions, retaining the ten-year window. These are bounded single-user inputs,
+not stress/scaling gates. The small `test` profile serves ordinary fixture safety
+tests only; the runner always selects the representative profile. Both revisions
+use the revised recipe; the approved application reference remains unchanged.
+
 Build candidate and approved reference with their own `uv.lock`; mount the same
 candidate harness read-only into both. Application imports come from each
 image's installed source, not the mounted candidate source. Use native ARM64

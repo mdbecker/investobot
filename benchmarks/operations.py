@@ -1,6 +1,7 @@
 """Shared, dependency-free boundary for isolated real workload observations."""
 
 import re
+import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -35,3 +36,4 @@ class Prepared:
     reset: Callable[[], None] = noop
     close: Callable[[], None] = noop
     storage_roots: tuple[Path, ...] = field(default_factory=tuple)
+    connection: sqlite3.Connection | None = None

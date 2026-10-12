@@ -3,6 +3,12 @@
 The [2026-10-12 addendum](../PRD-mvp-wrap-up-2026-10-12.md) controls the
 remaining scope. Original PRDs remain historical specifications.
 
+The [targeted final-review follow-up](review-follow-up-2026-10-12.md) supersedes
+the tiny-fixture measurements below with representative inputs and seed-free
+replay. The application reference is unchanged. The supplied review confirms
+both remote workflows passed; repository required-check enforcement remains
+human-owned.
+
 - A: approved the limited reference change from `7cbf2bed13a0447865403e986662119571217bc6`
   to `d0940a12c44831095492efcd7091fb7b937ad6b3`. All fifteen native
   operations comprising the eight retained workflows passed their existing

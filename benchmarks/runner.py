@@ -90,7 +90,9 @@ def measure(revision, *, batches=None):
             try:
                 for operation in workflow['operations']:
                     prepare = financial if int(operation.split('.')[0][1:]) <= 8 else analytical
-                    prepared.append(prepare(operation, Path(temporary) / operation, manifest()['profiles']['test']))
+                    definitions = manifest()
+                    dimensions = definitions['profiles'][definitions['profile']]
+                    prepared.append(prepare(operation, Path(temporary) / operation, dimensions))
                 count = batches['batches'][workflow['id']] if batches else 1
                 if isinstance(count, bool) or not isinstance(count, int) or count < 1:
                     raise ValueError('Positive integral batch required')

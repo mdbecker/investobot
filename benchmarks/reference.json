@@ -3,8 +3,8 @@
   "reference_commit": "d0940a12c44831095492efcd7091fb7b937ad6b3",
   "previous_reference_commit": "7cbf2bed13a0447865403e986662119571217bc6",
   "seed": 271828,
-  "recipe_sha256": "7141a3f57f267e92f17fc3c22ff1c3390d466b6837a5c84cb733b659a0c313ac",
-  "recipe_version": "mvp-wrap-up-v1",
+  "recipe_sha256": "7878e0b6ab4ce262a88b85e6927eaa7280d1ca04b9ad0d39089b8cfef219b303",
+  "recipe_version": "mvp-representative-v2",
   "legacy_timings_are_gate": false,
   "approval": {
     "procedure": "explicit-reviewed-rebaseline",
@@ -12,7 +12,7 @@
     "scope": "Eight retained workflows only; not release readiness",
     "authorization": "docs/PRD-mvp-wrap-up-2026-10-12.md section 2"
   },
-  "capture_status": "LOCAL_EIGHT_WORKFLOW_PAIR_PASS",
+  "capture_status": "PENDING_REPRESENTATIVE_PAIR",
   "capture_summary": "docs/implementation/wrap-up-status.md",
   "remote_required_check": "UNVERIFIED"
 }

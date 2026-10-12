@@ -16,7 +16,7 @@ PARAMS = {'import': {'template': {'coherent', 'inconsistent_value'}}, 'reconcile
     'activity': {'type': {'DEPOSIT'}, 'amount': 'decimal', 'date': 'date'},
     'tax': {'kind': {'lots'}}, 'plan': {'mode': {'contributions-only'}},
     'vector': {'kind': {'search'}, 'query': 'text'}, 'backup': {'kind': {'roundtrip'}}}
-CASE_FIELDS = {'id', 'family', 'seed', 'fixture_profile', 'records', 'operations', 'mutations',
+CASE_FIELDS = {'id', 'family', 'fixture_profile', 'records', 'operations', 'mutations',
                'invariants', 'expected_result', 'performance_dimension', 'rationale'}
 
 
@@ -45,8 +45,8 @@ def _case(case, large=False):
         raise ValueError('Unknown or missing scenario fields')
     if not _identifier(case['id']) or case['family'] not in {f'P{i:02}' for i in range(1, 16)}:
         raise ValueError('Invalid case identity/family')
-    if not _integer(case['seed'], 0, 2**63 - 1) or not _integer(case['records'], 1, limits(large)['max_records']):
-        raise ValueError('Unbounded seed/record count')
+    if not _integer(case['records'], 1, limits(large)['max_records']):
+        raise ValueError('Unbounded record count')
     if case['fixture_profile'] != 'tiny':
         raise ValueError('Unsupported synthetic prerequisites')
     if case['expected_result'] not in {'SUCCESS', 'BLOCKED', 'INPUT_ERROR'}:

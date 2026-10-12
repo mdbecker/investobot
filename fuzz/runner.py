@@ -61,7 +61,7 @@ def execute_case(case, *, large=False, timeout=None):
         raise ValueError('INVALID: ' + json.dumps(validation))
     limits = validation['limits']
     identity = validation['case_hashes'][0]
-    result = dict(identity, expected_result=case['expected_result'], seed=case['seed'],
+    result = dict(identity, expected_result=case['expected_result'],
                   classification='ENVIRONMENTAL', observed_result='UNRESOLVED', exit_code=4,
                   stdout='', stderr='', invariants_passed=False)
     started = time.perf_counter_ns()
@@ -156,7 +156,7 @@ def report(cases, fixture, output):
     write_json(output / 'fuzz-report.json', value)
     (output / 'fuzz-report.md').write_text('# Local synthetic fuzz report\n\n' + value['status'] + '\n\n'
         + value['conclusion'] + '\nExercised: ' + ', '.join(value['exercised_operations']) + '\n\n' + '\n'.join(
-        f"- {row['id']}: {row['classification']}; expected {row['expected_result']}, observed {row['observed_result']}; seed {row['seed']}; severity {row['severity']}\n"
+        f"- {row['id']}: {row['classification']}; expected {row['expected_result']}, observed {row['observed_result']}; severity {row['severity']}\n"
         f"  Replay: `{row['replay_command']}`\n"
         f"  Invariants: {json.dumps(row.get('invariant_results', {}), sort_keys=True)}"
         for row in cases) + '\n\nSource: ' + value['source_commit'] + '\n'

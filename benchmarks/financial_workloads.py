@@ -285,4 +285,4 @@ def prepare(case_id, root, dimensions, *, reuse=False):
                                 'policy':locals().get('policy'), 'trading_policy':fixture.policy,
                                 'prices':fixture.prices, 'target':fixture.target_id}),
         reset=guard if immutable_performance else fixture.reset,close=close,
-        storage_roots=(root,))
+        storage_roots=(root,), connection=ledger.connection)

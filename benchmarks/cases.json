@@ -1,10 +1,27 @@
 {
   "schema_version": 2,
-  "recipe_version": "mvp-wrap-up-v1",
+  "recipe_version": "mvp-representative-v2",
+  "profile": "representative",
   "seed": 271828,
   "fixed_clock": "2026-10-10T12:00:00Z",
   "data_environment": "SYNTHETIC",
   "profiles": {
+    "representative": {
+      "accounts": 4,
+      "positions": 200,
+      "lots": 400,
+      "accepted_snapshots": 8,
+      "saved_plans": 20,
+      "history_years": 10,
+      "funds": 4,
+      "constituents_per_fund": 12,
+      "nested_levels": 3,
+      "fund_vintages": 2,
+      "parquet_observations": 4000,
+      "research_chunks": 1000,
+      "vector_dimensions": 384,
+      "backup_fixture_bytes": 4096
+    },
     "test": {
       "accounts": 2,
       "positions": 12,

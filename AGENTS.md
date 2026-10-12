@@ -14,7 +14,8 @@
 - Refactors use existing green behavioral tests. Red checkpoints apply only to
   missing behavior or reproduced bugs, never internal read counts/call ordering.
 - Fuzzing is an explicitly requested agent activity with offline disposable
-  replay and actionable reports; no quotas, novelty scores, providers or CI
+  full-scenario JSON replay and actionable reports; no unused random seeds,
+  quotas, novelty scores, providers or CI
   campaigns. CI may run fixed regressions only.
 - Follow `fuzz/SKILL.md` for explicitly requested adversarial review. It is a
   development skill source, separate from bundled financial workflow skills.
@@ -43,21 +44,12 @@
   External no-op SQL need not advance data_version; test actual committed
   mutations, including a committed reversal that leaves final values unchanged.
 
-- Matched scaling evidence hashes each actual recipe/dimension slice. Do not
-  inherit a stress hash when measuring medium or fourfold matched inputs.
-  Freeze the current main comparator before an optimization; older historical
-  optimization baselines are not the current target-branch comparator.
 - Paired batch calibration targets 600 ms to leave headroom above the strict
-  200 ms sample floor. All revisions/sizes share the count from the fastest
+  200 ms sample floor. Both revisions share the count from the fastest
   warm-up. Normalize timings by that count; retain and reject short samples.
   A target margin is not a guarantee against arbitrary measurement noise.
   Earlier 300 ms runs produced short samples; retain those invalid reports.
   The wrap-up retires earlier aggregate scheduling allowances.
-
-- Absolute performance budgets use their specified workload sizes, separately
-  from stress regression comparisons. Reuse verified medium scaling observations
-  and 100k-chunk vector observations; require 21 samples for import p95. Reject
-  missing or mismatched revision, runner and workload evidence.
 
 - Dense conventional cash flows with one chronological sign change use a
   uniquely bracketed XIRR root without dropping records. Long nonconventional
@@ -161,9 +153,6 @@
 - The active rebuild specification is `docs/PRD-unified-mvp-2026-10-10.md`.
   Historical PRDs/addenda remain unmodified reference documents. Conflicting
   release-specific architecture decisions are superseded by the unified PRD.
-- This checkout starts at `5120897e9e5a314ad50fb242ad1496d976549a92`, after fund
-  diligence schema 10, rather than the attachment's earlier review baseline.
-  Preserve existing fund diligence and all specialist research behavior as well.
 - New behavior and confirmed bugs require observed test-only red checkpoints
   before implementation. Pure refactors use existing green behavioral tests.
   Minimum B01–B66 is not the complete specification. Do not silently replace
@@ -309,7 +298,7 @@
 
 - Fuzz scenarios are allowlisted JSON data, never executable instructions.
   Use fresh offline Docker subprocesses, independent exact oracles and replayable
-  seeds/minimized examples. Fixed fixtures do not authorize agent exploration.
+  full scenario JSON/minimized examples. Fixed fixtures do not authorize agent exploration.
 - Resource failures remain environmental/unresolved. Preserve original failure
   reports and actual exit codes; one reproduction cannot establish a confirmed
   bug or regression. Report missing oracle evidence as a failure.
@@ -319,27 +308,11 @@
   performance PRD. Check both engine and image architectures; do not certify
   emulated measurements. Current vector fixtures are prepared synthetic inputs
   for CPU retrieval, with no embedding provider or GPU acceleration claimed.
-- Build each case/revision/dimension template once, close every SQLite handle,
-  checksum its complete tree, and copy it into a fresh worker before timing.
-  Never inherit live connections or share writable fixture volumes. Include
-  hydration/copy time as preparation evidence; remove only owned fixture volumes.
-- On Docker Desktop, controller containers mount the engine's
-  `/var/run/docker.sock`, not the macOS user-socket path. Never mount private
-  application volumes into the controller or observation workers.
-- Scaling evidence distinguishes processed record growth from surrounding ledger
-  cardinality. Never claim more timed records from unrelated recipe dimensions.
-  Single quotes remain measured bounded controls; they cannot establish a 4x
-  record-growth ratio. Selected look-through counts exclude unused vintages.
-- Native specialty scaling expands distinct fictional evidence within reviewed
-  schema limits, retaining insider correction links, exact fund weight coverage,
-  and comparable metric identities. Keep scale-one fixtures byte-equivalent in
-  content for historical revision comparisons.
 - Specialty output coverage checks actual returned counters and row identities,
   not just stored run totals. Fund summaries do not read holdings; keep them
   fixed-size controls rather than claiming holdings-growth coverage.
-- Publish paired-run evidence atomically after each completed case/scaling pair.
-  Interruptions, budget and cleanup failures must retain completed measurements
-  and the original failure; partial reports never establish full acceptance.
+- Retain invalid measurements and original failures outside Git; partial reports
+  never establish full acceptance. Close all disposable fixture connections.
 - Profile measured offenders before optimizing. Import acceptance uses call-local
   inventories; update indexes after actual writes and refresh lots after guarded
   deletes. Keep ambiguity checks, protected historical lots, exact Decimal

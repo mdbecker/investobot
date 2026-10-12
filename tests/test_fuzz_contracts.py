@@ -41,7 +41,7 @@ def test_one_explicit_adversarial_case_needs_no_campaign_quota_or_history(tmp_pa
     assert report['cases'][0]['saved_fixture']
 
 
-def test_replay_preserves_seed_financial_result_and_private_ledger(tmp_path):
+def test_replay_preserves_case_financial_result_and_private_ledger(tmp_path):
     protected = tmp_path / 'private.db'
     protected.write_bytes(b'Private ledger must never be opened')
     env = dict(os.environ, INVEST_DB=str(protected), FMP_API_KEY='private-secret')
@@ -61,7 +61,7 @@ def test_replay_preserves_seed_financial_result_and_private_ledger(tmp_path):
     replay = invoke(['replay', output / case['saved_fixture'], '--output-dir', tmp_path / 'replay'])
     assert replay.returncode == 0, replay.stderr
     repeated = read_report(tmp_path / 'replay')['cases'][0]
-    assert repeated['seed'] == case['seed']
+    assert repeated['input_hash'] == case['input_hash']
     assert repeated['substantive_output_hash'] == case['substantive_output_hash']
 
 

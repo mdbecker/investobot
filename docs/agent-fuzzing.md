@@ -22,11 +22,11 @@ uv run --locked python scripts/fuzz.py replay /results/run/saved-case.json --out
 
 Use the actual saved-case path printed by the run. Each case executes in a fresh
 resource-bounded subprocess with disposable synthetic state and independent
-oracles. Keep seeds/minimized inputs and reports locally in ignored
+oracles. Keep complete scenario JSON/minimized inputs and reports locally in ignored
 `fuzz-results/`; retain unresolved correctness evidence until resolution.
 Timeout/OOM is unresolved environmental evidence, not a confirmed product bug.
 
-Reports include replay command/input, source identity, seed, expected/observed
+Reports include replay command/input, source identity, expected/observed
 result, violated invariant and severity. Reproduce/minimize surprising results.
 A confirmed bug needs an observed failing domain-language BDD checkpoint before
 the smallest fix, replay and full green correctness. Profile slow paths with
