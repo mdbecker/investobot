@@ -91,3 +91,18 @@ def test_paired_release_scaling_plan_covers_every_case_with_matched_dimensions()
         expected = importlib.import_module('benchmarks.scaling').dimensions(row['case']['id'], row['small'])
         assert row['large'] == expected
         assert row['revisions'] == ['candidate'] and row['observations'] >= 3
+
+
+def test_history_metrics_boundary_measures_one_adjusted_series(tmp_path):
+    from benchmarks import analytics_workloads, runner
+    dimensions = runner.manifest()['profiles']['test']
+    prepared = analytics_workloads.prepare('P09.history-metrics-hit', tmp_path, dimensions)
+    try:
+        result = prepared.operation()
+        assert 'metrics' in result, 'History metrics currently duplicates whole-fund comparison'
+        assert result['metrics']['usable_period']['observations'] == len(result['history']['prices'])
+        assert result['metrics']['rolling_returns']
+        assert prepared.counts['processed_funds'] == 1
+        assert all(proof['passed'] for proof in prepared.verify(result).values())
+    finally:
+        prepared.close()
