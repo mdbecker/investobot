@@ -1,5 +1,25 @@
 # Investobot project rules
 
+## Current finite wrap-up scope
+
+- `docs/PRD-mvp-wrap-up-2026-10-12.md` supersedes conflicting performance,
+  campaign and evidence requirements below. Keep financial safety unchanged.
+- Use exactly eight fixed representative workflows, one pinned reference
+  (`d0940a12c44831095492efcd7091fb7b937ad6b3`), one warm-up and five batched
+  samples. Confirm a >25% median regression with one complete repeat pair.
+  Retire three-revision, stress/scaling, p95 and aggregate certification gates.
+- Stop import optimization; retain its functional chronology, reconciliation,
+  identity, isolation, atomicity and retry checks. Institution profiles and FMP
+  remain unverified pending reviewed real evidence.
+- Refactors use existing green behavioral tests. Red checkpoints apply only to
+  missing behavior or reproduced bugs, never internal read counts/call ordering.
+- Fuzzing is an explicitly requested agent activity with offline disposable
+  replay and actionable reports; no quotas, novelty scores, providers or CI
+  campaigns. CI may run fixed regressions only.
+- Keep generated evidence outside Git with documented retention. Never run
+  untrusted PR code on a personal self-hosted runner. Complete the finite
+  acceptance checklist and stop; no speculative framework or performance work.
+
 ## Additional verified lifecycle lessons
 
 - Import/reconciliation chronology selects account history in SQLite before

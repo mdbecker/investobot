@@ -1,14 +1,17 @@
 {
   "schema_version": 1,
-  "reference_commit": "7cbf2bed13a0447865403e986662119571217bc6",
+  "reference_commit": "d0940a12c44831095492efcd7091fb7b937ad6b3",
+  "previous_reference_commit": "7cbf2bed13a0447865403e986662119571217bc6",
   "seed": 271828,
-  "recipe_sha256": "b26a21352e5862bace3b03a001233c35cffc7920ed1d3b9c92eaf14eda26cb89",
-  "recipe_version": "performance-v1",
+  "recipe_sha256": "7141a3f57f267e92f17fc3c22ff1c3390d466b6837a5c84cb733b659a0c313ac",
+  "recipe_version": "mvp-wrap-up-v1",
   "legacy_timings_are_gate": false,
   "approval": {
     "procedure": "explicit-reviewed-rebaseline",
-    "status": "PENDING_HUMAN_REVIEW"
+    "status": "APPROVED",
+    "scope": "Eight retained workflows only; not release readiness",
+    "authorization": "docs/PRD-mvp-wrap-up-2026-10-12.md section 2"
   },
-  "capture_status": "PENDING_CONSTRAINED_RUNNER",
+  "capture_status": "PENDING_EIGHT_WORKFLOW_PAIR",
   "measurements": []
 }
