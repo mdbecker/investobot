@@ -63,3 +63,23 @@ def test_identical_synthetic_inputs_have_repeatable_financial_hashes(tmp_path, o
         finally:
             fixture.close()
     assert hashes[0] == hashes[1]
+
+
+@pytest.mark.parametrize('operation,field,value', [
+    ('P12.run-ten-years', 'history_years', 9),
+    ('P14.semantic-top10', 'research_chunks', 25),
+    ('P11.temporal-join', 'parquet_observations', 121),
+])
+def test_changed_historical_or_corpus_evidence_changes_input_fingerprint(tmp_path, operation, field, value):
+    from benchmarks.analytics_workloads import prepare
+    dimensions = runner.manifest()['profiles']['test']
+    hashes = []
+    for attempt, supplied in enumerate((dimensions, dict(dimensions, **{field: value}))):
+        fixture = prepare(operation, tmp_path / str(attempt), supplied)
+        try:
+            result = fixture.operation()
+            assert all(proof['passed'] for proof in fixture.verify(result).values())
+            hashes.append(fixture.input_state_hash)
+        finally:
+            fixture.close()
+    assert hashes[0] != hashes[1]
