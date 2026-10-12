@@ -63,3 +63,21 @@ def test_quote_bounded_controls_remain_in_complete_scaling_plan():
     assert all(isinstance(row.get('reason'), str) and 'quote' in row['reason'].lower() for row in controls)
     assert all(row['small'] == row['large'] for row in controls)
     assert {row['case']['id'] for row in plan} == {case['id'] for case in MANIFEST['cases']}
+
+
+@pytest.mark.parametrize('temperature', ['hit', 'miss'])
+def test_replacement_scaling_excludes_the_subject_from_processed_candidates(tmp_path, temperature):
+    case = 'P09.replacements-' + temperature
+    large = scaling.dimensions(case, BASE)
+    assert large['funds'] - 1 == (BASE['funds'] - 1) * 4
+    for name, dimensions in [('small', BASE), ('large', large)]:
+        prepared = analytics_workloads.prepare(case, tmp_path / name, dimensions)
+        try:
+            output = prepared.operation()
+            assert all(proof['passed'] for proof in prepared.verify(output).values())
+            assert prepared.counts['processed_replacement_candidates'] == dimensions['funds'] - 1
+            report = {'cases': {case: {'samples': [{'counts': prepared.counts}]}}}
+            assert scaling.project(report, case)['cases'][case]['samples'][0]['counts'] == {
+                'logical_records': dimensions['funds'] - 1}
+        finally:
+            prepared.close()
