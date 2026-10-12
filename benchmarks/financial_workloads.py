@@ -281,6 +281,8 @@ def prepare(case_id, root, dimensions, *, reuse=False):
             fixture.close()
     return Prepared(operation=operation,verify=verify,counts=counts,
         input_state_hash=digest({'financial':substantive(ledger.planning_state()),
-                                'performance':payload if family=='P05' and name!='hypothetical-risk' else None}),
+                                'performance':payload if family=='P05' else None,
+                                'policy':locals().get('policy'), 'trading_policy':fixture.policy,
+                                'prices':fixture.prices, 'target':fixture.target_id}),
         reset=guard if immutable_performance else fixture.reset,close=close,
         storage_roots=(root,))

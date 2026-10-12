@@ -86,7 +86,13 @@ def prepare(case_id, root, dimensions, *, reuse=False):
     else:
         financial.close()
         raise ValueError('Unsupported analytics benchmark family')
-    baseline = fixtures.digest(evidence(ledger.planning_state()))
+    corpus_rows = {}
+    if family == 'P14':
+        for table in ('document_chunks', 'embeddings'):
+            corpus_rows[table] = [tuple(row) for row in ledger.connection.execute(
+                'SELECT * FROM ' + table + ' ORDER BY 1,2')]
+    baseline = fixtures.digest(evidence({'financial': ledger.planning_state(),
+                                        'sources': run.preparation, 'corpus': corpus_rows}))
     if not reuse:
         metadata_path.write_text(json.dumps({'case_id': case_id, 'dimensions': dimensions,
             'stage': run.preparation}, sort_keys=True, default=str))
@@ -268,7 +274,8 @@ def _historical(ledger, dimensions, operation, securities, counts, *, stage=None
         return {'ten-year-coverage': [True, available], 'no-look-ahead': [True, available],
             'three-target-comparison': [expected_runs, actual_runs],
             'missing-history-typed': [True, typed]}
-    run.preparation = {'manifest': manifest, 'days': days, 'runs': runs}
+    run.preparation = {'manifest': manifest, 'days': days, 'runs': runs,
+                       'policy': policy, 'portfolios': portfolios}
     return run, observed
 
 
