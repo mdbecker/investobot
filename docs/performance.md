@@ -227,6 +227,8 @@ correction/duplicate links stay within their evidence group. Selected look-throu
 records use `processed_constituents`, excluding unselected vintages.
 
 Reports distinguish `record_growth`, `context_cardinality` and `bounded_control`.
+Every native scaling report hashes its own complete recipe and actual dimensions;
+medium and matched-fourfold evidence must not inherit the stress fixture hash.
 Context pairs measure the cost of fixed work in a larger database and still face
 the same growth limit; they do not claim fourfold event/output counts. Quote
 controls and fund summaries remain in the full timing inventory and paired reports with identical

@@ -2,6 +2,11 @@
 
 ## Additional verified lifecycle lessons
 
+- Matched scaling evidence hashes each actual recipe/dimension slice. Do not
+  inherit a stress hash when measuring medium or fourfold matched inputs.
+  Freeze the current main comparator before an optimization; older historical
+  optimization baselines are not the current target-branch comparator.
+
 - Absolute performance budgets use their specified workload sizes, separately
   from stress regression comparisons. Reuse verified medium scaling observations
   and 100k-chunk vector observations; require 21 samples for import p95. Reject

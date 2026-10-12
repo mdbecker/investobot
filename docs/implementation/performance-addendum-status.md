@@ -1,5 +1,24 @@
 # Performance and fuzz addendum status
 
+Native acceptance follow-up: red checkpoint `b73e70e` records eight intended
+failures for dimension-specific fixture identity. Green `d607b11` hashes the
+actual recipe and dimensions in every native scaling report, instead of
+inheriting the stress hash. Eighty-two focused contracts and Ruff pass in Docker.
+The new capture freezes base `5e70f69` (current main at work start), rather than
+reusing an older historical optimization comparator. Full measurement evidence
+is recorded below when available; this metadata fix does not establish native
+acceptance.
+
+Exact `d607b11` source, archived into native ARM64 image `8c50ba5e6e12`, passed
+**1,627 tests in 247.56 seconds** and Ruff offline with no source mounts.
+
+Actual three-revision medium capture completed nine cases: the first eight
+passed both comparators; `P02.check` failed the 200 ms batch floor (20 of 21
+observations were too short). The next case was deliberately interrupted to
+fix calibration. The original report is retained as
+`docs/performance-evidence/m4-2026-10-12/paired-pr-d607b11-interrupted.json`.
+This is a measured harness blocker, not an application financial defect.
+
 Latest priority: finish native M4 medium/extended acceptance. A certification
 audit found that stress results were incorrectly being compared with named
 medium absolute budgets, and import acceptance lacked p95 sampling. Red

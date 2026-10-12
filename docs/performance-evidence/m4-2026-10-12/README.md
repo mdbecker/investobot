@@ -65,3 +65,19 @@ and 100k-vector observations, separately from stress comparisons.
 completed. It was stopped to apply the certification audit's correction;
 this is not a confirmed application bug. No completed-case acceptance is
 claimed from that run.
+
+## Current-main paired capture and short-batch blocker
+
+`paired-pr-d607b11-interrupted.json` retains the next native capture, using
+reference `7cbf2bed13a0447865403e986662119571217bc6`, current-main base
+`5e70f69a39e75ca55cb7cc75303123f6fe8a0521` (image `51ec26045731`), and
+candidate `d607b1169a007811a87e7ceb51317b079d456e36` (image `8c50ba5e6e12`).
+The first eight cases pass both comparators, including import acceptance and
+idempotent reimport. `P02.check` fails measurement validity: its common nine-call
+batches range from 174.664 to 202.483 ms, with 20 of 21 observations below the
+required 200 ms floor. This is a batch calibration failure, not a financial
+output defect or confirmed application slow path.
+
+The coordinator interrupted the following case (SIGINT, exit 130) to repair
+calibration. Original invalid measurements remain retained. Full PR/extended
+acceptance is still incomplete; passing eight cases does not certify the suite.
