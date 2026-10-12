@@ -2,6 +2,22 @@
 from copy import deepcopy
 
 
+def evidence_kind(case_id):
+    """Distinguish processed records from surrounding stored context."""
+    if case_id.startswith('P09.quote-'):
+        return 'bounded_control'
+    context = {
+        'P01.cli-startup', 'P01.tools-list', 'P01.tools-describe',
+        'P03.activity-append', 'P03.corrected-snapshot', 'P03.linked-cash-transfer',
+        'P04.manifest-verify', 'P06.specific-disposal', 'P06.budget',
+        'P08.persist-20-plans', 'P08.compare-20', 'P08.show', 'P08.markdown-export',
+        'P14.incremental-ingest', 'P15.top-issuer-research-sequence',
+        'P13.research-plan', 'P13.portfolio-report', 'P13.insiders-ownership',
+        'P13.context', 'P13.changes',
+    }
+    return 'context_cardinality' if case_id in context else 'record_growth'
+
+
 def _driver(case_id):
     family, operation = case_id.split('.', 1)
     if family == 'P04':
@@ -9,19 +25,23 @@ def _driver(case_id):
     if family == 'P05':
         return 'positions' if operation == 'hypothetical-risk' else 'history_checkpoints'
     if family == 'P09':
-        if operation.startswith(('holdings-', 'compare-', 'history-metrics-')):
+        if operation.startswith('history-'):
+            return 'processed_history_observations'
+        if operation.startswith('quote-'):
+            return 'processed_quote_observations'
+        if operation.startswith(('holdings-', 'compare-')):
             return 'constituents_per_fund'
         return 'funds'
     if family == 'P10':
-        return 'constituent_observations'
+        return 'processed_constituents'
     if family == 'P11':
         return 'parquet_observations'
     if family == 'P12':
         return 'history_rows'
     if family == 'P13':
-        # Legal specialty packages are bounded controls; scale the real ledger
-        # context, without claiming their fixed evidence cardinality increases.
-        return 'positions'
+        return ('research_runs' if operation in {'history-list', 'context', 'changes',
+                'portfolio-report', 'research-plan', 'insiders-ownership'}
+                or operation.endswith('-list') else 'research_evidence_items')
     if family == 'P14':
         return 'research_chunks'
     if family == 'P06':
@@ -50,6 +70,11 @@ def dimensions(case_id, base_dimensions):
     elif family == 'P08':
         fields = ('saved_plans',)
     elif family == 'P09':
+        if case_id.startswith('P09.quote-'):
+            return result
+        if case_id.startswith('P09.history-'):
+            result['provider_history_observations'] = base_dimensions.get('provider_history_observations', 5) * 4
+            return result
         driver = _driver(case_id)
         fields = (driver,)
     elif family == 'P10':
@@ -60,7 +85,11 @@ def dimensions(case_id, base_dimensions):
         result['historical_assets'] = base_dimensions.get('historical_assets', 2) * 4
         return result
     elif family == 'P13':
-        fields = ('accounts', 'positions', 'lots', 'accepted_snapshots')
+        if _driver(case_id) == 'research_runs':
+            fields = ('funds',)
+        else:
+            result['research_evidence_scale'] = base_dimensions.get('research_evidence_scale', 1) * 4
+            return result
     elif family == 'P14':
         fields = ('research_chunks',)
     else:
@@ -75,16 +104,12 @@ def dimensions(case_id, base_dimensions):
 def project(report, case_id):
     """Return a derived logical-count view; never alter archived observation evidence."""
     result = deepcopy(report)
+    result['scaling_evidence_kind'] = evidence_kind(case_id)
     driver = _driver(case_id)
     for row in result['cases'][case_id]['samples']:
         counts = row.get('counts', {})
         if driver not in counts:
-            # Only dimensions actually attested by the observation are acceptable.
-            if driver == 'constituent_observations' and all(
-                    name in counts for name in ('funds', 'constituents_per_fund', 'fund_vintages')):
-                value = counts['funds'] * counts['constituents_per_fund'] * counts['fund_vintages']
-            else:
-                raise ValueError(f'Missing measured logical driver: {driver}')
+            raise ValueError(f'Missing measured logical driver: {driver}')
         else:
             value = counts[driver]
         if isinstance(value, bool) or not isinstance(value, int) or value <= 0:

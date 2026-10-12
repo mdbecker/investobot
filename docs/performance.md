@@ -203,3 +203,20 @@ It builds `linux/arm64` images and verifies the native engine/image architecture
 Configuring that runner, baseline approval and branch protection are human setup
 steps; no runner or host packages were installed by this implementation. Hosted
 ARM runners on another machine do not establish performance on your M4.
+# Scaling evidence
+
+Matched history reads and metrics grow actual adjusted-price observations
+(`provider_history_observations`, default 5), rather than fund or constituent
+counts. Specialty package boundaries grow distinct native evidence arrays with
+`research_evidence_scale` (default 1); list/context controls grow stored runs.
+Fund TOP_N stays at most 100, exact aggregate weights are conserved, and insider
+correction/duplicate links stay within their evidence group. Selected look-through
+records use `processed_constituents`, excluding unselected vintages.
+
+Reports distinguish `record_growth`, `context_cardinality` and `bounded_control`.
+Context pairs measure the cost of fixed work in a larger database and still face
+the same growth limit; they do not claim fourfold event/output counts. Quote
+controls remain in the full timing inventory and paired reports with identical
+dimensions, but do not establish a record-growth ratio. Their ordinary latency,
+resource and absolute-budget gates still apply. No nonlinear exemption is added.
+

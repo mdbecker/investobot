@@ -272,3 +272,11 @@
 - On Docker Desktop, controller containers mount the engine's
   `/var/run/docker.sock`, not the macOS user-socket path. Never mount private
   application volumes into the controller or observation workers.
+- Scaling evidence distinguishes processed record growth from surrounding ledger
+  cardinality. Never claim more timed records from unrelated recipe dimensions.
+  Single quotes remain measured bounded controls; they cannot establish a 4x
+  record-growth ratio. Selected look-through counts exclude unused vintages.
+- Native specialty scaling expands distinct fictional evidence within reviewed
+  schema limits, retaining insider correction links, exact fund weight coverage,
+  and comparable metric identities. Keep scale-one fixtures byte-equivalent in
+  content for historical revision comparisons.

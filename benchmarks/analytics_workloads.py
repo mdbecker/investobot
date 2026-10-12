@@ -118,7 +118,7 @@ def prepare(case_id, root, dimensions, *, reuse=False):
         run, observations = _historical(ledger, dimensions, operation,
             financial.securities[:dimensions.get('historical_assets', 2)], counts, stage=stage)
     elif family == 'P13':
-        run, observations = _research(ledger, root, dimensions, operation, stage=stage)
+        run, observations = _research(ledger, root, dimensions, operation, counts=counts, stage=stage)
     elif family == 'P14':
         run, observations = _corpus(ledger, dimensions, operation, counts, stage=stage)
     elif family == 'P15':
@@ -167,6 +167,10 @@ def _provider(ledger, root, dimensions, operation, counts, *, stage=None):
         processed_funds=1 if name in {'holdings', 'quote', 'history-read', 'history-metrics'} else 2
                         if name == 'compare' else dimensions['funds'])
     ticker, peer = 'FUND0000', 'FUND0001'
+    if name.startswith('history-'):
+        counts['processed_history_observations'] = len(payload['history'][ticker])
+    if name == 'quote':
+        counts['processed_quote_observations'] = len(payload['quote'][ticker])
 
     def history_metrics():
         history = client.history(ticker, refresh=temperature == 'miss')
@@ -454,7 +458,7 @@ def _corpus(ledger, dimensions, operation, counts, *, stage=None):
     return run, observed
 
 
-def _research(ledger, root, dimensions, operation, *, stage=None):
+def _research(ledger, root, dimensions, operation, *, counts=None, stage=None):
     aliases = {'fund-diligence': 'fund_diligence'}
     specialty = next((name for name in ('fund-diligence', 'competitive', 'insiders',
         'political', 'earnings', 'news') if operation.startswith(name + '-')), 'news')
@@ -473,6 +477,7 @@ def _research(ledger, root, dimensions, operation, *, stage=None):
             payload['company']['security_id'] = register['id']
         else:
             payload = fixtures.specialty_template(specialty)
+        payload = fixtures.research_payload(payload, specialty, dimensions.get('research_evidence_scale', 1))
     else:
         payload = stage['payload']
     native = importlib.import_module('invest.' + aliases.get(specialty, specialty))
@@ -496,6 +501,11 @@ def _research(ledger, root, dimensions, operation, *, stage=None):
     proposed['limitations'].append('Original fictional independently reviewed new source edition')
     run_table = 'research_political_runs' if specialty == 'political' else 'research_runs'
     before_runs = ledger.connection.execute('SELECT count(*) FROM ' + run_table).fetchone()[0]
+    if counts is not None:
+        primary = {'news': 'events', 'earnings': 'metrics', 'political': 'contributions',
+                   'competitive': 'metrics', 'insiders': 'transactions', 'fund-diligence': 'holdings'}
+        counts.update(research_runs=before_runs,
+                      research_evidence_items=len(payload[primary[specialty]]))
     query_name = {'insiders': 'insider_queries', 'fund-diligence': 'fund_diligence_queries'}.get(
         specialty, specialty + '_queries')
     queries = importlib.import_module('invest.' + query_name)

@@ -14,7 +14,12 @@ def scaling_plan(definitions):
     base = definitions['profiles']['medium']
     return [{'case': case, 'small': dict(base),
              'large': scaling.dimensions(case['id'], base),
-             'revisions': ['candidate'], 'observations': case['repetitions']['extended']}
+             'revisions': ['candidate'], 'observations': case['repetitions']['extended'],
+             'evidence_kind': scaling.evidence_kind(case['id']),
+             'bounded_control': scaling.evidence_kind(case['id']) == 'bounded_control',
+             'reason': ('One quote is a fixed-size control; ordinary latency/resource gates apply.'
+                        if scaling.evidence_kind(case['id']) == 'bounded_control' else
+                        'Fourfold ' + scaling.evidence_kind(case['id']) + '; native evidence retained.')}
             for case in definitions['cases']]
 
 # Rebaseline requires a reviewed source change, never an approval field in JSON.
@@ -230,7 +235,9 @@ def _run(images, commits, host_root, suite, output, pool):
     if suite != 'pr':
         for planned in scaling_plan(definitions):
             case = planned['case']
-            pair = {'case_id': case['id'], 'expected_complexity': 'linear'}
+            pair = {'case_id': case['id'], 'expected_complexity': 'linear',
+                    'evidence_kind': planned['evidence_kind'], 'reason': planned['reason'],
+                    'bounded_control': planned['bounded_control']}
             warmups = {}
             for size in ('small', 'large'):
                 sample = observation(images['candidate'], commits['candidate'], host_root,
@@ -259,7 +266,8 @@ def _run(images, commits, host_root, suite, output, pool):
             pool.clear()
             if measured_ns > 3600 * 1_000_000_000:
                 raise RuntimeError('Extended measurement job budget exceeded during matched scaling')
-    scaling_result = gates.compare_scaling(scaling_reports) if suite != 'pr' else None
+    scaling_result = gates.compare_scaling([pair for pair in scaling_reports
+        if not pair['bounded_control']]) if suite != 'pr' else None
     certification = gates.certify(reports['candidate'], budgets) if suite != 'pr' else None
     result = {'status': 'FAIL' if any(row['status'] == 'FAIL' for row in comparisons)
               or (certification and certification['status'] == 'FAIL')
