@@ -2,14 +2,23 @@
 
 ## Additional verified lifecycle lessons
 
+- Pure P05 performance fixtures may reuse verified immutable inventory only
+  under SQLite query_only, total_changes and data_version guards. Verify every
+  raw result independently and recheck full inventory/FKs before closing. Keep
+  mutating and cache-writing fixtures on their original per-operation resets.
+  External no-op SQL need not advance data_version; test actual committed
+  mutations, including a committed reversal that leaves final values unchanged.
+
 - Matched scaling evidence hashes each actual recipe/dimension slice. Do not
   inherit a stress hash when measuring medium or fourfold matched inputs.
   Freeze the current main comparator before an optimization; older historical
   optimization baselines are not the current target-branch comparator.
-- Paired batch calibration targets 400 ms to leave headroom above the strict
+- Paired batch calibration targets 300 ms to leave headroom above the strict
   200 ms sample floor. All revisions/sizes share the count from the fastest
   warm-up. Normalize timings by that count; retain and reject short samples.
   A target margin is not a guarantee against arbitrary measurement noise.
+  The earlier 400 ms target exceeded the nominal extended scheduling allowance
+  before bulk work; preserve original evidence, strict floor and suite budgets.
 
 - Absolute performance budgets use their specified workload sizes, separately
   from stress regression comparisons. Reuse verified medium scaling observations

@@ -369,12 +369,34 @@ def prepare(case_id, root, dimensions, *, reuse=False):
                     'issues':raw_result.get('issues',[])}
         return substantive(raw_result)
 
+    immutable_performance = family == 'P05' and name != 'hypothetical-risk'
+    immutable_state = ledger.planning_state() if immutable_performance else None
+    immutable_fk = (not ledger.connection.execute('PRAGMA foreign_key_check').fetchall()
+                    if immutable_performance else None)
+    if immutable_performance:
+        immutable_inventory_ok = (len(immutable_state['positions']) == dimensions['positions']
+            and len(immutable_state['lots']) == dimensions['lots']
+            and all(Decimal(p['quantity']) == 10 for p in immutable_state['positions'])
+            and all(Decimal(l['remaining_adjusted_basis']) == 600 for l in immutable_state['lots']))
+        immutable_preserved = state_hash(immutable_state) == before
+        ledger.connection.execute('PRAGMA query_only=ON')
+        initial_changes = ledger.connection.total_changes
+        initial_version = ledger.connection.execute('PRAGMA data_version').fetchone()[0]
+
+    def guard():
+        if (ledger.connection.execute('PRAGMA query_only').fetchone()[0] != 1
+                or ledger.connection.total_changes != initial_changes
+                or ledger.connection.execute('PRAGMA data_version').fetchone()[0] != initial_version):
+            raise ValueError('Immutable performance fixture guard changed')
+
     def verify(projected):
         """Check exact fixture facts independently of the implementation's success label."""
         result=raw_result
-        state=ledger.planning_state()
-        valid_fk=not ledger.connection.execute('PRAGMA foreign_key_check').fetchall()
-        inventory_ok=(len(state['positions'])==dimensions['positions'] and
+        if immutable_performance:
+            guard()
+        state=immutable_state if immutable_performance else ledger.planning_state()
+        valid_fk=immutable_fk if immutable_performance else not ledger.connection.execute('PRAGMA foreign_key_check').fetchall()
+        inventory_ok=immutable_inventory_ok if immutable_performance else (len(state['positions'])==dimensions['positions'] and
             len(state['lots'])==dimensions['lots'] and
             all(Decimal(p['quantity'])==(9 if family=='P06' and name=='budget' and
                 p['account_id']==account and p['security_id'] in fixture.securities[:2] else 10)
@@ -382,7 +404,7 @@ def prepare(case_id, root, dimensions, *, reuse=False):
             all(Decimal(l['remaining_adjusted_basis'])==(480 if family=='P06' and name=='budget' and
                 l['id'] in {f'{account}:lot:00000:0',f'{account}:lot:00001:0'} else 600)
                 for l in state['lots']))
-        preserved=state_hash(state)==before
+        preserved=immutable_preserved if immutable_performance else state_hash(state)==before
         semantic=True
         if family=='P01':semantic=isinstance(result,dict) and bool(result)
         elif family=='P02':
@@ -531,8 +553,17 @@ def prepare(case_id, root, dimensions, *, reuse=False):
         nonlocal closed
         if closed:return
         closed=True
-        for call in cleanup:call()
-        fixture.close()
+        try:
+            if immutable_performance:
+                # Final independent native inventory proof precedes PASS publication.
+                final_state = ledger.planning_state()
+                final_fk = ledger.connection.execute('PRAGMA foreign_key_check').fetchall()
+                guard()
+                if state_hash(final_state) != before or final_fk:
+                    raise ValueError('Immutable performance fixture inventory changed')
+            for call in cleanup:call()
+        finally:
+            fixture.close()
     return Prepared(operation=operation,verify=verify,counts=counts,
-        input_state_hash=fixture.input_state_hash,reset=fixture.reset,close=close,
+        input_state_hash=fixture.input_state_hash,reset=guard if immutable_performance else fixture.reset,close=close,
         storage_roots=(root,))

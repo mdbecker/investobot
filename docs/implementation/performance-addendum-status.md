@@ -1,5 +1,32 @@
 # Performance and fuzz addendum status
 
+## Current work checklist — October 12
+
+- Done: 300 ms paired calibration with unchanged 200 ms validity floor
+  (`0ea623b` red, `7417f94` green; 97 focused tests).
+- Done: guarded immutable reuse for four pure P05 calculations (`49b51f2`
+  red: 13 intended failures, two controls). Broader verification passes 161
+  tests and Ruff in offline Docker. Every raw result retains its independent
+  oracle; full inventory/FK checks surround measurement. Mutation/risk resets
+  remain unchanged. An external-write test was corrected to commit a real
+  mutation and reversal; SQLite need not count a no-op as a database change.
+- Evidence: the interrupted `7417f94` capture completed 18 paired cases, all
+  passing. Preserve its original exit 130 and report; this is not full acceptance.
+  The P05 before-profile records 30 operations: 7.7 ms calculation, 588 ms reset,
+  1,194 ms verification. Source/input/output hashes and native proofs are retained.
+- Next: measure the guarded P05 overhead, run one integrated suite, and check
+  the pinned reference's stress import cost before another full capture.
+- Pending: complete native medium/extended/scaling/absolute-budget acceptance;
+  independently reviewed reference; executable fuzz slow-path investigation;
+  explicitly human-invoked campaigns; remote runner/protection setup.
+- Manual product gates: reviewed institution HTML, entitled FMP acceptance and
+  source rights. No x86 validation is required.
+
+Overall implementation remains approximately **90%**. This checklist supersedes
+historical pending statements below; passing a partial capture is not delivery.
+
+## Historical checkpoints
+
 Latest progress: the native capture's short-batch blocker is corrected at
 `5e7a73d`, after red `9f967fb` (four intended failures and one control).
 Paired and scaling calibration target 400 ms while preserving the strict 200 ms

@@ -88,9 +88,18 @@ def test_external_committed_write_is_rejected_without_restoring_it(tmp_path):
     prepared = financial_workloads.prepare(PURE_CASES[0], tmp_path, DIMENSIONS)
     connection = live_connection(prepared)
     external = sqlite3.connect(tmp_path / 'financial.db')
-    external.execute('UPDATE accounts SET name=name')
+    initial_version = connection.execute('PRAGMA data_version').fetchone()[0]
+    account_id, original_name = external.execute('SELECT id,name FROM accounts ORDER BY id').fetchone()
+    # A no-op may change zero pages and leaves SQLite data_version unchanged.
+    # Commit a real change and its reversal: final state equality must not hide writes.
+    external.execute('UPDATE accounts SET name=? WHERE id=?',
+                     (original_name + ' transient benchmark mutation', account_id))
+    external.commit()
+    external.execute('UPDATE accounts SET name=? WHERE id=?', (original_name, account_id))
     external.commit()
     external.close()
+    assert connection.execute('SELECT name FROM accounts WHERE id=?', (account_id,)).fetchone()[0] == original_name
+    assert connection.execute('PRAGMA data_version').fetchone()[0] != initial_version
     try:
         with pytest.raises(ValueError, match='(?i)changed|mutat|guard'):
             prepared.reset()
