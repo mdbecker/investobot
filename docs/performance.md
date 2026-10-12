@@ -89,6 +89,11 @@ Run this entry point in the documented Docker orchestration environment; the hos
 root is a disposable work directory, never a private application directory.
 `--suite extended` selects the extended measurement policy. Implemented entry
 points do not establish completed native paired measurements or remote CI results.
+The output is an atomic progress checkpoint after each completed case and scaling
+pair. `IN_PROGRESS` and interrupted/failed reports retain evidence but cannot
+certify full coverage. A cleanup error is secondary to the original failure;
+report publication never discards an existing valid checkpoint on serialization
+failure. Keep failed captures alongside the later rerun.
 
 ## Comparison and certification
 

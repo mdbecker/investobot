@@ -2,11 +2,39 @@
 
 import http.client
 import json
+import os
 import socket
+import tempfile
 import time
 import uuid
+from pathlib import Path
 
 from benchmarks import gates, runner, scaling
+
+
+def checkpoint(output, state):
+    """Atomically retain actual evidence; serialization failure preserves its predecessor."""
+    if output is None:
+        return
+    payload = json.dumps(state, indent=2, allow_nan=False) + '\n'
+    output = Path(output)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', dir=output.parent, suffix='.tmp',
+                                         delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, output)
+        descriptor = os.open(output.parent, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def scaling_plan(definitions):
@@ -138,13 +166,34 @@ class FixturePool:
 
 def run(images, commits, host_root, suite='pr', output=None):
     pool = FixturePool(images, commits, host_root)
+    state = {'status': 'IN_PROGRESS', 'reports': {}, 'comparisons': []}
+    failed = None
     try:
-        return _run(images, commits, host_root, suite, output, pool)
+        return _run(images, commits, host_root, suite, output, pool, state)
+    except BaseException as error:
+        failed = error
+        state.update(status='FAIL', failure={'kind': type(error).__name__, 'message': str(error)})
+        try:
+            checkpoint(output, state)
+        except Exception as publication_error:
+            state['failure']['publication_error'] = str(publication_error)
+        raise
     finally:
-        pool.clear()
+        try:
+            pool.clear()
+        except Exception as cleanup_error:
+            if failed is None:
+                state.update(status='FAIL', failure={'kind': 'CLEANUP_FAILED', 'message': str(cleanup_error)})
+                checkpoint(output, state)
+                raise
+            state['failure']['cleanup_error'] = str(cleanup_error)
+            try:
+                checkpoint(output, state)
+            except Exception as publication_error:
+                state['failure']['publication_error'] = str(publication_error)
 
 
-def _run(images, commits, host_root, suite, output, pool):
+def _run(images, commits, host_root, suite, output, pool, state):
     """No dynamic models, network providers or user ledgers enter these containers."""
     required = {'reference', 'base', 'candidate'}
     if set(images) != required or set(commits) != required:
@@ -174,6 +223,17 @@ def _run(images, commits, host_root, suite, output, pool):
     started = time.monotonic()
     measured_ns = 0
     prepared_ns = 0
+    scaling_reports = []
+
+    def publish():
+        state.update(reports=reports, comparisons=comparisons, scaling_reports=scaling_reports,
+            measurement_wall_seconds=time.monotonic() - started,
+            timed_operation_seconds=measured_ns / 1_000_000_000,
+            fixture_preparation_and_reset_seconds=(prepared_ns + pool.preparation_ns) / 1_000_000_000,
+            fixture_templates=pool.evidence, fixture_builds=len(pool.evidence),
+            reference_review_status=metadata['approval']['status'])
+        checkpoint(output, state)
+    publish()
 
     def capture(revision, case, repetitions=None, warmup=False):
         try:
@@ -182,9 +242,7 @@ def _run(images, commits, host_root, suite, output, pool):
                                template=pool.get(revision, case, dimensions))
         except Exception as exc:
             reports[revision]['cases'][case['id']] = {'status': 'FAIL', 'error': str(exc)}
-            if output:
-                output.write_text(json.dumps({'status': 'FAIL', 'reports': reports,
-                                  'comparisons': comparisons, 'error': str(exc)}, indent=2) + '\n')
+            publish()
             raise
     for case in definitions['cases']:
         count = case['repetitions'][suite]
@@ -225,13 +283,13 @@ def _run(images, commits, host_root, suite, output, pool):
             measure(retry=True)
             result = gates.compare(reports['candidate'], reports['base'], reports['reference'], contract)
         comparisons.append(result)
+        publish()
         pool.clear()
         if measured_ns > (1200 if suite == 'pr' else 3600) * 1_000_000_000:
             raise RuntimeError('Measurement job budget exceeded; preparation/build recorded separately')
     budgets = [{'id': case['id'], 'mode': 'extended_retrieval' if case['repetitions']['extended'] == 21
                 else 'extended_bulk', 'budget_ns': case['budget_ns'], 'budget_stat': case['budget_stat']}
                for case in definitions['cases']]
-    scaling_reports = []
     if suite != 'pr':
         for planned in scaling_plan(definitions):
             case = planned['case']
@@ -263,6 +321,7 @@ def _run(images, commits, host_root, suite, output, pool):
                 pair[size] = scaling.project(raw, case['id'])
                 pair[size + '_native'] = raw
             scaling_reports.append(pair)
+            publish()
             pool.clear()
             if measured_ns > 3600 * 1_000_000_000:
                 raise RuntimeError('Extended measurement job budget exceeded during matched scaling')
@@ -279,6 +338,6 @@ def _run(images, commits, host_root, suite, output, pool):
               'fixture_preparation_and_reset_seconds': (prepared_ns + pool.preparation_ns) / 1_000_000_000,
               'fixture_templates': pool.evidence, 'fixture_builds': len(pool.evidence),
               'reference_review_status': metadata['approval']['status']}
-    if output:
-        output.write_text(json.dumps(result, indent=2) + '\n')
+    state.update(result)
+    checkpoint(output, state)
     return result

@@ -283,3 +283,6 @@
 - Specialty output coverage checks actual returned counters and row identities,
   not just stored run totals. Fund summaries do not read holdings; keep them
   fixed-size controls rather than claiming holdings-growth coverage.
+- Publish paired-run evidence atomically after each completed case/scaling pair.
+  Interruptions, budget and cleanup failures must retain completed measurements
+  and the original failure; partial reports never establish full acceptance.
