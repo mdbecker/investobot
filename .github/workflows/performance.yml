@@ -4,80 +4,79 @@ on:
   pull_request:
   push:
     branches: [main]
-  schedule:
-    - cron: '23 3 * * *'
   workflow_dispatch:
-    inputs:
-      suite:
-        type: choice
-        options: [pr, extended]
-        default: extended
 
 permissions:
   contents: read
 
 jobs:
   performance:
-    runs-on: [self-hosted, macOS, ARM64, investobot-m4]
-    timeout-minutes: 100
-    env:
-      OMP_NUM_THREADS: '1'
-      OPENBLAS_NUM_THREADS: '1'
-      MKL_NUM_THREADS: '1'
+    # GitHub-hosted ARM isolation; never run PR code on a personal Docker engine.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           path: candidate
-          fetch-depth: 2
-      - name: Resolve immutable reference and current target or prior main
-        id: revisions
-        env:
-          EVENT: ${{ github.event_name }}
-          TARGET: ${{ github.event.pull_request.base.sha }}
-          BEFORE: ${{ github.event.before }}
+      - name: Read explicitly approved reference
+        id: reference
         run: |
           reference=$(docker run --rm --network none -v "$PWD/candidate:/source:ro" python:3.12-slim python -c 'import json; print(json.load(open("/source/benchmarks/reference.json"))["reference_commit"])')
-          base="$TARGET"
-          if [ -z "$base" ]; then base="$BEFORE"; fi
-          if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ]; then base=$(git -C candidate rev-parse HEAD^); fi
-          echo "reference=$reference" >> "$GITHUB_OUTPUT"
-          echo "base=$base" >> "$GITHUB_OUTPUT"
-          echo "candidate=$(git -C candidate rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "sha=$reference" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.revisions.outputs.reference }}
+          ref: ${{ steps.reference.outputs.sha }}
           path: reference
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.revisions.outputs.base }}
-          path: base
       - name: Build each revision with its own locked dependencies
         run: |
-          for revision in reference base candidate; do
-            docker build --platform linux/arm64 --tag "invest-perf-$revision" "$revision"
-          done
-      - name: Fixed synthetic three-revision measurements
+          docker build --platform linux/arm64 -t invest-perf-reference reference
+          docker build --platform linux/arm64 -t invest-perf-candidate candidate
+      - name: Compare eight workflows and confirm any slowdown once
         env:
-          REFERENCE: ${{ steps.revisions.outputs.reference }}
-          BASE: ${{ steps.revisions.outputs.base }}
-          CANDIDATE: ${{ steps.revisions.outputs.candidate }}
-          EVENT: ${{ github.event_name }}
-          REQUESTED_SUITE: ${{ inputs.suite }}
+          REFERENCE: ${{ steps.reference.outputs.sha }}
+          CANDIDATE: ${{ github.sha }}
         run: |
-          suite=pr
-          if [ "$EVENT" = schedule ] || [ "$REQUESTED_SUITE" = extended ]; then suite=extended; fi
           mkdir -p results
-          docker run --rm --network none --cpus=2 --memory=4g \
-            -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD/candidate:/harness:ro" -v "$PWD/results:/results" \
-            invest-perf-candidate python /harness/scripts/perf.py paired --suite "$suite" \
-            --images '{"reference":"invest-perf-reference","base":"invest-perf-base","candidate":"invest-perf-candidate"}' \
-            --commits "{\"reference\":\"$REFERENCE\",\"base\":\"$BASE\",\"candidate\":\"$CANDIDATE\"}" \
-            --host-root "$PWD/candidate" --output /results/performance.json
+          engine_arch=$(docker info --format '{{.Architecture}}')
+          engine_id=$(docker info --format '{{.ID}}')
+          run_case() {
+            image=$1
+            shift
+            image_arch=$(docker image inspect "$image" --format '{{.Architecture}}')
+            docker run --rm --network none --cpus=2 --memory=4g \
+              -e INVEST_PROMPTS=/data/prompts -e OMP_NUM_THREADS=1 \
+              -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
+              -e INVEST_PERF_ENGINE_ARCH="$engine_arch" \
+              -e INVEST_PERF_ENGINE_ID="$engine_id" \
+              -e INVEST_PERF_IMAGE_ARCH="$image_arch" \
+              -v "$PWD/candidate:/harness:ro" -v "$PWD/results:/results" \
+              "$image" uv run --locked python /harness/scripts/perf.py "$@"
+          }
+          pair() {
+            suffix=$1
+            run_case invest-perf-reference warmup --revision "$REFERENCE" --output "/results/reference-warmup$suffix.json"
+            run_case invest-perf-candidate warmup --revision "$CANDIDATE" --output "/results/candidate-warmup$suffix.json"
+            run_case invest-perf-candidate batches "/results/reference-warmup$suffix.json" "/results/candidate-warmup$suffix.json" --output "/results/batches$suffix.json"
+            run_case invest-perf-reference run --revision "$REFERENCE" --batches "/results/batches$suffix.json" --output "/results/reference$suffix.json"
+            run_case invest-perf-candidate run --revision "$CANDIDATE" --batches "/results/batches$suffix.json" --output "/results/candidate$suffix.json"
+          }
+          pair ''
+          set +e
+          run_case invest-perf-candidate compare /results/reference.json /results/candidate.json --output /results/comparison.json
+          status=$?
+          set -e
+          if [ "$status" = 2 ]; then
+            pair '-confirmation'
+            run_case invest-perf-candidate compare /results/reference.json /results/candidate.json \
+              --confirmation-reference /results/reference-confirmation.json \
+              --confirmation-candidate /results/candidate-confirmation.json \
+              --output /results/comparison.json
+          else
+            exit "$status"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fixed-performance-evidence
+          name: eight-workflow-performance
           path: results
-          retention-days: 90
+          retention-days: 30

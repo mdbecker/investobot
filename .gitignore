@@ -11,3 +11,8 @@ local-data/
 !src/invest/static/*.html
 
 .local-data/
+docs/performance-evidence/
+docs/implementation/benchmark-*.json
+docs/benchmark-*.json
+benchmark-results/
+fuzz-results/

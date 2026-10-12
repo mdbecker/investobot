@@ -1,81 +1,60 @@
 #!/usr/bin/env python3
-"""Small fixed-workload runner. This entrypoint never invokes an AI agent."""
-
+"""Eight offline synthetic workflows; no AI, providers or Docker controller."""
 import argparse
 import json
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from benchmarks import gates, runner  # noqa: E402
 
-from benchmarks import runner  # noqa: E402
+
+def read(path):
+    return json.loads(Path(path).read_text())
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('coverage')
-    worker = commands.add_parser('_worker')
-    worker.add_argument('--request')
-    preparation = commands.add_parser('_prepare')
-    preparation.add_argument('--request')
-    paired = commands.add_parser('paired')
-    paired.add_argument('--suite', choices=('pr', 'extended'), default='pr')
-    paired.add_argument('--images', required=True)
-    paired.add_argument('--commits', required=True)
-    paired.add_argument('--host-root', required=True)
-    paired.add_argument('--output', type=Path, required=True)
-    run = commands.add_parser('run')
-    run.add_argument('--suite', choices=('pr', 'extended'), default='pr')
-    run.add_argument('--profile', choices=('test', 'medium', 'stress'), default='medium')
-    run.add_argument('--case')
-    run.add_argument('--observations', type=int)
-    run.add_argument('--batch-repetitions', type=int)
-    run.add_argument('--scale', type=int, choices=(1, 4), default=1)
-    run.add_argument('--output', type=Path)
+    for name in ('warmup', 'run'):
+        command = commands.add_parser(name)
+        command.add_argument('--revision', required=True)
+        command.add_argument('--output', type=Path, required=True)
+        if name == 'run':
+            command.add_argument('--batches', type=Path, required=True)
+    for name in ('batches', 'compare'):
+        command = commands.add_parser(name)
+        command.add_argument('reference', type=Path)
+        command.add_argument('candidate', type=Path)
+        command.add_argument('--output', type=Path, required=True)
+        if name == 'compare':
+            command.add_argument('--confirmation-reference', type=Path)
+            command.add_argument('--confirmation-candidate', type=Path)
     args = parser.parse_args()
     try:
-        if args.command == 'coverage':
-            result = runner.coverage()
-        elif args.command in {'_worker', '_prepare'}:
-            request = json.loads(args.request) if args.request else json.load(sys.stdin)
-            request['root'] = Path(request['root'])
-            if args.command == '_prepare':
-                from benchmarks.templates import create
-                result = create(request['case'], request['dimensions'], request['root'])
-            else:
-                template = request.pop('template', None)
-                copy_ns = 0
-                if template:
-                    from benchmarks.templates import clone
-                    copying = time.perf_counter_ns()
-                    manifest = clone(template, request['root'], request['case'], request['dimensions'])
-                    copy_ns = time.perf_counter_ns() - copying
-                    request.update(reuse=True, template_hash=manifest['template_hash'])
-                else:
-                    request['root'].mkdir(parents=True)
-                result = runner.observe(**request)
-                result['fixture_copy_ns'] = copy_ns
-                result['preparation_ns'] += copy_ns
-        elif args.command == 'paired':
-            from benchmarks.paired import run
-
-            result = run(json.loads(args.images), json.loads(args.commits), args.host_root,
-                         args.suite, args.output)
+        if args.command in {'warmup', 'run'}:
+            result = runner.measure(args.revision, batches=read(args.batches) if args.command == 'run' else None)
+        elif args.command == 'batches':
+            result = runner.common_batch_counts(read(args.reference), read(args.candidate))
         else:
-            if args.observations is not None and args.observations <= 0:
-                raise ValueError('Observations must be positive')
-            if args.batch_repetitions is not None and args.batch_repetitions <= 0:
-                raise ValueError('Batch repetitions must be positive')
-            result = runner.run(args.suite, args.profile, args.case, args.observations,
-                                args.batch_repetitions, args.scale)
-            if args.output:
-                args.output.write_text(json.dumps(result, indent=2) + '\n')
-        print(json.dumps(result))
-        return 0 if result.get('status') != 'FAIL' else 3
-    except Exception as exc:
-        print(json.dumps({'status': 'FAIL', 'error': str(exc)}), file=sys.stderr)
+            reference = read(args.reference)
+            approved = read(Path(__file__).resolve().parents[1] / 'benchmarks/reference.json')
+            if reference.get('revision') != approved['reference_commit'] or reference.get('recipe_hash') != approved['recipe_sha256']:
+                raise ValueError('Reference revision or recipe is not the approved pin')
+            confirmation = None
+            if args.confirmation_reference or args.confirmation_candidate:
+                if not (args.confirmation_reference and args.confirmation_candidate):
+                    raise ValueError('Both complete confirmation reports are required')
+                confirmation = (read(args.confirmation_reference), read(args.confirmation_candidate))
+            if confirmation and confirmation[0].get('revision') != approved['reference_commit']:
+                raise ValueError('Confirmation reference revision is not approved')
+            result = gates.compare_pair(reference, read(args.candidate), confirmation=confirmation)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, sort_keys=True, indent=2) + '\n')
+        print(json.dumps({'status': result.get('status', 'OK'), 'output': str(args.output)}, sort_keys=True))
+        return 2 if result.get('status') == 'CONFIRM' else 3 if result.get('status') in {'FAIL', 'INVALID'} else 0
+    except (ValueError, OSError, KeyError) as error:
+        print(json.dumps({'status': 'INVALID', 'error': str(error)}), file=sys.stderr)
         return 3
 
 

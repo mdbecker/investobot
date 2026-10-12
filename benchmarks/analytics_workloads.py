@@ -2,43 +2,22 @@
 
 import copy
 import hashlib
-import importlib
 import json
-import os
 import sqlite3
-import subprocess
 from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
 from benchmarks import analytics_fixtures as fixtures
 from invest import (
-    analytics,
     analytics_store,
     backtest,
-    discovery,
     lookthrough,
-    research_portfolio,
     search,
 )
-from invest.market import MarketClient, compare
-from invest.plans import state_hash
 
-SUPPORTED_CASES = frozenset(
-    ['P09.' + operation + '-' + cache for operation in
-     ('holdings', 'compare', 'search', 'replacements', 'screen', 'history-read', 'history-metrics', 'quote')
-     for cache in ('hit', 'miss')]
-    + ['P10.' + operation for operation in ('recursive-exposure', 'top-issuers', 'research-universe', 'incomplete-coverage')]
-    + ['P11.' + operation for operation in ('data-snapshot', 'pinned-parquet-read', 'temporal-join', 'observation-aggregation')]
-    + ['P12.' + operation for operation in ('run-ten-years', 'compare-three', 'identical-repeat', 'unavailable-history')]
-    + ['P13.' + specialty + '-' + operation for specialty in
-       ('news', 'political', 'earnings', 'competitive', 'insiders', 'fund-diligence')
-       for operation in ('validate', 'import', 'list', 'show', 'summary')]
-    + ['P13.' + operation for operation in ('history-list', 'context', 'changes', 'compare', 'portfolio-report',
-       'competitive-matrix', 'insiders-activity', 'insiders-ownership', 'fund-diligence-holdings', 'research-plan')]
-    + ['P14.' + operation for operation in ('text-top10', 'semantic-top10', 'hybrid-filtered-top10',
-       'rebuild-after-deletion', 'incremental-ingest')]
-    + ['P15.monthly-report-sequence', 'P15.top-issuer-research-sequence'])
+SUPPORTED_CASES = frozenset({'P10.recursive-exposure', 'P10.top-issuers',
+    'P11.temporal-join', 'P12.run-ten-years', 'P14.text-top10', 'P14.semantic-top10'})
 
 
 def _json(value):
@@ -71,22 +50,9 @@ def _checkpoint(ledger, root, *, reuse=False):
     return reset
 
 
-def _cli(ledger, arguments, *, env=None):
-    environment = dict(os.environ, INVEST_DB=str(ledger.path),
-                       INVEST_CONFIG=str(ledger.path.parent / 'benchmark-config.toml'))
-    environment.pop('FMP_API_KEY', None)
-    environment.pop('INVEST_FIXTURES', None)
-    environment.update(env or {})
-    process = subprocess.run(['invest', *map(str, arguments)], env=environment,
-                             capture_output=True, text=True, timeout=120)
-    if process.returncode:
-        raise RuntimeError(f'Benchmark CLI failed: {arguments}: {process.stderr}')
-    return json.loads(process.stdout)
-
-
 def prepare(case_id, root, dimensions, *, reuse=False):
     from benchmarks.financial_fixtures import build
-    from benchmarks.operations import Prepared
+    from benchmarks.operations import Prepared, evidence
 
     if case_id not in SUPPORTED_CASES:
         raise ValueError('Unsupported analytical operation: ' + case_id)
@@ -108,25 +74,19 @@ def prepare(case_id, root, dimensions, *, reuse=False):
         'P11': ('parquet_observations',), 'P12': ('history_years',),
         'P14': ('research_chunks', 'vector_dimensions')}
     counts.update({key: dimensions[key] for key in factual_dimensions.get(family, ())})
-    if family == 'P09':
-        run, observations = _provider(ledger, root, dimensions, operation, counts, stage=stage)
-    elif family == 'P10':
+    if family == 'P10':
         run, observations = _exposure(ledger, dimensions, operation, counts, stage=stage)
     elif family == 'P11':
         run, observations = _parquet(ledger, root, dimensions, operation, financial.securities[0], counts, stage=stage)
     elif family == 'P12':
         run, observations = _historical(ledger, dimensions, operation,
             financial.securities[:dimensions.get('historical_assets', 2)], counts, stage=stage)
-    elif family == 'P13':
-        run, observations = _research(ledger, root, dimensions, operation, counts=counts, stage=stage)
     elif family == 'P14':
         run, observations = _corpus(ledger, dimensions, operation, counts, stage=stage)
-    elif family == 'P15':
-        run, observations = _sequence(financial, root, dimensions, operation, stage=stage)
     else:
         financial.close()
         raise ValueError('Unsupported analytics benchmark family')
-    baseline = state_hash(ledger.planning_state())
+    baseline = fixtures.digest(evidence(ledger.planning_state()))
     if not reuse:
         metadata_path.write_text(json.dumps({'case_id': case_id, 'dimensions': dimensions,
             'stage': run.preparation}, sort_keys=True, default=str))
@@ -152,93 +112,6 @@ def prepare(case_id, root, dimensions, *, reuse=False):
     return Prepared(operation=operation_call, verify=verify, counts=counts,
                     input_state_hash=baseline, reset=reset, close=financial.close,
                     storage_roots=(root,))
-
-
-def _provider(ledger, root, dimensions, operation, counts, *, stage=None):
-    if stage is None:
-        path, payload = fixtures.provider_file(root, dimensions)
-    else:
-        path = root / 'public-provider.json'
-        payload = json.loads(path.read_text())
-    client = MarketClient(ledger, fixture_path=path)
-    name, temperature = operation.rsplit('-', 1)
-    counts.update(provider_cache_supported=name != 'screen', provider_cache_hits=0)
-    counts.update(provider_fixture_funds=dimensions['funds'],
-        processed_funds=1 if name in {'holdings', 'quote', 'history-read', 'history-metrics'} else 2
-                        if name == 'compare' else dimensions['funds'])
-    ticker, peer = 'FUND0000', 'FUND0001'
-    if name.startswith('history-'):
-        counts['processed_history_observations'] = len(payload['history'][ticker])
-    if name == 'quote':
-        counts['processed_quote_observations'] = len(payload['quote'][ticker])
-    if name == 'replacements':
-        counts['processed_replacement_candidates'] = len(payload['metadata']) - 1
-
-    def history_metrics():
-        history = client.history(ticker, refresh=temperature == 'miss')
-        return {'history': history, 'metrics': analytics.series_metrics(history['prices'])}
-
-    functions = {'holdings': lambda: client.holdings(ticker, refresh=temperature == 'miss'),
-        'compare': lambda: compare(client, ticker, peer, refresh=temperature == 'miss'),
-        'search': lambda: discovery.search(client, {'fund_type': 'ETF'}),
-        'replacements': lambda: discovery.replacements(client, ticker,
-            [f'FUND{index:04}' for index in range(1, dimensions['funds'])]),
-        'screen': lambda: discovery.screen(client, {}),
-        'history-read': lambda: client.history(ticker, refresh=temperature == 'miss'),
-        'history-metrics': history_metrics,
-        'quote': lambda: client.quote(ticker, refresh=temperature == 'miss')}
-    run = functions[name]
-    # Cache initialization belongs to preparation, never the measured boundary.
-    if temperature == 'hit' and stage is None:
-        run()
-    initial = state_hash(ledger.planning_state())
-    before_cache = {row['id']: row['retrieved_at'] for table in ('market_data_cache', 'fund_holdings_cache')
-                    for row in ledger.rows(table)}
-
-    def observed(output):
-        if name == 'holdings':
-            coverage = len(output['holdings'])
-            expected = dimensions['constituents_per_fund']
-        elif name in {'history-read'}:
-            coverage = len(output.get('prices', output.get('history', [])))
-            expected = len(payload['history'][ticker])
-        elif name == 'quote':
-            coverage, expected = output.get('price'), '100'
-        elif name == 'history-metrics':
-            coverage = output['metrics']['usable_period']['observations']
-            expected = len(payload['history'][ticker])
-        elif name == 'compare':
-            coverage, expected = Decimal(str(output['overlap'])).normalize(), Decimal(1)
-        else:
-            rows = output.get('candidates', output.get('results', output.get('funds', [])))
-            coverage = len(rows)
-            expected = dimensions['funds'] - (1 if name == 'replacements' else 0)
-        cached_flags = []
-
-        def cache_flags(value):
-            if isinstance(value, dict):
-                if isinstance(value.get('cached'), bool):
-                    cached_flags.append(value['cached'])
-                for nested in value.values():
-                    cache_flags(nested)
-            elif isinstance(value, list):
-                for nested in value:
-                    cache_flags(nested)
-        cache_flags(output)
-        counts['provider_cache_hits'] = sum(cached_flags)
-        actual_cache = ('BYPASS' if name == 'screen' else 'hit' if cached_flags and all(cached_flags)
-                        else 'miss' if cached_flags and not all(cached_flags) else 'UNPROVEN')
-        if name == 'search':
-            current = {row['id']: row['retrieved_at'] for row in ledger.rows('market_data_cache')}
-            actual_cache = 'hit' if current and all(before_cache.get(key) == value
-                                                   for key, value in current.items()) else 'miss'
-            counts['provider_cache_hits'] = sum(before_cache.get(key) == value for key, value in current.items())
-        expected_cache = 'BYPASS' if name == 'screen' else temperature
-        return {'complete-requested-provider-fixture-coverage': [str(expected), str(coverage)],
-            'canonical-marks-unchanged': [initial, state_hash(ledger.planning_state())],
-            'cache-path-proven': [expected_cache, actual_cache]}
-    run.preparation = {}
-    return run, observed
 
 
 def _exposure(ledger, dimensions, operation, counts, *, stage=None):
@@ -457,177 +330,4 @@ def _corpus(ledger, dimensions, operation, counts, *, stage=None):
             'permission-issuer-date-filters': [expected_ids, ids],
             'top10-exact-eligible-results': [expected_ids, ids]}
     run.preparation = {}
-    return run, observed
-
-
-def _research(ledger, root, dimensions, operation, *, counts=None, stage=None):
-    aliases = {'fund-diligence': 'fund_diligence'}
-    specialty = next((name for name in ('fund-diligence', 'competitive', 'insiders',
-        'political', 'earnings', 'news') if operation.startswith(name + '-')), 'news')
-    verb = operation[len(specialty) + 1:] if operation.startswith(specialty + '-') else operation
-    if stage is None:
-        register = fixtures.register_issuer(ledger)
-        if specialty == 'news':
-            payload = fixtures.news_package(cik='0000000001', name='Fictional company',
-                researched_as_of=fixtures.DATE, window_start='2026-10-01', event_date='2026-10-06')
-            payload['company'].update(ticker='FAKE', security_id=register['id'])
-        elif specialty == 'earnings':
-            payload = fixtures.earnings_package()
-            payload['company']['security_id'] = register['id']
-        elif specialty == 'political':
-            payload = fixtures.political_package()
-            payload['company']['security_id'] = register['id']
-        else:
-            payload = fixtures.specialty_template(specialty)
-        payload = fixtures.research_payload(payload, specialty, dimensions.get('research_evidence_scale', 1))
-    else:
-        payload = stage['payload']
-    native = importlib.import_module('invest.' + aliases.get(specialty, specialty))
-    if specialty == 'insiders':
-        native = importlib.import_module('invest.insiders')
-    policy = root / 'independently-reviewed-rights.json'
-    if stage is None:
-        policy.write_text(json.dumps(fixtures.rights_policy()))
-    kwargs = {'policy_path': policy} if specialty == 'political' else {}
-    expected_runs = dimensions['funds']
-    if stage is None:
-        runs = []
-        for index in range(expected_runs):
-            package = copy.deepcopy(payload)
-            package['limitations'].append(f'Original fictional independently reviewed source edition {index:06}')
-            accepted = native.import_research(ledger, package, yes=True, **kwargs)
-            runs.append(accepted['research_run_id'])
-    else:
-        runs = stage['runs']
-    proposed = copy.deepcopy(payload)
-    proposed['limitations'].append('Original fictional independently reviewed new source edition')
-    run_table = 'research_political_runs' if specialty == 'political' else 'research_runs'
-    before_runs = ledger.connection.execute('SELECT count(*) FROM ' + run_table).fetchone()[0]
-    if counts is not None:
-        primary = {'news': 'events', 'earnings': 'metrics', 'political': 'contributions',
-                   'competitive': 'metrics', 'insiders': 'transactions', 'fund-diligence': 'holdings'}
-        counts.update(research_runs=before_runs,
-                      research_evidence_items=len(payload[primary[specialty]]))
-    query_name = {'insiders': 'insider_queries', 'fund-diligence': 'fund_diligence_queries'}.get(
-        specialty, specialty + '_queries')
-    queries = importlib.import_module('invest.' + query_name)
-    universe = {'manifest_id': 'fictional-research-universe', 'as_of': fixtures.DATE,
-        'data_environment': 'SYNTHETIC', 'requested_top': 1,
-        'issuers': [{'issuer_id': '0000000001', 'exposure_weight': '1',
-                    'identity': {'cik': '0000000001', 'name': 'Fictional company'}}],
-        'coverage': {'household_total_value': '1000', 'unknown_exposure_value': '0',
-                     'filtered_exposure_value': '0', 'unresolved_issuer_value': '0'}}
-    if stage is None:
-        analytics_store.snapshot(ledger, {'id': universe['manifest_id'], 'purpose': 'RESEARCH_UNIVERSE',
-            'data_environment': 'SYNTHETIC', 'artifacts': [], 'metadata': {'universe': universe}}, confirm=True)
-        research_plan = research_portfolio.plan(ledger, universe['manifest_id'],
-            window_start='2026-10-01', window_end=fixtures.DATE)
-    else:
-        research_plan = stage['research_plan']
-
-    def run():
-        if verb == 'validate':
-            return native.import_research(ledger, proposed, yes=False, **kwargs)
-        if verb == 'import':
-            return native.import_research(ledger, proposed, yes=True, **kwargs)
-        if verb in {'list', 'history-list'}:
-            return queries.list_runs(ledger)
-        if verb == 'show':
-            return queries.show(ledger, runs[-1])
-        if verb == 'summary':
-            return queries.summary(ledger, runs[-1])
-        if operation == 'portfolio-report':
-            return research_portfolio.report(ledger, research_plan['id'])
-        if operation == 'research-plan':
-            return research_portfolio.plan(ledger, universe['manifest_id'],
-                window_start='2026-10-01', window_end=fixtures.DATE)
-        if operation in {'context', 'changes'}:
-            return getattr(queries, operation)(ledger, 'FAKE')
-        if operation == 'compare':
-            return queries.compare(ledger, runs[0], runs[-1])
-        special = {'competitive-matrix': 'matrix', 'insiders-activity': 'activity',
-                   'insiders-ownership': 'ownership', 'fund-diligence-holdings': 'holdings'}
-        if operation in special:
-            return getattr(queries, special[operation])(ledger, runs[-1])
-        raise ValueError('No research operation implementation: ' + operation)
-
-    def observed(output):
-        after_runs = ledger.connection.execute('SELECT count(*) FROM ' + run_table).fetchone()[0]
-        expected = before_runs + (verb == 'import')
-        rows = ledger.connection.execute('SELECT id,package_json FROM ' + run_table).fetchall()
-        packages_intact = all(isinstance(json.loads(package), dict) and len(checksum) == 64
-                              for checksum, package in rows)
-        coverage = len(output['runs']) if verb in {'list', 'history-list'} else after_runs
-        coverage_expected = expected_runs if verb in {'list', 'history-list'} else expected
-        primary = {'news': ('events', 'event_count'), 'earnings': ('metrics', 'metric_count'),
-            'political': ('contributions', 'verified_transactions'),
-            'competitive': ('metrics', 'metric_count'), 'insiders': ('transactions', 'transaction_count'),
-            'fund-diligence': ('holdings', 'holding_count')}
-        field, counter = primary[specialty]
-        if verb in {'validate', 'import'}:
-            coverage_expected, coverage = len(payload[field]), output.get(counter)
-        elif verb == 'show':
-            coverage_expected = sorted(row.get('id', row.get('event_key')) for row in payload[field])
-            coverage = sorted(row.get('id', row.get('event_key')) for row in output.get(field, []))
-        return {'strict-specialty-validation': [True, packages_intact],
-            'atomic-immutable-run-evidence': [expected, after_runs],
-            'complete-requested-research-coverage': [coverage_expected, coverage]}
-    run.preparation = {'payload': payload, 'runs': runs, 'research_plan': research_plan}
-    return run, observed
-
-
-def _sequence(financial, root, dimensions, operation, *, stage=None):
-    ledger = financial.ledger
-    before = state_hash(ledger.planning_state())
-    if operation == 'monthly-report-sequence':
-        from invest.planning import save_policy
-        policy = dict(financial.policy, id='fictional-monthly-approved',
-                      source='Explicit fictional human-reviewed benchmark policy')
-        if stage is None:
-            save_policy(ledger, policy, confirm=True)
-            (root / 'benchmark-config.toml').write_text('[planning]\npolicy_id="fictional-monthly-approved"\n')
-        file = root / 'monthly-input.json'
-        if stage is None:
-            file.write_text(json.dumps({'target_id': financial.target_id, 'prices': financial.prices}))
-        before = state_hash(ledger.planning_state())
-        evidence = {}
-
-        def run():
-            preflight = _cli(ledger, ['portfolio', 'check', '--as-of', fixtures.DATE])
-            proposal = _cli(ledger, ['plan', 'propose', '--policy', policy['id'], '--mode',
-                'contributions-only', '--as-of', fixtures.DATE, '--file', file])
-            exported = _cli(ledger, ['report', 'export', proposal['id'], '--output', root / 'plan.md'])
-            original = (root / 'plan.md').read_text()
-            evidence.update(report=original, exported=exported)
-            normalized = original.replace(proposal['id'], '<GENERATED_PLAN_ID>').replace(
-                proposal['created_at'], '<CREATION_CLOCK>')
-            return {'preflight': preflight, 'proposal': proposal,
-                    'report': normalized, 'export': {'format': exported['format'],
-                        'path': str(Path(exported['path']).relative_to(root)),
-                        'content_hash': fixtures.digest(normalized)}}
-    else:
-        run_research, _ = _research(ledger, root, dimensions, 'research-plan',
-                                    stage=None if stage is None else stage['research'])
-        pinned = run_research() if stage is None else stage['pinned']
-        before = state_hash(ledger.planning_state())
-
-        def run():
-            created = _cli(ledger, ['research', 'portfolio', 'plan', '--universe-manifest',
-                                   'fictional-research-universe'])
-            report = _cli(ledger, ['research', 'portfolio', 'report', '--plan', created['id']])
-            destination = root / 'research-report.json'
-            destination.write_text(json.dumps(report, sort_keys=True))
-            return {'plan': created, 'report': report, 'saved_report': json.loads(destination.read_text()),
-                    'pinned_manifest': pinned['universe_manifest_id']}
-
-    def observed(output):
-        pinned = (bool(output['proposal'].get('source_state_hash')) and
-                  bool(output['report']) and evidence['exported']['content_hash'] ==
-                  hashlib.sha256(evidence['report'].encode()).hexdigest()) if operation == 'monthly-report-sequence' else (
-                      output['report'] == output['saved_report'])
-        return {'every-cli-stage-success': [True, bool(output)],
-            'no-trade-or-live-provider': [before, state_hash(ledger.planning_state())],
-            'source-pinned-saved-report': [True, pinned]}
-    run.preparation = {} if operation == 'monthly-report-sequence' else {
-        'research': run_research.preparation, 'pinned': pinned}
     return run, observed

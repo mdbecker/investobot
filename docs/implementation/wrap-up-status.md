@@ -27,6 +27,17 @@ The retained recipe SHA-256 is
 Original evidence remains in Git history and a local ignored archive; no
 history rewrite or further import optimization is authorized.
 
+The stress input/output hashes were respectively
+`e00241390564030e0fdcfbc2c35bd99a79de6aa272baf39e34df374b160cd184` /
+`81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce`.
+The 25-file archive is `local-data/performance-archive/2026-10-12`, with
+SHA256 manifest hash
+`7d304c5721f420c6c53f237004a7f4d5f67529f44325ff9f8fbd5010cade2bf7`.
+Retain local diagnostic archives for 90 days; retain evidence of open
+correctness issues until resolution. CI artifacts expire after 30 days.
+Git history preserves prior committed evidence indefinitely. New raw results
+belong in ignored `benchmark-results/` or `fuzz-results/`, never the build context.
+
 ## Human prerequisites
 
 Vanguard, Fidelity NetBenefits and PNC profiles remain PROVISIONAL until

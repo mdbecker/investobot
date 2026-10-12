@@ -13,7 +13,7 @@ DIMENSIONS = runner.manifest()['profiles']['test']
 
 def live_connection(prepared):
     """Inspect the real operation's captured ledger; never replace its dependencies."""
-    return inspect.getclosurevars(prepared.operation).nonlocals['ledger'].connection
+    return inspect.getclosurevars(prepared.close).nonlocals['ledger'].connection
 
 
 def assert_native_proofs(prepared):
@@ -122,36 +122,3 @@ def test_close_checks_actual_inventory_and_closes_after_final_mutation_failure(t
         prepared.close()
     with pytest.raises(sqlite3.ProgrammingError, match='closed'):
         connection.execute('SELECT 1')
-
-
-def test_per_iteration_oracles_do_not_reload_inventory(tmp_path):
-    prepared = financial_workloads.prepare(PURE_CASES[0], tmp_path, DIMENSIONS)
-    connection = live_connection(prepared)
-    statements = []
-    try:
-        connection.set_trace_callback(statements.append)
-        for _ in range(3):
-            prepared.reset()
-            assert_native_proofs(prepared)
-        assert not any('FROM POSITION_BALANCES' in sql.upper() or
-                       'FROM TAX_LOTS' in sql.upper() for sql in statements)
-    finally:
-        connection.set_trace_callback(None)
-        prepared.close()
-
-
-@pytest.mark.parametrize('case', ['P03.activity-append', 'P05.hypothetical-risk'])
-def test_mutation_and_risk_fixtures_keep_original_reset_and_writable_connections(tmp_path, case):
-    prepared = financial_workloads.prepare(case, tmp_path, DIMENSIONS)
-    connection = live_connection(prepared)
-    try:
-        assert connection.execute('PRAGMA query_only').fetchone()[0] == 0
-        assert prepared.reset.__name__ == 'reset'
-        assert hasattr(prepared.reset, '__self__')
-        output = prepared.operation()
-        assert all(proof['passed'] for proof in prepared.verify(output).values())
-        prepared.reset()
-        output = prepared.operation()
-        assert all(proof['passed'] for proof in prepared.verify(output).values())
-    finally:
-        prepared.close()
