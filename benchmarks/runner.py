@@ -66,7 +66,9 @@ def common_batch_counts(reference, candidate):
         fastest = min(a[name]['warmup_ns'], b[name]['warmup_ns'])
         if fastest <= 0:
             raise ValueError('Warmup duration must be positive')
-        counts[name] = max(1, math.ceil(300_000_000 / fastest))
+        # A single cold warmup may run slower than a warmed batch. This margin
+        # avoids interpreting short samples as evidence; the strict floor stays 200 ms.
+        counts[name] = max(1, math.ceil(600_000_000 / fastest))
     return {'recipe_hash': reference['recipe_hash'], 'batches': counts}
 
 

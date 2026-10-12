@@ -60,7 +60,7 @@ engine/images, the same resource limits, network disabled and no private volumes
 The approved reference is `d0940a12c44831095492efcd7091fb7b937ad6b3`.
 
 All runner execution is inside Docker. Each revision gets one warm-up; `batches`
-chooses a common count from the fastest warm-up targeting 300 ms. `run` takes
+chooses a common count from the fastest warm-up targeting 600 ms. `run` takes
 five samples with no second warm-up. Every raw sample must reach 200 ms or the
 measurement is INVALID. Compare normalized medians; a >25% increase requests
 one complete repeat pair before FAIL. Changed recipes, outputs, counts or runner

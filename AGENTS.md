@@ -47,12 +47,12 @@
   inherit a stress hash when measuring medium or fourfold matched inputs.
   Freeze the current main comparator before an optimization; older historical
   optimization baselines are not the current target-branch comparator.
-- Paired batch calibration targets 300 ms to leave headroom above the strict
+- Paired batch calibration targets 600 ms to leave headroom above the strict
   200 ms sample floor. All revisions/sizes share the count from the fastest
   warm-up. Normalize timings by that count; retain and reject short samples.
   A target margin is not a guarantee against arbitrary measurement noise.
-  The earlier 400 ms target exceeded the nominal extended scheduling allowance
-  before bulk work; preserve original evidence, strict floor and suite budgets.
+  Earlier 300 ms runs produced short samples; retain those invalid reports.
+  The wrap-up retires earlier aggregate scheduling allowances.
 
 - Absolute performance budgets use their specified workload sizes, separately
   from stress regression comparisons. Reuse verified medium scaling observations
