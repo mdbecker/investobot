@@ -4,6 +4,7 @@
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -17,6 +18,8 @@ def main():
     commands.add_parser('coverage')
     worker = commands.add_parser('_worker')
     worker.add_argument('--request')
+    preparation = commands.add_parser('_prepare')
+    preparation.add_argument('--request')
     paired = commands.add_parser('paired')
     paired.add_argument('--suite', choices=('pr', 'extended'), default='pr')
     paired.add_argument('--images', required=True)
@@ -35,11 +38,26 @@ def main():
     try:
         if args.command == 'coverage':
             result = runner.coverage()
-        elif args.command == '_worker':
+        elif args.command in {'_worker', '_prepare'}:
             request = json.loads(args.request) if args.request else json.load(sys.stdin)
             request['root'] = Path(request['root'])
-            request['root'].mkdir(parents=True)
-            result = runner.observe(**request)
+            if args.command == '_prepare':
+                from benchmarks.templates import create
+                result = create(request['case'], request['dimensions'], request['root'])
+            else:
+                template = request.pop('template', None)
+                copy_ns = 0
+                if template:
+                    from benchmarks.templates import clone
+                    copying = time.perf_counter_ns()
+                    manifest = clone(template, request['root'], request['case'], request['dimensions'])
+                    copy_ns = time.perf_counter_ns() - copying
+                    request.update(reuse=True, template_hash=manifest['template_hash'])
+                else:
+                    request['root'].mkdir(parents=True)
+                result = runner.observe(**request)
+                result['fixture_copy_ns'] = copy_ns
+                result['preparation_ns'] += copy_ns
         elif args.command == 'paired':
             from benchmarks.paired import run
 

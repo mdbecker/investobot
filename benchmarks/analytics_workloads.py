@@ -52,14 +52,22 @@ def _json(value):
     return json.loads(json.dumps(value, default=str))
 
 
-def _checkpoint(ledger, root):
+def _checkpoint(ledger, root, *, reuse=False):
     path = root / 'benchmark-baseline.sqlite'
-    with sqlite3.connect(path) as destination:
-        ledger.connection.backup(destination)
+    if not reuse:
+        destination = sqlite3.connect(path)
+        try:
+            destination.execute('PRAGMA journal_mode=DELETE')
+            ledger.connection.backup(destination)
+        finally:
+            destination.close()
 
     def reset():
-        with sqlite3.connect(path) as source:
+        source = sqlite3.connect(f'file:{path}?mode=ro', uri=True)
+        try:
             source.backup(ledger.connection)
+        finally:
+            source.close()
     return reset
 
 
@@ -76,7 +84,7 @@ def _cli(ledger, arguments, *, env=None):
     return json.loads(process.stdout)
 
 
-def prepare(case_id, root, dimensions):
+def prepare(case_id, root, dimensions, *, reuse=False):
     from benchmarks.financial_fixtures import build
     from benchmarks.operations import Prepared
 
@@ -84,7 +92,12 @@ def prepare(case_id, root, dimensions):
         raise ValueError('Unsupported analytical operation: ' + case_id)
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
-    financial = build(root, dimensions)
+    metadata_path = root / 'analytical-preparation.json'
+    metadata = json.loads(metadata_path.read_text()) if reuse else {}
+    if reuse and (metadata.get('case_id') != case_id or metadata.get('dimensions') != dimensions):
+        raise ValueError('Analytical template identity mismatch')
+    stage = metadata.get('stage') if reuse else None
+    financial = build(root, dimensions, reuse=reuse)
     ledger = financial.ledger
     family, operation = case_id.split('.', 1)
     counts = {name: len(ledger.rows(table))
@@ -96,25 +109,28 @@ def prepare(case_id, root, dimensions):
         'P14': ('research_chunks', 'vector_dimensions')}
     counts.update({key: dimensions[key] for key in factual_dimensions.get(family, ())})
     if family == 'P09':
-        run, observations = _provider(ledger, root, dimensions, operation, counts)
+        run, observations = _provider(ledger, root, dimensions, operation, counts, stage=stage)
     elif family == 'P10':
-        run, observations = _exposure(ledger, dimensions, operation, counts)
+        run, observations = _exposure(ledger, dimensions, operation, counts, stage=stage)
     elif family == 'P11':
-        run, observations = _parquet(ledger, root, dimensions, operation, financial.securities[0], counts)
+        run, observations = _parquet(ledger, root, dimensions, operation, financial.securities[0], counts, stage=stage)
     elif family == 'P12':
         run, observations = _historical(ledger, dimensions, operation,
-            financial.securities[:dimensions.get('historical_assets', 2)], counts)
+            financial.securities[:dimensions.get('historical_assets', 2)], counts, stage=stage)
     elif family == 'P13':
-        run, observations = _research(ledger, root, dimensions, operation)
+        run, observations = _research(ledger, root, dimensions, operation, stage=stage)
     elif family == 'P14':
-        run, observations = _corpus(ledger, dimensions, operation, counts)
+        run, observations = _corpus(ledger, dimensions, operation, counts, stage=stage)
     elif family == 'P15':
-        run, observations = _sequence(financial, root, dimensions, operation)
+        run, observations = _sequence(financial, root, dimensions, operation, stage=stage)
     else:
         financial.close()
         raise ValueError('Unsupported analytics benchmark family')
     baseline = state_hash(ledger.planning_state())
-    reset = _checkpoint(ledger, root)
+    if not reuse:
+        metadata_path.write_text(json.dumps({'case_id': case_id, 'dimensions': dimensions,
+            'stage': run.preparation}, sort_keys=True, default=str))
+    reset = _checkpoint(ledger, root, reuse=reuse)
     definitions = json.loads((fixtures.ROOT / 'benchmarks/cases.json').read_text())
     required = next(case['invariant'] for case in definitions['cases'] if case['id'] == case_id)
 
@@ -138,8 +154,12 @@ def prepare(case_id, root, dimensions):
                     storage_roots=(root,))
 
 
-def _provider(ledger, root, dimensions, operation, counts):
-    path, payload = fixtures.provider_file(root, dimensions)
+def _provider(ledger, root, dimensions, operation, counts, *, stage=None):
+    if stage is None:
+        path, payload = fixtures.provider_file(root, dimensions)
+    else:
+        path = root / 'public-provider.json'
+        payload = json.loads(path.read_text())
     client = MarketClient(ledger, fixture_path=path)
     name, temperature = operation.rsplit('-', 1)
     counts.update(provider_cache_supported=name != 'screen', provider_cache_hits=0)
@@ -163,7 +183,7 @@ def _provider(ledger, root, dimensions, operation, counts):
         'quote': lambda: client.quote(ticker, refresh=temperature == 'miss')}
     run = functions[name]
     # Cache initialization belongs to preparation, never the measured boundary.
-    if temperature == 'hit':
+    if temperature == 'hit' and stage is None:
         run()
     initial = state_hash(ledger.planning_state())
     before_cache = {row['id']: row['retrieved_at'] for table in ('market_data_cache', 'fund_holdings_cache')
@@ -211,51 +231,55 @@ def _provider(ledger, root, dimensions, operation, counts):
         return {'complete-requested-provider-fixture-coverage': [str(expected), str(coverage)],
             'canonical-marks-unchanged': [initial, state_hash(ledger.planning_state())],
             'cache-path-proven': [expected_cache, actual_cache]}
+    run.preparation = {}
     return run, observed
 
 
-def _exposure(ledger, dimensions, operation, counts):
+def _exposure(ledger, dimensions, operation, counts, *, stage=None):
     # Three wrappers with exactly sourced fractional paths to shared companies.
     size = dimensions['constituents_per_fund']
-    companies = [fixtures.register_issuer(ledger, ticker=f'COMP{index:06}',
-        cik=f'{index + 1:010}', name=f'Fictional company {index}') for index in range(size)]
-    wrappers = [fixtures.register_security(ledger, f'fictional-wrapper-{index:04}', {'ticker': f'WRAP{index:04}',
-        'name': f'Fictional wrapper {index}', 'asset_type': 'ETF', 'currency': 'USD',
-        'source': 'Reviewed fictional wrapper record', 'data_environment': 'SYNTHETIC'})
-        for index in range(dimensions['funds'])]
-    ledger.apply({'account': {'id': 'fund-slice', 'name': 'Fictional fund exposure slice',
-        'tax_status': 'TAX_FREE', 'currency': 'USD'},
-        'positions': [{'security': wrapper['ticker'], 'asset_type': 'ETF', 'quantity': '1',
-            'price': '100', 'market_value': '100', 'as_of': fixtures.DATE,
-            'displayed_price_precision': 0, 'displayed_market_value_precision': 0} for wrapper in wrappers],
-        'lots': [], 'cash': '0', 'cash_known': True, 'positions_complete': True,
-        'lots_complete': False, 'source_timestamp': fixtures.DATE,
-        'source_hash': 'fictional-fund-slice', 'data_environment': 'SYNTHETIC'})
-    state = ledger.planning_state()
-    state['accounts'] = [row for row in state['accounts'] if row['id'] == 'fund-slice']
-    state['positions'] = [row for row in state['positions'] if row['account_id'] == 'fund-slice']
-    state['cash_balances'] = []  # Explicit zero confirmed cash adds no exposure path.
-    sources = {}
-    for index, wrapper in enumerate(wrappers):
-        weight = (Decimal(1) / size).quantize(Decimal('0.000000000001'))
-        holdings = [{'security_id': company['id'], 'issuer_id': company['cik'],
-            'issuer_verified': True, 'weight': str(weight if row < size - 1 else 1 - weight * (size - 1))}
-            for row, company in enumerate(companies)]
-        if index < 2:
-            holdings[0] = {'security_id': wrappers[index + 1]['id'], 'weight': str(weight)}
-        if operation == 'incomplete-coverage':
-            # Omit half each terminal company's disclosed weight, never redistribute.
-            for holding in holdings:
-                if holding.get('issuer_verified'):
-                    holding['weight'] = str(Decimal(holding['weight']) / 2)
-        vintages = []
-        for vintage in range(dimensions['fund_vintages']):
-            day = (date.fromisoformat(fixtures.DATE) - timedelta(days=vintage * 30)).isoformat()
-            vintages.append({'id': f'fictional-{index}-vintage-{vintage}',
-                'security_id': wrapper['id'], 'as_of': day, 'observed_at': day,
-                'published_at': day, 'sha256': fixtures.digest(holdings),
-                'currency': 'USD', 'data_environment': 'SYNTHETIC', 'rows': holdings})
-        sources[wrapper['id']] = vintages
+    if stage is None:
+        companies = [fixtures.register_issuer(ledger, ticker=f'COMP{index:06}',
+            cik=f'{index + 1:010}', name=f'Fictional company {index}') for index in range(size)]
+        wrappers = [fixtures.register_security(ledger, f'fictional-wrapper-{index:04}', {'ticker': f'WRAP{index:04}',
+            'name': f'Fictional wrapper {index}', 'asset_type': 'ETF', 'currency': 'USD',
+            'source': 'Reviewed fictional wrapper record', 'data_environment': 'SYNTHETIC'})
+            for index in range(dimensions['funds'])]
+        ledger.apply({'account': {'id': 'fund-slice', 'name': 'Fictional fund exposure slice',
+            'tax_status': 'TAX_FREE', 'currency': 'USD'},
+            'positions': [{'security': wrapper['ticker'], 'asset_type': 'ETF', 'quantity': '1',
+                'price': '100', 'market_value': '100', 'as_of': fixtures.DATE,
+                'displayed_price_precision': 0, 'displayed_market_value_precision': 0} for wrapper in wrappers],
+            'lots': [], 'cash': '0', 'cash_known': True, 'positions_complete': True,
+            'lots_complete': False, 'source_timestamp': fixtures.DATE,
+            'source_hash': 'fictional-fund-slice', 'data_environment': 'SYNTHETIC'})
+        state = ledger.planning_state()
+        state['accounts'] = [row for row in state['accounts'] if row['id'] == 'fund-slice']
+        state['positions'] = [row for row in state['positions'] if row['account_id'] == 'fund-slice']
+        state['cash_balances'] = []  # Explicit zero confirmed cash adds no exposure path.
+        sources = {}
+        for index, wrapper in enumerate(wrappers):
+            weight = (Decimal(1) / size).quantize(Decimal('0.000000000001'))
+            holdings = [{'security_id': company['id'], 'issuer_id': company['cik'],
+                'issuer_verified': True, 'weight': str(weight if row < size - 1 else 1 - weight * (size - 1))}
+                for row, company in enumerate(companies)]
+            if index < 2:
+                holdings[0] = {'security_id': wrappers[index + 1]['id'], 'weight': str(weight)}
+            if operation == 'incomplete-coverage':
+                # Omit half each terminal company's disclosed weight, never redistribute.
+                for holding in holdings:
+                    if holding.get('issuer_verified'):
+                        holding['weight'] = str(Decimal(holding['weight']) / 2)
+            vintages = []
+            for vintage in range(dimensions['fund_vintages']):
+                day = (date.fromisoformat(fixtures.DATE) - timedelta(days=vintage * 30)).isoformat()
+                vintages.append({'id': f'fictional-{index}-vintage-{vintage}',
+                    'security_id': wrapper['id'], 'as_of': day, 'observed_at': day,
+                    'published_at': day, 'sha256': fixtures.digest(holdings),
+                    'currency': 'USD', 'data_environment': 'SYNTHETIC', 'rows': holdings})
+            sources[wrapper['id']] = vintages
+    else:
+        state, sources = stage['state'], stage['sources']
     counts.update(processed_funds=dimensions['funds'],
         processed_constituents=dimensions['funds'] * size,
         selected_fund_vintages=dimensions['funds'],
@@ -280,6 +304,7 @@ def _exposure(ledger, dimensions, operation, counts):
         return {'all-paths-and-vintages-accounted': [str(size), str(len(rows))],
             'duplicate-issuer-consolidation': [str(size), str(len({row['issuer_id'] for row in rows}))],
             'unknown-residual-preserved': [Decimal(expected_unknown), Decimal(output['unknown_exposure_value'])]}
+    run.preparation = {'state': state, 'sources': sources}
     return run, observed
 
 
@@ -287,9 +312,9 @@ def financial_account(state):
     return state['accounts'][0]['id']
 
 
-def _parquet(ledger, root, dimensions, operation, security, counts):
-    payload = fixtures.parquet_file(root, dimensions, security)
-    if operation != 'data-snapshot':
+def _parquet(ledger, root, dimensions, operation, security, counts, *, stage=None):
+    payload = fixtures.parquet_file(root, dimensions, security) if stage is None else stage['payload']
+    if operation != 'data-snapshot' and stage is None:
         analytics_store.snapshot(ledger, payload, confirm=True, artifact_root=root)
 
     def run():
@@ -319,11 +344,13 @@ def _parquet(ledger, root, dimensions, operation, security, counts):
         return {'exact-dated-row-coverage': [dimensions['parquet_observations'], rows],
             'pinned-manifest-hashes': ['AVAILABLE', verification['status']],
             'no-future-constituents': [dimensions['parquet_observations'], rows]}
+    run.preparation = {'payload': payload}
     return run, observed
 
 
-def _historical(ledger, dimensions, operation, securities, counts):
-    manifest, days = fixtures.daily_history(securities, dimensions['history_years'])
+def _historical(ledger, dimensions, operation, securities, counts, *, stage=None):
+    manifest, days = (fixtures.daily_history(securities, dimensions['history_years'])
+                      if stage is None else (stage['manifest'], stage['days']))
     policy = {'version': 'fictional-backtest-1', 'data_environment': 'SYNTHETIC',
               'starting_value': '10000', 'fee_per_trade': '0'}
     counts.update(historical_assets=len(securities), history_rows=len(securities) * len(days))
@@ -338,7 +365,7 @@ def _historical(ledger, dimensions, operation, securities, counts):
     def execute(weights, source=manifest):
         return backtest.run(ledger, portfolio=weights, start=days[0],
                             end=days[-1], policy=policy, manifest=source)
-    runs = [execute(weights) for weights in portfolios] if operation == 'compare-three' else []
+    runs = ([execute(weights) for weights in portfolios] if operation == 'compare-three' else []) if stage is None else stage['runs']
 
     def run():
         if operation == 'compare-three':
@@ -362,19 +389,22 @@ def _historical(ledger, dimensions, operation, securities, counts):
         return {'ten-year-coverage': [True, available], 'no-look-ahead': [True, available],
             'three-target-comparison': [expected_runs, actual_runs],
             'missing-history-typed': [True, typed]}
+    run.preparation = {'manifest': manifest, 'days': days, 'runs': runs}
     return run, observed
 
 
-def _corpus(ledger, dimensions, operation, counts):
-    rows = fixtures.corpus(dimensions)
-    rows[-1]['permission'] = 'DENIED'
-    rows[-2]['model_id'] = 'fictional-incompatible-384-v1'
-    rows[-3]['source_date'] = '2027-01-01'
-    search.store_chunks(ledger.path, rows, confirmed=True)
+def _corpus(ledger, dimensions, operation, counts, *, stage=None):
+    size = dimensions['research_chunks']
+    if stage is None:
+        rows = fixtures.corpus(dimensions)
+        rows[-1]['permission'] = 'DENIED'
+        rows[-2]['model_id'] = 'fictional-incompatible-384-v1'
+        rows[-3]['source_date'] = '2027-01-01'
+        search.store_chunks(ledger.path, rows, confirmed=True)
     if operation == 'rebuild-after-deletion':
         from invest.sqlite_extensions import load_required
         load_required(ledger.connection)
-    expected = min(10, len(rows) // 2 if operation == 'hybrid-filtered-top10' else len(rows))
+    expected = min(10, size // 2 if operation == 'hybrid-filtered-top10' else size)
     before = ledger.connection.execute('SELECT count(*) FROM document_chunks').fetchone()[0]
     def canonical_hash():
         digest = hashlib.sha256()
@@ -388,7 +418,7 @@ def _corpus(ledger, dimensions, operation, counts):
         return digest.hexdigest()
     counts.update(corpus_chunks=before, canonical_documents_changed=0)
     query_vector = [1.0] + [0.0] * (dimensions['vector_dimensions'] - 1)
-    extra = fixtures.corpus(dimensions, start=len(rows), count=1)
+    extra = fixtures.corpus(dimensions, start=size, count=1)
     canonical_before = canonical_hash()
 
     def run():
@@ -420,40 +450,48 @@ def _corpus(ledger, dimensions, operation, counts):
             'model-dimension-compatibility': [True, output.get('status') in {'AVAILABLE', 'APPROVED', 'UNCHANGED'}],
             'permission-issuer-date-filters': [expected_ids, ids],
             'top10-exact-eligible-results': [expected_ids, ids]}
+    run.preparation = {}
     return run, observed
 
 
-def _research(ledger, root, dimensions, operation):
+def _research(ledger, root, dimensions, operation, *, stage=None):
     aliases = {'fund-diligence': 'fund_diligence'}
     specialty = next((name for name in ('fund-diligence', 'competitive', 'insiders',
         'political', 'earnings', 'news') if operation.startswith(name + '-')), 'news')
     verb = operation[len(specialty) + 1:] if operation.startswith(specialty + '-') else operation
-    register = fixtures.register_issuer(ledger)
-    if specialty == 'news':
-        payload = fixtures.news_package(cik='0000000001', name='Fictional company',
-            researched_as_of=fixtures.DATE, window_start='2026-10-01', event_date='2026-10-06')
-        payload['company'].update(ticker='FAKE', security_id=register['id'])
-    elif specialty == 'earnings':
-        payload = fixtures.earnings_package()
-        payload['company']['security_id'] = register['id']
-    elif specialty == 'political':
-        payload = fixtures.political_package()
-        payload['company']['security_id'] = register['id']
+    if stage is None:
+        register = fixtures.register_issuer(ledger)
+        if specialty == 'news':
+            payload = fixtures.news_package(cik='0000000001', name='Fictional company',
+                researched_as_of=fixtures.DATE, window_start='2026-10-01', event_date='2026-10-06')
+            payload['company'].update(ticker='FAKE', security_id=register['id'])
+        elif specialty == 'earnings':
+            payload = fixtures.earnings_package()
+            payload['company']['security_id'] = register['id']
+        elif specialty == 'political':
+            payload = fixtures.political_package()
+            payload['company']['security_id'] = register['id']
+        else:
+            payload = fixtures.specialty_template(specialty)
     else:
-        payload = fixtures.specialty_template(specialty)
+        payload = stage['payload']
     native = importlib.import_module('invest.' + aliases.get(specialty, specialty))
     if specialty == 'insiders':
         native = importlib.import_module('invest.insiders')
     policy = root / 'independently-reviewed-rights.json'
-    policy.write_text(json.dumps(fixtures.rights_policy()))
+    if stage is None:
+        policy.write_text(json.dumps(fixtures.rights_policy()))
     kwargs = {'policy_path': policy} if specialty == 'political' else {}
     expected_runs = dimensions['funds']
-    runs = []
-    for index in range(expected_runs):
-        package = copy.deepcopy(payload)
-        package['limitations'].append(f'Original fictional independently reviewed source edition {index:06}')
-        accepted = native.import_research(ledger, package, yes=True, **kwargs)
-        runs.append(accepted['research_run_id'])
+    if stage is None:
+        runs = []
+        for index in range(expected_runs):
+            package = copy.deepcopy(payload)
+            package['limitations'].append(f'Original fictional independently reviewed source edition {index:06}')
+            accepted = native.import_research(ledger, package, yes=True, **kwargs)
+            runs.append(accepted['research_run_id'])
+    else:
+        runs = stage['runs']
     proposed = copy.deepcopy(payload)
     proposed['limitations'].append('Original fictional independently reviewed new source edition')
     run_table = 'research_political_runs' if specialty == 'political' else 'research_runs'
@@ -467,10 +505,13 @@ def _research(ledger, root, dimensions, operation):
                     'identity': {'cik': '0000000001', 'name': 'Fictional company'}}],
         'coverage': {'household_total_value': '1000', 'unknown_exposure_value': '0',
                      'filtered_exposure_value': '0', 'unresolved_issuer_value': '0'}}
-    analytics_store.snapshot(ledger, {'id': universe['manifest_id'], 'purpose': 'RESEARCH_UNIVERSE',
-        'data_environment': 'SYNTHETIC', 'artifacts': [], 'metadata': {'universe': universe}}, confirm=True)
-    research_plan = research_portfolio.plan(ledger, universe['manifest_id'],
-        window_start='2026-10-01', window_end=fixtures.DATE)
+    if stage is None:
+        analytics_store.snapshot(ledger, {'id': universe['manifest_id'], 'purpose': 'RESEARCH_UNIVERSE',
+            'data_environment': 'SYNTHETIC', 'artifacts': [], 'metadata': {'universe': universe}}, confirm=True)
+        research_plan = research_portfolio.plan(ledger, universe['manifest_id'],
+            window_start='2026-10-01', window_end=fixtures.DATE)
+    else:
+        research_plan = stage['research_plan']
 
     def run():
         if verb == 'validate':
@@ -509,20 +550,23 @@ def _research(ledger, root, dimensions, operation):
             'atomic-immutable-run-evidence': [expected, after_runs],
             'complete-requested-research-coverage': [expected_runs if verb in {'list', 'history-list'} else expected,
                                                       coverage]}
+    run.preparation = {'payload': payload, 'runs': runs, 'research_plan': research_plan}
     return run, observed
 
 
-def _sequence(financial, root, dimensions, operation):
+def _sequence(financial, root, dimensions, operation, *, stage=None):
     ledger = financial.ledger
     before = state_hash(ledger.planning_state())
     if operation == 'monthly-report-sequence':
         from invest.planning import save_policy
         policy = dict(financial.policy, id='fictional-monthly-approved',
                       source='Explicit fictional human-reviewed benchmark policy')
-        save_policy(ledger, policy, confirm=True)
-        (root / 'benchmark-config.toml').write_text('[planning]\npolicy_id="fictional-monthly-approved"\n')
+        if stage is None:
+            save_policy(ledger, policy, confirm=True)
+            (root / 'benchmark-config.toml').write_text('[planning]\npolicy_id="fictional-monthly-approved"\n')
         file = root / 'monthly-input.json'
-        file.write_text(json.dumps({'target_id': financial.target_id, 'prices': financial.prices}))
+        if stage is None:
+            file.write_text(json.dumps({'target_id': financial.target_id, 'prices': financial.prices}))
         before = state_hash(ledger.planning_state())
         evidence = {}
 
@@ -537,10 +581,12 @@ def _sequence(financial, root, dimensions, operation):
                 proposal['created_at'], '<CREATION_CLOCK>')
             return {'preflight': preflight, 'proposal': proposal,
                     'report': normalized, 'export': {'format': exported['format'],
-                        'path': exported['path'], 'content_hash': fixtures.digest(normalized)}}
+                        'path': str(Path(exported['path']).relative_to(root)),
+                        'content_hash': fixtures.digest(normalized)}}
     else:
-        run_research, _ = _research(ledger, root, dimensions, 'research-plan')
-        pinned = run_research()
+        run_research, _ = _research(ledger, root, dimensions, 'research-plan',
+                                    stage=None if stage is None else stage['research'])
+        pinned = run_research() if stage is None else stage['pinned']
         before = state_hash(ledger.planning_state())
 
         def run():
@@ -560,4 +606,6 @@ def _sequence(financial, root, dimensions, operation):
         return {'every-cli-stage-success': [True, bool(output)],
             'no-trade-or-live-provider': [before, state_hash(ledger.planning_state())],
             'source-pinned-saved-report': [True, pinned]}
+    run.preparation = {} if operation == 'monthly-report-sequence' else {
+        'research': run_research.preparation, 'pinned': pinned}
     return run, observed

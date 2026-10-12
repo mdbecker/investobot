@@ -37,14 +37,21 @@ class FinancialFixture:
 
     def freeze(self):
         self.ledger.connection.commit()
-        with sqlite3.connect(self.frozen) as destination:
+        destination = sqlite3.connect(self.frozen)
+        try:
             self.ledger.connection.backup(destination)
+            destination.execute('PRAGMA journal_mode=DELETE')
+        finally:
+            destination.close()
         self.input_state_hash = state_hash(self.ledger.planning_state())
 
     def reset(self):
         self.ledger.connection.rollback()
-        with sqlite3.connect(self.frozen) as source:
+        source = sqlite3.connect(f'file:{self.frozen}?mode=ro', uri=True)
+        try:
             source.backup(self.ledger.connection)
+        finally:
+            source.close()
 
     def close(self):
         if not self.closed:
@@ -52,9 +59,19 @@ class FinancialFixture:
             self.closed = True
 
 
-def build(root, dimensions, *, concentrated_target=False):
+def build(root, dimensions, *, concentrated_target=False, reuse=False):
     """Seed validated records with stable IDs; fixture writes are outside timing."""
     root = Path(root)
+    metadata_path = root / 'financial-fixture.json'
+    if reuse:
+        if not metadata_path.is_file():
+            raise ValueError('Missing financial fixture reuse metadata')
+        metadata = json.loads(metadata_path.read_text())
+        if metadata['dimensions'] != dimensions or metadata['concentrated_target'] != concentrated_target:
+            raise ValueError('Financial fixture recipe dimensions differ')
+        if not (root / 'financial.db').is_file() or not (root / 'frozen.db').is_file():
+            raise ValueError('Missing financial fixture database')
+        return FinancialFixture(Ledger(root / 'financial.db'), **metadata['fixture'], frozen=root / 'frozen.db')
     root.mkdir(parents=True, exist_ok=True)
     ledger = Ledger(root / 'financial.db')
     account_count = dimensions['accounts']
@@ -128,7 +145,17 @@ def build(root, dimensions, *, concentrated_target=False):
         {key:dimensions[key] for key in ('accounts','positions','lots','accepted_snapshots')},
         '', root/'frozen.db')
     fixture.freeze()
+    persist(fixture, dimensions, concentrated_target=concentrated_target)
     return fixture
+
+
+def persist(fixture, dimensions, *, concentrated_target=False):
+    """Store only reconstructable facts, never live database or server handles."""
+    fields = ('snapshots', 'target_id', 'policy', 'prices', 'accounts', 'securities',
+              'counts', 'input_state_hash')
+    metadata = dict(version=1, dimensions=dimensions, concentrated_target=concentrated_target,
+                    fixture={key:getattr(fixture,key) for key in fields})
+    (fixture.frozen.parent / 'financial-fixture.json').write_text(json.dumps(metadata, sort_keys=True))
 
 
 def seed_plans(fixture, count):

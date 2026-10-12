@@ -22,7 +22,7 @@ It preserves the unified MVP and strengthens its performance policy.
 
 The checked-in reference metadata records pending human review and capture,
 not invented measurements. Run the paired medium and extended suites on the
-documented native x86-64 Docker runner, retain their reports, investigate any
+documented native M4/ARM64 Docker runner, retain their reports, investigate any
 offenders, and review the initial reference. The local ARM64 test profile is
 diagnostic only. Remote CI and branch-protection results are unverified because
 no changes have been pushed.
@@ -65,9 +65,51 @@ Docker image `453f16c9683c`. With no source bind mount and networking disabled,
 `uv run --locked pytest -q -x` passed **1,485 tests in 202.35 seconds** and Ruff
 passed. This includes all existing MVP tests, 114 fixed workload boundaries,
 paired scaling-plan contracts and 40 fixed fuzz contracts. These ARM64 diagnostic
-results certify functional behavior for that tree, not x86-64 performance budgets.
+results certify functional behavior for that tree, not paired native performance budgets.
 
 Estimated implementation progress: approximately **85%**, a scope estimate rather
 than a measured acceptance score. Remaining engineering and human gates above
 prevent describing this PRD as complete. No live AI campaign, host installation,
 remote Git operation or push was performed.
+
+## Native M4 and fixture reuse follow-up
+
+The user's native M4 scope supersedes the preserved attachment's x86-64 runner
+choice. Red checkpoint `9222bd9` records 39 intended failures and seven existing
+controls for the ARM runtime and fixture-reuse follow-up. Implementation and
+final combined green evidence are pending; these reds are not release results.
+
+Verified Docker facts are engine `aarch64`, image `arm64`, container `aarch64`.
+No GPU/render device paths are exposed (`/dev/dri`, `/dev/nvidia0`, `/dev/kfd`
+or render devices). Current benchmarks measure native CPU algorithms and
+retrieval over precomputed synthetic 384-dimensional vectors, without a GPU or
+embedding provider. Metal access and GPU adapter acceleration remain unverified
+and require future explicit setup and measurement.
+
+Native paired medium/extended reports, absolute budget certification, reviewed
+reference capture and remote branch-protection configuration remain outstanding.
+The smaller test profile cannot satisfy those gates merely by running on ARM.
+
+### Fixture reuse implementation
+
+The previous fixture-reuse engineering gap is addressed: all 114 boundaries now
+prepare one closed checksummed template per case/revision/dimension. Fresh
+observations clone and reopen it; initial construction, copying and hydration are
+outside timed work. Named volumes are owned, mounted read-only for workers, and
+removed between cases and on failure. Raw SQLite backup/reset handles are
+explicitly closed. Source/dimension mismatches, corruption and symlinks reject
+reuse. The native M4 workflow excludes x86 emulation and targets a configured
+self-hosted M4 runner.
+
+Focused Docker verification passed 107 template/runtime/gate contracts. A real
+Docker-engine smoke exercised activity append and hybrid retrieval: each template
+was built once and reused by two fresh constrained offline containers, with
+matching substantive results and no owned volumes left. Full exact-source green
+verification is recorded below when complete.
+
+Next priority: audit matched scaling against actual timed record counts before
+capturing native performance baselines. Provider history and bounded specialty
+packages still need that audit. Broader fuzz adapters and expressly requested
+live campaigns follow performance acceptance. GPU embedding integration is
+outside this change: the current native ARM image has no exposed GPU devices and
+the fixed retrieval workloads invoke no embedding provider.

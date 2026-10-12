@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from benchmarks.financial_fixtures import DATE, build, digest, seed_plans
+from benchmarks.financial_fixtures import DATE, build, digest, persist, seed_plans
 from benchmarks.operations import Prepared
 from invest import analytics_store, backup, migrations, performance, plans, tax, tax_policy
 from invest.cash_transfers import record as transfer
@@ -71,13 +71,29 @@ def _performance(dimensions, *, flows=False, incomplete=False, account=False):
         fee_method='NET_OF_FEES')
 
 
-def prepare(case_id, root, dimensions):
+def prepare(case_id, root, dimensions, *, reuse=False):
     """Build outside timing; each mutation can restore its original real SQLite input."""
     root = Path(root)
     if case_id not in SUPPORTED_CASES:
         raise ValueError(f'Unsupported measured operation: {case_id}')
-    fixture = build(root, dimensions,concentrated_target=case_id=='P07.quarterly-proposal')
+    metadata_path=root/'financial-workload.json'
+    metadata=json.loads(metadata_path.read_text()) if reuse else {}
+    if reuse and (metadata['case_id']!=case_id or metadata['dimensions']!=dimensions):
+        raise ValueError('Financial workload recipe dimensions or case differ')
+    fixture = build(root, dimensions,concentrated_target=case_id=='P07.quarterly-proposal',reuse=reuse)
     ledger = fixture.ledger
+    if reuse and case_id=='P04.schema-migration':
+        receipt_path=root/'financial.db.backup-receipt.json'
+        receipt=json.loads(receipt_path.read_text())
+        archive=root/'pre-migration.tar.gz'
+        if backup.verify(archive)['status']!='AVAILABLE':raise ValueError('Invalid template recovery archive')
+        if hashlib.sha256(archive.read_bytes()).hexdigest()!=receipt['archive_sha256']:
+            raise ValueError('Template recovery archive checksum differs')
+        if backup.logical_fingerprint(ledger.connection)!=receipt['database_fingerprint']:
+            raise ValueError('Template recovery state differs')
+        receipt.update(source_path=str(ledger.path.resolve()),archive=str(archive.resolve()))
+        receipt_path.write_text(json.dumps(receipt,sort_keys=True))
+        receipt_path.chmod(0o600)
     family, name = case_id.split('.',1)
     account, sid = fixture.accounts[0], fixture.securities[0]
     latest = copy.deepcopy(fixture.snapshots[0])
@@ -133,8 +149,10 @@ def prepare(case_id, root, dimensions):
         elif name=='reconcile':operation=lambda:{'results':[ledger.reconcile(c) for c in candidates]}
         elif name=='apply':operation=lambda:{'results':[ledger.apply(c) for c in candidates]}
         elif name=='idempotent-reimport':
-            for candidate in candidates:ledger.apply(candidate)
-            fixture.freeze();before=state_hash(ledger.planning_state())
+            if not reuse:
+                for candidate in candidates:ledger.apply(candidate)
+                fixture.freeze()
+            before=state_hash(ledger.planning_state())
             operation=lambda:{'results':[ledger.apply(c) for c in candidates]}
         else:
             from invest.readiness import check
@@ -148,9 +166,10 @@ def prepare(case_id, root, dimensions):
                 event_timestamp=DATE+'T12:00:00Z',source='Reviewed fictional paired bank notice')
             operation=lambda:transfer(ledger,payload,confirm=True)
         elif name=='corrected-snapshot':
-            ledger.record_activity(event,yes=True)
+            if not reuse:ledger.record_activity(event,yes=True)
             latest.update(cash='10001',source_timestamp='2026-10-11T12:00:00Z')
-            fixture.freeze();before=state_hash(ledger.planning_state())
+            if not reuse:fixture.freeze()
+            before=state_hash(ledger.planning_state())
             operation=lambda:ledger.apply(latest)
         elif name=='summary':operation=ledger.summary
         else:operation=ledger.planning_state
@@ -159,24 +178,26 @@ def prepare(case_id, root, dimensions):
             # Deterministic incompressible payload is SQLite fixture content, not a private volume.
             rng=random.Random(271828)
             required=dimensions['backup_fixture_bytes']
-            with ledger.connection:
-                ledger.connection.execute('CREATE TABLE benchmark_padding(id INTEGER PRIMARY KEY, payload BLOB)')
-                for i in range((required+1048575)//1048576):
-                    ledger.connection.execute('INSERT INTO benchmark_padding VALUES (?,?)',
-                        (i,rng.randbytes(min(1048576,required-i*1048576))))
-            fixture.freeze()
+            if not reuse:
+                with ledger.connection:
+                    ledger.connection.execute('CREATE TABLE benchmark_padding(id INTEGER PRIMARY KEY, payload BLOB)')
+                    for i in range((required+1048575)//1048576):
+                        ledger.connection.execute('INSERT INTO benchmark_padding VALUES (?,?)',
+                            (i,rng.randbytes(min(1048576,required-i*1048576))))
+                fixture.freeze()
             counts['backup_fixture_bytes']=ledger.connection.execute(
                 'SELECT sum(length(payload)) FROM benchmark_padding').fetchone()[0]
             archive=root/'verified.tar.gz'
-            if name!='backup':
+            if name!='backup' and not reuse:
                 outcome=backup.create(ledger.path,archive,artifact_root=root)
                 if outcome['status']!='AVAILABLE':raise ValueError(outcome)
             if name=='backup':operation=lambda:backup.create(ledger.path,archive,artifact_root=root)
             elif name=='verify':operation=lambda:backup.verify(archive)
             else:operation=lambda:backup.restore(archive,root/'staged.db',confirm=True)
         elif name=='schema-migration':
-            outcome=backup.create(ledger.path,root/'pre-migration.tar.gz',artifact_root=root)
-            if outcome['status']!='AVAILABLE':raise ValueError(outcome)
+            if not reuse:
+                outcome=backup.create(ledger.path,root/'pre-migration.tar.gz',artifact_root=root)
+                if outcome['status']!='AVAILABLE':raise ValueError(outcome)
             sql='CREATE TABLE benchmark_future(id TEXT PRIMARY KEY);'
             migration=dict(id='002-benchmark-future',sql=sql,
                 checksum=hashlib.sha256(sql.encode()).hexdigest(),destructive=False)
@@ -184,14 +205,16 @@ def prepare(case_id, root, dimensions):
         else:
             import duckdb
             parquet=root/'verified.parquet'
-            connection=duckdb.connect(':memory:')
-            connection.execute('COPY (SELECT 1 AS observation) TO ? (FORMAT PARQUET)',[str(parquet)])
-            connection.close()
-            payload=dict(data_environment='SYNTHETIC',artifacts=[dict(kind='DIVIDEND_ADJUSTED_PRICES',
-                relative_path=parquet.name,sha256=hashlib.sha256(parquet.read_bytes()).hexdigest(),
-                provider='FICTIONAL',observed_at=DATE,as_of=DATE,data_environment='SYNTHETIC')])
-            pinned=analytics_store.snapshot(ledger,payload,confirm=True,artifact_root=root)
-            fixture.freeze()
+            if reuse:pinned=metadata['pinned']
+            else:
+                connection=duckdb.connect(':memory:')
+                connection.execute('COPY (SELECT 1 AS observation) TO ? (FORMAT PARQUET)',[str(parquet)])
+                connection.close()
+                payload=dict(data_environment='SYNTHETIC',artifacts=[dict(kind='DIVIDEND_ADJUSTED_PRICES',
+                    relative_path=parquet.name,sha256=hashlib.sha256(parquet.read_bytes()).hexdigest(),
+                    provider='FICTIONAL',observed_at=DATE,as_of=DATE,data_environment='SYNTHETIC')])
+                pinned=analytics_store.snapshot(ledger,payload,confirm=True,artifact_root=root)
+                fixture.freeze()
             operation=lambda:analytics_store.verify_snapshot(ledger,pinned['manifest_id'],artifact_root=root)
     elif family=='P05':
         if name=='hypothetical-risk':
@@ -202,7 +225,7 @@ def prepare(case_id, root, dimensions):
                 history.append({'date':date(2016+month//12,month%12+1,1).isoformat(),
                                 'adjClose':str(Decimal(100)+Decimal(month)/10)})
             provider=root/'risk-provider.json'
-            provider.write_text(json.dumps({'history':{f'FICT{i:05}':history
+            if not reuse:provider.write_text(json.dumps({'history':{f'FICT{i:05}':history
                                             for i in range(len(fixture.securities))}}))
             counts['history_years']=dimensions['history_years']
             counts['history_prices']=len(history)*len(fixture.securities)
@@ -214,10 +237,11 @@ def prepare(case_id, root, dimensions):
             counts['history_checkpoints']=len(payload['checkpoints'])
             counts['history_flows']=len(payload['cash_flows'])
             counts['history_years']=date.fromisoformat(payload['to_date']).year-date.fromisoformat(payload['from_date']).year
-            fixture.input_state_hash=digest({'financial':fixture.input_state_hash,'performance':payload})
+            if not reuse:
+                fixture.input_state_hash=digest({'financial':fixture.input_state_hash,'performance':payload})
             operation=lambda:performance.calculate(payload)
     elif family=='P06':
-        if name=='budget':
+        if name=='budget' and not reuse:
             for index,price in enumerate(('100','150')):
                 ledger.record_activity(dict(activity_id=f'fictional-budget-sale-{index}',
                     account_id=account,security=fixture.securities[index],type='SELL',quantity='1',
@@ -265,16 +289,17 @@ def prepare(case_id, root, dimensions):
                     taxable_history_complete=True,covered_account_ids=fixture.accounts,
                     data_environment='SYNTHETIC',source='Reviewed fictional annual allowance',
                     as_of='2026-09-30T12:00:00Z')
-                with ledger.connection:
-                    for row in ledger.rows('positions'):
-                        ledger.put('positions',row['id'],dict(row,as_of='2026-09-29',source_timestamp='2026-09-29'))
-                    for row in ledger.rows('cash_balances'):
-                        ledger.put('cash_balances',row['id'],dict(row,as_of='2026-09-29',source_timestamp='2026-09-29'))
-                    for row in ledger.rows('snapshots'):
-                        ledger.connection.execute('DELETE FROM snapshot_observations WHERE id=?',(row['id'],))
-                        ledger.put('snapshots',row['id'],dict(row,source_timestamp='2026-09-29',
-                            positions=[dict(p,as_of='2026-09-29') for p in row['positions']]))
-                fixture.freeze()
+                if not reuse:
+                    with ledger.connection:
+                        for row in ledger.rows('positions'):
+                            ledger.put('positions',row['id'],dict(row,as_of='2026-09-29',source_timestamp='2026-09-29'))
+                        for row in ledger.rows('cash_balances'):
+                            ledger.put('cash_balances',row['id'],dict(row,as_of='2026-09-29',source_timestamp='2026-09-29'))
+                        for row in ledger.rows('snapshots'):
+                            ledger.connection.execute('DELETE FROM snapshot_observations WHERE id=?',(row['id'],))
+                            ledger.put('snapshots',row['id'],dict(row,source_timestamp='2026-09-29',
+                                positions=[dict(p,as_of='2026-09-29') for p in row['positions']]))
+                    fixture.freeze()
                 fixture.prices={key:dict(value,as_of='2026-09-30')
                                 for key,value in fixture.prices.items()}
             operation=lambda:propose(ledger,fixture.target_id,policy=policy,mode=mode,
@@ -282,8 +307,10 @@ def prepare(case_id, root, dimensions):
                                      prices=fixture.prices)
     elif family=='P08':
         existing_count=dimensions['saved_plans']-20 if name=='persist-20-plans' else dimensions['saved_plans']
-        if existing_count:
-            plan_ids=seed_plans(fixture,existing_count);fixture.freeze();before=state_hash(ledger.planning_state())
+        if reuse:plan_ids=metadata['plan_ids']
+        elif existing_count:
+            plan_ids=seed_plans(fixture,existing_count);fixture.freeze()
+        before=state_hash(ledger.planning_state())
         counts['existing_plans']=existing_count
         counts['output_plans']=dimensions['saved_plans']
         if name=='persist-20-plans':
@@ -296,6 +323,14 @@ def prepare(case_id, root, dimensions):
         elif name=='show':operation=lambda:plans.show(ledger,plan_ids[0])
         else:operation=lambda:{'export':export(plans.show(ledger,plan_ids[0]),root/'report.md')}
     else:raise ValueError(f'Not a financial workload: {case_id}')
+
+    if family=='P08':counts['saved_plans']=dimensions['saved_plans']
+    if reuse:
+        counts.update(metadata['counts'])
+    if not reuse:
+        persist(fixture,dimensions,concentrated_target=case_id=='P07.quarterly-proposal')
+        metadata_path.write_text(json.dumps(dict(version=1,case_id=case_id,dimensions=dimensions,
+            plan_ids=plan_ids,counts=counts,pinned=locals().get('pinned')),sort_keys=True))
 
     raw_operation=operation
     raw_result=None

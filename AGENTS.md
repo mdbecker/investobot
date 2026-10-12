@@ -97,7 +97,7 @@
   behavior; optimize only measured offenders after an additional red checkpoint.
 - Fixed performance measurements use offline disposable Docker fixtures and
   three separately locked revisions. Archived timings are evidence, never a
-  cross-machine comparator. Native x86-64 release validation and human reference
+  cross-machine comparator. Native ARM64 M4 release validation and human reference
   review remain explicit gates; test-profile measurements cannot certify them.
 - Exploratory AI campaigns require explicit human invocation after performance
   acceptance. CI may test the fixed harness and promoted regressions, but must
@@ -261,3 +261,14 @@
   bug or regression. Report missing oracle evidence as a failure.
 - Historical metric benchmarks call the single adjusted-series calculation,
   preserving its source/cache evidence; whole-fund comparison is a separate case.
+- The user's native M4/ARM64 scope supersedes x86 requirements in the preserved
+  performance PRD. Check both engine and image architectures; do not certify
+  emulated measurements. Current vector fixtures are prepared synthetic inputs
+  for CPU retrieval, with no embedding provider or GPU acceleration claimed.
+- Build each case/revision/dimension template once, close every SQLite handle,
+  checksum its complete tree, and copy it into a fresh worker before timing.
+  Never inherit live connections or share writable fixture volumes. Include
+  hydration/copy time as preparation evidence; remove only owned fixture volumes.
+- On Docker Desktop, controller containers mount the engine's
+  `/var/run/docker.sock`, not the macOS user-socket path. Never mount private
+  application volumes into the controller or observation workers.

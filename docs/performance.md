@@ -76,7 +76,7 @@ certify medium/stress coverage or release latency. Source development may bind
 only the checkout and use `--no-sync` after building its locked image; all
 execution and dependency installation remain inside Docker.
 
-The paired orchestration entry point is being integrated as:
+The paired orchestration entry point is:
 
 ```sh
 python scripts/perf.py paired --suite pr \
@@ -87,18 +87,29 @@ python scripts/perf.py paired --suite pr \
 
 Run this entry point in the documented Docker orchestration environment; the host
 root is a disposable work directory, never a private application directory.
-`--suite extended` selects the extended measurement policy. Until paired
-orchestration and its CI wiring are verified, this example describes the intended
-interface rather than evidence of a completed release check.
+`--suite extended` selects the extended measurement policy. Implemented entry
+points do not establish completed native paired measurements or remote CI results.
 
 ## Comparison and certification
 
 Measure candidate, current target-branch base and pinned reference on the same
 runner with their own locked Docker dependencies and identical inputs. Native
-Linux x86-64, two CPUs, 4 GiB RAM, no network and one process at a time are required
+Linux ARM64 on the native M4 Docker engine, two CPUs, 4 GiB RAM, no network and one process at a time are required
 for release measurements. Set `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and
 `MKL_NUM_THREADS` to `1`. Retain runtime, dependency, source and fixture identities
 in raw JSON. Cross-machine archived timings are audit evidence, not comparators.
+The user's M4 requirement supersedes the attachment's x86-64 execution choice;
+the original PRD is retained unchanged. Reject x86 emulation and mismatched engine
+and container architectures. Retain actual Docker architecture evidence rather
+than relabeling reports with a fixed architecture.
+
+Verified local facts: Docker engine `aarch64`, image `arm64`, and container
+`aarch64`. No `/dev/dri`, `/dev/nvidia0`, `/dev/kfd` or render devices are exposed.
+Current search benchmarks use precomputed synthetic 384-dimensional float32
+vectors and native CPU retrieval. They invoke no embedding provider or GPU.
+Docker ARM support does not establish access to Apple Metal. A future GPU
+embedding adapter requires explicit device/provider setup, authorization and
+separate measured evidence; no GPU acceleration is claimed here.
 
 Use one warm-up followed by seven observations per revision in PR mode, with
 rotated interleaved revision order. Extended retrieval uses 21 observations and
@@ -163,3 +174,32 @@ remote CI or release certification.
 Exploratory AI fuzzing belongs to the subsequent addendum after this performance
 foundation is complete. It requires explicit local human invocation; fixed CI
 benchmarks never launch an agent or an exploratory campaign.
+
+## Reusable fixtures and native Mac setup
+
+Each selected case, revision and dimension set is prepared once. Preparation
+closes the database handles and saves JSON reconstruction metadata plus a
+checksummed file manifest. Warm-up, measured observations and a retry each copy
+that verified template into a fresh worker directory, reopen independent SQLite
+handles and reconstruct the operation. Accepted lots, research runs, Parquet,
+caches and vector indexes are reused. Each iteration restores its local frozen
+baseline. No live connection, pickled closure or writable template is shared.
+Changed source, dimensions, corrupt files and symlinks reject reuse before opening
+an observation database. Copy/hash/hydration and initial construction times are
+recorded separately from timed operations. Normal cache TTLs remain authoritative;
+an expired warm-cache fixture fails its cache-path proof rather than being called
+a hit. Start a new measurement job to prepare a fresh template.
+
+Paired runs use owned named Docker volumes, read-only during observation. These
+are deleted after each case and on failure. JSON retains template hashes and
+construction counts. On Docker Desktop, the controller mounts the engine socket
+at `/var/run/docker.sock`; do not bind the macOS user-socket path inside Linux.
+The host source directory is mounted read-only and private application volumes
+must remain absent.
+
+The performance workflow requires an existing self-hosted M4 Mac runner labelled
+`macOS`, `ARM64`, and `investobot-m4`, with Docker Desktop available to its user.
+It builds `linux/arm64` images and verifies the native engine/image architectures.
+Configuring that runner, baseline approval and branch protection are human setup
+steps; no runner or host packages were installed by this implementation. Hosted
+ARM runners on another machine do not establish performance on your M4.

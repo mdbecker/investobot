@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   performance:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, investobot-m4]
     timeout-minutes: 100
     env:
       OMP_NUM_THREADS: '1'
@@ -54,7 +54,7 @@ jobs:
       - name: Build each revision with its own locked dependencies
         run: |
           for revision in reference base candidate; do
-            docker build --platform linux/amd64 --tag "invest-perf-$revision" "$revision"
+            docker build --platform linux/arm64 --tag "invest-perf-$revision" "$revision"
           done
       - name: Fixed synthetic three-revision measurements
         env:

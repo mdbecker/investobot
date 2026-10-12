@@ -218,8 +218,8 @@ def certify(report, cases):
         issues.append({"code": "UNCERTIFIED_RUNNER"})
     if (("docker" in runner and runner["docker"] is not True)
             or ("network" in runner and runner["network"] != "none")
-            or ("machine" in runner and runner["machine"] not in {"x86_64", "amd64"})
-            or ("platform" in runner and runner["platform"] not in {"linux/amd64", "linux/x86_64"})):
+            or ("machine" in runner and runner["machine"] not in {"aarch64", "arm64", "x86_64", "amd64"})
+            or ("platform" in runner and runner["platform"] not in {"linux/arm64", "linux/amd64", "linux/x86_64"})):
         issues.append({"code": "UNCERTIFIED_RUNTIME"})
     for definition in cases:
         identity = definition["id"]

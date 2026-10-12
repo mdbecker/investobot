@@ -40,7 +40,9 @@ def source_hash():
 def validate_runtime(runtime):
     safe = (runtime.get('docker') is True and runtime.get('network') == 'none'
             and runtime.get('cpus') == 2 and runtime.get('memory_bytes') == 4 * 1024 ** 3
-            and runtime.get('machine') == 'x86_64')
+            and runtime.get('machine') in {'aarch64', 'arm64'}
+            and runtime.get('emulated', False) is False
+            and runtime.get('engine_machine', runtime.get('machine')) in {'aarch64', 'arm64'})
     return {'status': 'PASS' if safe else 'FAIL',
             'issues': [] if safe else [{'code': 'UNSAFE_RUNTIME'}]}
 
@@ -56,7 +58,10 @@ def runtime():
     return {'docker': Path('/.dockerenv').exists(), 'machine': platform.machine(),
             'cpus': int(quota[0]) / int(quota[1]) if quota and quota[0] != 'max' else None,
             'memory_bytes': int(memory) if memory.isdecimal() else None,
-            'network': 'none' if not Path('/sys/class/net/eth0').exists() else 'connected'}
+            'network': 'none' if not Path('/sys/class/net/eth0').exists() else 'connected',
+            'gpu_devices': sorted(str(path) for pattern in ('dri/renderD*', 'nvidia[0-9]*', 'kfd')
+                                  for path in Path('/dev').glob(pattern)),
+            'embedding_workload': 'prepared synthetic vectors; CPU retrieval'}
 
 
 def schedule(revisions, observations=7):
@@ -111,13 +116,13 @@ def _bytes(roots):
     return total
 
 
-def observe(case, dimensions, root, repetitions=None, warmup=False):
+def observe(case, dimensions, root, repetitions=None, warmup=False, reuse=False, template_hash=None):
     if int(case['family'][1:]) <= 8:
         from benchmarks.financial_workloads import prepare
     else:
         from benchmarks.analytics_workloads import prepare
     preparation_started = time.perf_counter_ns()
-    prepared = prepare(case['id'], root, dimensions)
+    prepared = prepare(case['id'], root, dimensions, reuse=reuse)
     preparation_ns = time.perf_counter_ns() - preparation_started
     peak = [0]
     stop = threading.Event()
@@ -168,7 +173,8 @@ def observe(case, dimensions, root, repetitions=None, warmup=False):
                                       'seed': manifest()['seed']}),
                 'input_state_hash': prepared.input_state_hash, 'output_hash': output_hash,
                 'counts': prepared.counts, 'invariant_results': proofs,
-                'exit_code': 0, 'fresh_process': True}
+                'exit_code': 0, 'fresh_process': True,
+                'fixture_reused': reuse, 'template_hash': template_hash}
     finally:
         stop.set()
         watcher.join()
@@ -181,7 +187,7 @@ def run(suite='pr', profile='medium', case=None, observations=None, batch_repeti
     if not facts['docker'] or facts['network'] != 'none':
         raise ValueError('Measurements require offline Docker')
     if profile != 'test' and validate_runtime(facts)['status'] != 'PASS':
-        raise ValueError('Release measurements require native x86-64, two CPUs and 4 GiB')
+        raise ValueError('Release measurements require native ARM64, two CPUs and 4 GiB')
     dimensions = value['profiles'][profile]
     if scale not in {1, 4} or (scale == 4 and not case):
         raise ValueError('Matched scaling requires one case and scale 1 or 4')
@@ -200,7 +206,7 @@ def run(suite='pr', profile='medium', case=None, observations=None, batch_repeti
               'runner': {**facts, 'profile': profile, 'disposable': True, 'warmups': 1,
                          'source_hash': sha, 'fixture_preparation_in_timing': False,
                          'docker_startup_in_timing': False, 'cache': 'warm process; OS cache unknown',
-                         'workspace_removed': False}, 'cases': {}}
+                         'workspace_removed': False, 'fixture_builds': 0}, 'cases': {}}
     env = {key: val for key, val in os.environ.items()
            if key not in {'INVEST_DB', 'FMP_API_KEY', 'INVEST_PROMPTS'}}
     env.update(INVEST_PROMPTS='/data/prompts', OMP_NUM_THREADS='1',
@@ -211,9 +217,18 @@ def run(suite='pr', profile='medium', case=None, observations=None, batch_repeti
         for row in selected:
             count = observations or row['repetitions']['pr' if suite == 'pr' else 'extended']
             samples = []
+            template = workspace / (row['id'] + '-template')
+            process = subprocess.run([sys.executable, str(ROOT / 'scripts/perf.py'), '_prepare'],
+                input=json.dumps({'case': row, 'dimensions': dimensions, 'root': str(template)}),
+                capture_output=True, text=True, env=env, timeout=600)
+            if process.returncode:
+                raise RuntimeError(f"{row['id']}: template preparation: {process.stderr[-8000:]}")
+            template_manifest = json.loads(process.stdout)
+            report['runner']['fixture_builds'] += 1
             for index in range(count + 1):
                 request = {'case': row, 'dimensions': dimensions,
                            'root': str(workspace / f"{row['id']}-{index}"),
+                           'template': str(template),
                            'repetitions': batch_repetitions, 'warmup': index == 0}
                 try:
                     process = subprocess.run(
@@ -228,6 +243,7 @@ def run(suite='pr', profile='medium', case=None, observations=None, batch_repeti
                     samples.append(sample)
             normalized = [s['elapsed_ns'] / s['batch_repetitions'] for s in samples]
             report['cases'][row['id']] = {'status': 'PASS', 'samples': samples,
+                'template': template_manifest,
                 'median_ns': statistics.median(normalized), 'max_ns': max(normalized),
                 'p95_ns': sorted(normalized)[math.ceil(.95 * len(normalized)) - 1]
                           if len(samples) == 21 else None}

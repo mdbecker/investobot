@@ -95,3 +95,10 @@ Triage never edits benchmark inventory or production. Promotion requires two
 clean reproductions, a fixed input, observed red and green evidence for the same
 regression test, and human review. Structural validation cannot verify external
 source truth, rights or real institution adapter compatibility.
+
+The current local Docker target is native M4/ARM64 with CPU execution. Vector
+fixtures use precomputed synthetic 384-dimensional vectors; no GPU embedding
+provider is invoked, and no Metal or GPU device access has been verified.
+An explicit future GPU adapter setup needs separate authorization and measured
+evidence. Native ARM functional tests do not replace paired medium/extended
+performance acceptance or reviewed reference capture before a live campaign.
