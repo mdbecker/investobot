@@ -249,3 +249,15 @@
 - Document actual behavior clearly and concisely, including setup/manual gates
   and outstanding scope. See `docs/implementation/unified-mvp-status.md` for
   current evidence; do not describe unimplemented requirements as complete.
+
+## Performance addendum harness lessons
+
+- Fuzz scenarios are allowlisted JSON data, never executable instructions.
+  Use fresh offline Docker subprocesses, independent exact oracles and retained
+  hash-only novelty history. Explicitly acknowledge absent history; never reset
+  it to manufacture novelty. Fixed campaign fixtures do not authorize live AI.
+- Resource failures remain environmental/unresolved. Preserve original failure
+  reports and actual exit codes; one reproduction cannot establish a confirmed
+  bug or regression. Report missing oracle evidence as a failure.
+- Historical metric benchmarks call the single adjusted-series calculation,
+  preserving its source/cache evidence; whole-fund comparison is a separate case.

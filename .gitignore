@@ -9,3 +9,5 @@ config.toml
 local-data/
 *.html
 !src/invest/static/*.html
+
+.local-data/

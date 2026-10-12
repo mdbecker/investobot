@@ -102,3 +102,7 @@ Work stays on `main`, with conventional observed red/green commits and no remote
 Git operations. Historical specifications remain unmodified references; the
 unified PRD governs the MVP; the preserved performance addendum strengthens its
 performance gates. See [project rules](AGENTS.md).
+
+The [local agent fuzzing guide](docs/agent-fuzzing.md) documents safe data-only
+campaigns, replay and retained novelty history. Fixed harness tests run offline;
+live campaigns require explicit human invocation after performance acceptance.

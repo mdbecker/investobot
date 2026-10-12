@@ -28,7 +28,7 @@ def manifest():
 
 def source_hash():
     checksum = hashlib.sha256()
-    for directory in ('src', 'benchmarks', 'scripts'):
+    for directory in ('src', 'benchmarks', 'scripts', 'fuzz'):
         for path in sorted((ROOT / directory).rglob('*')):
             if path.is_file() and '__pycache__' not in path.parts:
                 checksum.update(str(path.relative_to(ROOT)).encode())

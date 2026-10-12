@@ -12,7 +12,15 @@ from decimal import Decimal
 from pathlib import Path
 
 from benchmarks import analytics_fixtures as fixtures
-from invest import analytics_store, backtest, discovery, lookthrough, research_portfolio, search
+from invest import (
+    analytics,
+    analytics_store,
+    backtest,
+    discovery,
+    lookthrough,
+    research_portfolio,
+    search,
+)
 from invest.market import MarketClient, compare
 from invest.plans import state_hash
 
@@ -136,9 +144,14 @@ def _provider(ledger, root, dimensions, operation, counts):
     name, temperature = operation.rsplit('-', 1)
     counts.update(provider_cache_supported=name != 'screen', provider_cache_hits=0)
     counts.update(provider_fixture_funds=dimensions['funds'],
-        processed_funds=1 if name in {'holdings', 'quote', 'history-read'} else 2
-                        if name in {'compare', 'history-metrics'} else dimensions['funds'])
+        processed_funds=1 if name in {'holdings', 'quote', 'history-read', 'history-metrics'} else 2
+                        if name == 'compare' else dimensions['funds'])
     ticker, peer = 'FUND0000', 'FUND0001'
+
+    def history_metrics():
+        history = client.history(ticker, refresh=temperature == 'miss')
+        return {'history': history, 'metrics': analytics.series_metrics(history['prices'])}
+
     functions = {'holdings': lambda: client.holdings(ticker, refresh=temperature == 'miss'),
         'compare': lambda: compare(client, ticker, peer, refresh=temperature == 'miss'),
         'search': lambda: discovery.search(client, {'fund_type': 'ETF'}),
@@ -146,7 +159,7 @@ def _provider(ledger, root, dimensions, operation, counts):
             [f'FUND{index:04}' for index in range(1, dimensions['funds'])]),
         'screen': lambda: discovery.screen(client, {}),
         'history-read': lambda: client.history(ticker, refresh=temperature == 'miss'),
-        'history-metrics': lambda: compare(client, ticker, peer, refresh=temperature == 'miss'),
+        'history-metrics': history_metrics,
         'quote': lambda: client.quote(ticker, refresh=temperature == 'miss')}
     run = functions[name]
     # Cache initialization belongs to preparation, never the measured boundary.
@@ -165,7 +178,10 @@ def _provider(ledger, root, dimensions, operation, counts):
             expected = len(payload['history'][ticker])
         elif name == 'quote':
             coverage, expected = output.get('price'), '100'
-        elif name in {'compare', 'history-metrics'}:
+        elif name == 'history-metrics':
+            coverage = output['metrics']['usable_period']['observations']
+            expected = len(payload['history'][ticker])
+        elif name == 'compare':
             coverage, expected = Decimal(str(output['overlap'])).normalize(), Decimal(1)
         else:
             rows = output.get('candidates', output.get('results', output.get('funds', [])))

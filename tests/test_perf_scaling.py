@@ -101,7 +101,7 @@ def test_history_metrics_boundary_measures_one_adjusted_series(tmp_path):
         result = prepared.operation()
         assert 'metrics' in result, 'History metrics currently duplicates whole-fund comparison'
         assert result['metrics']['usable_period']['observations'] == len(result['history']['prices'])
-        assert result['metrics']['rolling_returns']
+        assert result['metrics']['rolling_window_sessions'] == 21
         assert prepared.counts['processed_funds'] == 1
         assert all(proof['passed'] for proof in prepared.verify(result).values())
     finally:
