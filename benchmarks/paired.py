@@ -46,8 +46,8 @@ def fixture_identity(definitions, dimensions):
 
 
 def measurement_batch(warmups):
-    """Target twice the 200ms validity floor; faster repeated calls need headroom."""
-    return runner.common_batch_counts(warmups, minimum_ns=400_000_000)
+    """Leave 50% headroom above the 200ms floor without exhausting suite budgets."""
+    return runner.common_batch_counts(warmups, minimum_ns=300_000_000)
 
 
 def certification_plan(definitions):
