@@ -57,3 +57,17 @@ specialty inputs), then retain native paired/extended reports. The current fuzz
 operation adapters cover the fixed campaign; additional adapters are needed for
 full P01–P15 exploratory workflow coverage. Five fresh human-invoked campaigns,
 coverage/novelty review, native budgets and baseline approval remain unverified.
+
+## Exact committed-source verification
+
+Commit `8524245` was archived with Git and built with locked dependencies into
+Docker image `453f16c9683c`. With no source bind mount and networking disabled,
+`uv run --locked pytest -q -x` passed **1,485 tests in 202.35 seconds** and Ruff
+passed. This includes all existing MVP tests, 114 fixed workload boundaries,
+paired scaling-plan contracts and 40 fixed fuzz contracts. These ARM64 diagnostic
+results certify functional behavior for that tree, not x86-64 performance budgets.
+
+Estimated implementation progress: approximately **85%**, a scope estimate rather
+than a measured acceptance score. Remaining engineering and human gates above
+prevent describing this PRD as complete. No live AI campaign, host installation,
+remote Git operation or push was performed.
