@@ -444,3 +444,18 @@ def test_unresolved_execution_and_changed_limits_cannot_be_confirmed_regressions
     result = triage.compare(base, candidate, retry_reference=base, retry_candidate=candidate)
     assert result['classification'] != 'CONFIRMED_SLOW_PATH'
     assert result['status'] == 'FAILED'
+
+
+def test_one_explicit_adversarial_case_needs_no_campaign_quota_or_history(ctx):
+    """A human can request one useful sequence and retain its replay evidence."""
+    data = campaign()
+    data['cases'] = data['cases'][:1]
+    assert validate(data)['status'] == 'VALID'
+    source = ctx['tmp'] / 'requested.json'
+    source.write_text(json.dumps(data))
+    output = ctx['tmp'] / 'requested-report'
+    result = invoke(['run', source, '--output-dir', output])
+    assert result.returncode == 0, result.stderr
+    report = read_report(output)
+    assert len(report['cases']) == 1
+    assert report['cases'][0]['saved_fixture']
