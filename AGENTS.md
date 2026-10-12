@@ -2,6 +2,11 @@
 
 ## Additional verified lifecycle lessons
 
+- Import/reconciliation chronology selects account history in SQLite before
+  decoding snapshot payloads. Preserve every selected historical observation,
+  fingerprint and source lexeme, including existing status behavior. Read fresh
+  on every command; do not introduce cross-command caches or schema changes.
+
 - Pure P05 performance fixtures may reuse verified immutable inventory only
   under SQLite query_only, total_changes and data_version guards. Verify every
   raw result independently and recheck full inventory/FKs before closing. Keep

@@ -20,8 +20,19 @@
   overhead from 1.78 seconds to 0.60 ms; financial input/output hashes, counts
   and all native proofs are identical. Retained profile reports are diagnostic,
   not full paired acceptance.
-- Next: check the pinned reference's stress import cost before another full
-  capture; retain actual measurements instead of relying on extrapolation.
+- Diagnostic stress import: pinned reference **460.992 seconds**, optimized
+  `77a8515` **23.241 seconds**, both 4,000 positions/8,000 lots/40 accounts and
+  identical input/output hashes and financial proofs. These single observations
+  establish scheduling evidence, not confirmed regression or full acceptance.
+  At the observed rate, reference warm-up plus three bulk samples would consume
+  about 31 minutes; complete extended scheduling still needs restructuring.
+- Profiled candidate import: 25.43 seconds including profiler overhead; snapshot
+  JSON decoding dominated. Red `48499d9` records three intended SQL-filter
+  failures and two financial controls. The account-filtered history lookup now
+  passes all five tests and Ruff, preserving chronology/provenance/retry identity.
+- Next: verify matched import scaling and the integrated image once, then resolve
+  reference scheduling before another full capture. Reference metadata remains
+  unchanged; no automatic rebaseline or timing-limit relaxation is authorized.
 - Pending: complete native medium/extended/scaling/absolute-budget acceptance;
   independently reviewed reference; executable fuzz slow-path investigation;
   explicitly human-invoked campaigns; remote runner/protection setup.

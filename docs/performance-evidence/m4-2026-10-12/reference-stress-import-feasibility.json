@@ -1,0 +1,134 @@
+{
+  "status": "DIAGNOSTIC",
+  "purpose": "stress reference scheduling feasibility",
+  "reference_commit": "7cbf2bed13a0447865403e986662119571217bc6",
+  "case_id": "P02.apply",
+  "dimensions": {
+    "accounts": 40,
+    "positions": 4000,
+    "lots": 8000,
+    "accepted_snapshots": 800,
+    "saved_plans": 80,
+    "history_years": 10,
+    "funds": 80,
+    "constituents_per_fund": 4000,
+    "nested_levels": 3,
+    "fund_vintages": 12,
+    "parquet_observations": 2000000,
+    "research_chunks": 100000,
+    "vector_dimensions": 384,
+    "backup_fixture_bytes": 209715200
+  },
+  "sample": {
+    "elapsed_ns": 460992288877,
+    "batch_repetitions": 1,
+    "preparation_ns": 638440833,
+    "reset_ns": 82051792,
+    "peak_rss_bytes": 358031360,
+    "persisted_bytes": 168903868,
+    "temp_bytes": 80908184,
+    "input_hash": "e00241390564030e0fdcfbc2c35bd99a79de6aa272baf39e34df374b160cd184",
+    "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+    "output_hash": "81bf88821cba296c1e1c08653a8a1ea4b7441d59a6df19a603ea17fde56037ce",
+    "counts": {
+      "accounts": 40,
+      "positions": 4000,
+      "lots": 8000,
+      "accepted_snapshots": 800
+    },
+    "invariant_results": {
+      "source-precision-and-provenance-preserved": {
+        "passed": true,
+        "expected": {
+          "environments": [
+            "SYNTHETIC"
+          ],
+          "price_precision": [
+            0
+          ]
+        },
+        "observed": {
+          "environments": [
+            "SYNTHETIC"
+          ],
+          "price_precision": [
+            0
+          ]
+        }
+      },
+      "positions-lots-cash-match-fixture": {
+        "passed": true,
+        "expected": {
+          "positions": 4000,
+          "lots": 8000,
+          "cash": "400000"
+        },
+        "observed": {
+          "positions": 4000,
+          "lots": 8000,
+          "cash": "400000"
+        }
+      }
+    },
+    "exit_code": 0,
+    "fresh_process": true,
+    "fixture_reused": true,
+    "template_hash": "faacc817690d86c0a542b405338b269ed3b825f9ccde33e50a0ecd3a933b509a",
+    "fixture_copy_ns": 210470666
+  },
+  "preparation_ns": 2296996168,
+  "templates": [
+    {
+      "revision": "reference",
+      "commit": "7cbf2bed13a0447865403e986662119571217bc6",
+      "schema_version": 1,
+      "case": "P02.apply",
+      "dimensions": {
+        "accounts": 40,
+        "positions": 4000,
+        "lots": 8000,
+        "accepted_snapshots": 800,
+        "saved_plans": 80,
+        "history_years": 10,
+        "funds": 80,
+        "constituents_per_fund": 4000,
+        "nested_levels": 3,
+        "fund_vintages": 12,
+        "parquet_observations": 2000000,
+        "research_chunks": 100000,
+        "vector_dimensions": 384,
+        "backup_fixture_bytes": 209715200
+      },
+      "source_hash": "7d2cdf168bdd9b94ef09a9dc582652f9520c2141811be106a4f7bfa1a3d947d4",
+      "recipe_version": "performance-v1",
+      "seed": 271828,
+      "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+      "build_count": 1,
+      "files": {
+        "financial-fixture.json": {
+          "sha256": "b58a2850e37125ca489f4e387eb860389660c3ca878faf3efba9ca7b66a0e8b0",
+          "bytes": 4210064
+        },
+        "financial-workload.json": {
+          "sha256": "ec0e44488898fd95ea1c88a5523b321cfed12711d6f58c7803d62be628dc087b",
+          "bytes": 496
+        },
+        "financial.db": {
+          "sha256": "2a9a7224b5a2412492438d3ebc017da46c1322672fabc758356f16ca6cfee5ee",
+          "bytes": 80367616
+        },
+        "financial.db.restore.lock": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "frozen.db": {
+          "sha256": "7a35b5d7fcbb585051fe21291186fa139c3f641ea0da5883280333b045763346",
+          "bytes": 80367616
+        }
+      },
+      "template_hash": "faacc817690d86c0a542b405338b269ed3b825f9ccde33e50a0ecd3a933b509a",
+      "preparation_ns": 2296996168
+    }
+  ],
+  "caveat": "One observation cannot establish a regression or full acceptance."
+}

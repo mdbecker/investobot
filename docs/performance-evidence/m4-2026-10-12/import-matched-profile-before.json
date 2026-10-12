@@ -1,0 +1,63 @@
+{
+  "commit": "77a8515569efa929ae4bfb8fd0f7ef1661a8826c",
+  "diagnostic": "cProfile overhead included; not gate timings",
+  "elapsed_ns": 25431034136,
+  "dimensions": {
+    "accounts": 40,
+    "positions": 4000,
+    "lots": 8000,
+    "accepted_snapshots": 800,
+    "saved_plans": 20,
+    "history_years": 10,
+    "funds": 20,
+    "constituents_per_fund": 1000,
+    "nested_levels": 3,
+    "fund_vintages": 1,
+    "parquet_observations": 500000,
+    "research_chunks": 10000,
+    "vector_dimensions": 384,
+    "backup_fixture_bytes": 209715200
+  },
+  "counts": {
+    "accounts": 40,
+    "positions": 4000,
+    "lots": 8000,
+    "accepted_snapshots": 800
+  },
+  "input_state_hash": "9706ef4ff6d293c1d7400a67a2ea86fe47dc2852769f3e396f5ad3345e3d8038",
+  "output_hash": "c112bfbcc8ac587b79051f1ec5af47810eacb2b18bc6693526d76c4984aefa67",
+  "proofs": {
+    "source-precision-and-provenance-preserved": {
+      "passed": true,
+      "expected": {
+        "environments": [
+          "SYNTHETIC"
+        ],
+        "price_precision": [
+          0
+        ]
+      },
+      "observed": {
+        "environments": [
+          "SYNTHETIC"
+        ],
+        "price_precision": [
+          0
+        ]
+      }
+    },
+    "positions-lots-cash-match-fixture": {
+      "passed": true,
+      "expected": {
+        "positions": 4000,
+        "lots": 8000,
+        "cash": "400000"
+      },
+      "observed": {
+        "positions": 4000,
+        "lots": 8000,
+        "cash": "400000"
+      }
+    }
+  }
+}

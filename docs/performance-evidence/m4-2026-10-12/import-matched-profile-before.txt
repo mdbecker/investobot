@@ -1,0 +1,33 @@
+         22455543 function calls (22447326 primitive calls) in 25.430 seconds
+
+   Ordered by: cumulative time
+   List reduced from 238 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   25.431   25.431 /app/benchmarks/financial_workloads.py:354(operation)
+        1    0.095    0.095   25.431   25.431 /app/benchmarks/financial_workloads.py:150(<lambda>)
+       40    0.919    0.023   25.335    0.633 /app/src/invest/ledger.py:384(apply)
+      560    0.003    0.000   20.200    0.036 /app/src/invest/ledger.py:60(rows)
+      560    5.068    0.009   20.197    0.036 /app/src/invest/db.py:316(rows)
+    75700    0.031    0.000   15.002    0.000 /usr/local/lib/python3.12/json/__init__.py:299(loads)
+    75700    0.051    0.000   14.958    0.000 /usr/local/lib/python3.12/json/decoder.py:333(decode)
+    75700   14.865    0.000   14.865    0.000 /usr/local/lib/python3.12/json/decoder.py:344(raw_decode)
+       40    0.831    0.021   11.505    0.288 /app/src/invest/ledger.py:196(reconcile)
+  1600000    0.957    0.000    1.786    0.000 /app/src/invest/security_identity.py:6(_matches)
+     8000    0.004    0.000    1.348    0.000 /app/src/invest/ledger.py:186(_snapshot_security)
+     8000    0.261    0.000    1.344    0.000 /app/src/invest/security_identity.py:20(resolve_observation)
+     8000    0.077    0.000    0.972    0.000 /app/src/invest/security_identity.py:13(resolve)
+ 10201243    0.602    0.000    0.602    0.000 {method 'get' of 'dict' objects}
+    20120    0.011    0.000    0.540    0.000 /app/src/invest/ledger.py:72(put)
+    20120    0.144    0.000    0.529    0.000 /app/src/invest/db.py:348(put)
+836080/828080    0.105    0.000    0.399    0.000 {built-in method builtins.any}
+  1600000    0.213    0.000    0.274    0.000 {method 'update' of 'set' objects}
+      840    0.002    0.000    0.271    0.000 /app/src/invest/ledger.py:46(snapshot_fingerprint)
+     4920    0.003    0.000    0.258    0.000 /usr/local/lib/python3.12/json/__init__.py:183(dumps)
+      840    0.000    0.000    0.258    0.000 /app/src/invest/ledger.py:286(<genexpr>)
+     4920    0.003    0.000    0.254    0.000 /usr/local/lib/python3.12/json/encoder.py:183(encode)
+     4920    0.250    0.000    0.250    0.000 /usr/local/lib/python3.12/json/encoder.py:205(iterencode)
+    40680    0.170    0.000    0.170    0.000 {method 'execute' of 'sqlite3.Connection' objects}
+    65648    0.061    0.000    0.116    0.000 {method 'join' of 'str' objects}
+
+

@@ -76,6 +76,12 @@ class Ledger:
             raise ValueError("Unknown table")
         put(self.connection, table, key, data)
 
+    def _account_snapshots(self, account_id):
+        """Read complete account history without decoding other households' evidence."""
+        return [json.loads(row[0]) for row in self.connection.execute(
+            'SELECT payload_json FROM snapshot_observations WHERE account_id=? ORDER BY id',
+            (account_id,))]
+
     def state(self):
         return {
             table: self.rows(table)
@@ -273,7 +279,7 @@ class Ledger:
             changes.append(dict(kind="lots", status="CHANGED_VALUE"))
         elif not snap["lots_complete"]:
             observations.append(dict(kind="lots", status="UNKNOWN_VALUE"))
-        previous = [s for s in self.rows("snapshots") if s["account"]["id"] == account_id]
+        previous = self._account_snapshots(account_id)
         dated = [s["source_timestamp"] for s in previous if s.get("source_timestamp")]
         latest_known = max(dated, key=source_time, default=None)
         source_status = "NO_PRIOR_DATED_STATE"
@@ -386,7 +392,7 @@ class Ledger:
         account_id = snap["account"]["id"]
         # Import timestamps are provenance, never evidence of source freshness.
         fingerprint = snapshot_fingerprint(snap)
-        previous = [s for s in self.rows("snapshots") if s["account"]["id"] == account_id]
+        previous = self._account_snapshots(account_id)
         identical = next((s for s in previous if s.get("fingerprint") == fingerprint), None)
         if identical:
             return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id, warnings=snap["warnings"])
