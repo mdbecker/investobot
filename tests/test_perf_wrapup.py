@@ -93,3 +93,19 @@ def test_changed_historical_or_corpus_evidence_changes_input_fingerprint(tmp_pat
         finally:
             fixture.close()
     assert hashes[0] != hashes[1]
+
+
+def test_retired_calendar_output_projection_preserves_every_financial_and_policy_field():
+    from benchmarks.financial_workloads import foundation_projection
+
+    native = {'algorithm_version': 'contribution-first-hifo-1', 'cadence': {'eligible': True},
+              'proposed_actions': [{'type': 'BUY', 'quantity': '4', 'notional': '400'}],
+              'estimated_tax_budget_consumption': '0', 'policy': {'source': 'Human reviewed'},
+              'issues': [], 'source_state_hash': 'exact-source'}
+    candidate = deepcopy(native)
+    candidate.pop('cadence')
+    assert foundation_projection(native) == candidate
+    assert foundation_projection(candidate) == candidate
+    native['cadence']['eligible'] = False
+    with pytest.raises(ValueError, match='calendar'):
+        foundation_projection(native)

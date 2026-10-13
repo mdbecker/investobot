@@ -208,3 +208,38 @@ def test_mixed_currency_summary_returns_typed_error(dashboard):
         ledger.connection.close()
     code, error = request(dashboard, '/api/summary')
     assert code == 409 and error['code'] == 3
+
+
+def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_gap(
+        dashboard, monkeypatch):
+    # Given a confirmed purchase without an independent accepted valuation mark.
+    ledger = accepted(dashboard)
+    try:
+        ledger.register_security({'ticker': 'UNMARKED', 'name': 'Synthetic unmarked stock',
+                                  'asset_type': 'STOCK', 'currency': 'USD',
+                                  'source': 'Reviewed synthetic security identity'})
+        ledger.record_activity({'activity_id': 'synthetic-unmarked-purchase', 'account_id': 'ira',
+                                'type': 'BUY', 'security': 'UNMARKED', 'quantity': '1',
+                                'price': '10', 'fee': '0', 'date': '2026-10-08'}, yes=True)
+        before = list(ledger.connection.iterdump())
+        calls = []
+
+        def unavailable(*args, **kwargs):
+            calls.append(args)
+            raise AssertionError('Viewer attempted a provider request')
+
+        monkeypatch.setattr(httpx, 'get', unavailable)
+        code, value = request(dashboard, '/api/overview')
+        assert code == 200, value
+        assert value['summary']['total_value'] is None
+        assert value['summary']['cash'] == '190'
+        holding = next(row for row in value['state']['positions'] if row['security'] == 'UNMARKED')
+        assert holding['quantity'] == '1' and holding['market_value'] is None
+        assert value['exposure']['status'] == 'UNAVAILABLE'
+        assert value['exposure']['total_value'] is None
+        assert value['exposure']['unknown_exposure_percentage'] is None
+        assert 'MISSING_VALUATION_MARK' in {issue['code'] for issue in value['exposure']['issues']}
+        assert calls == []
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
