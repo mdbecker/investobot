@@ -164,7 +164,8 @@ class MarketClient:
             if kind == 'quote':
                 result['status'] = 'REVIEW_REQUIRED'
         result['issues'] = list({issue['code']: issue for issue in result['issues']}.values())
-        result['coverage'] = {'source_date_known': result['source_date_status'] in {'KNOWN', 'STALE', 'FUTURE'},
+        result['coverage'] = {**result.get('coverage', {}),
+                              'source_date_known': result['source_date_status'] in {'KNOWN', 'STALE', 'FUTURE'},
                               'decision_freshness_complete': result['source_date_status'] == 'KNOWN'
                                   and not any(issue['code'] == 'PARTIAL_SOURCE_DATE_COVERAGE'
                                               for issue in result['issues'])}
@@ -275,26 +276,25 @@ class MarketClient:
                 price = _number(adjusted)
                 if price <= 0:
                     warnings.append(f"{day}: nonpositive adjusted price excluded")
+                    issues.append(_issue('INVALID_ADJUSTED_PRICE',
+                                         'Adjusted historical prices must be positive'))
                     continue
                 prices.append({"date": day.isoformat(), "adjusted_close": str(price)})
             prices.sort(key=lambda p: p["date"])
             if len({p["date"] for p in prices}) != len(prices):
                 raise DomainError("Provider history contains duplicate dates", 2)
-            for previous, current in pairwise(prices):
-                start, end = (
-                    date.fromisoformat(previous["date"]),
-                    date.fromisoformat(current["date"]),
-                )
-                if np.busday_count(start.isoformat(), end.isoformat()) > 1:
-                    warnings.append(
-                        f"Possible missing sessions between {start} and {end}; holiday calendar not applied"
-                    )
-                    issues.append(_issue('UNVERIFIED_HISTORY_SESSION_COVERAGE',
-                                         'Observed dates have gaps; a verified session calendar is required'))
             if not prices and not issues:
                 issues.append(_issue('HISTORY_UNAVAILABLE', 'No adjusted historical observations supplied'))
+            observed_complete = bool(prices) and len(prices) == len(rows)
+            status = "AVAILABLE" if prices and not issues else 'PARTIAL' if prices else 'UNAVAILABLE'
+            # Provider observations do not establish an independent exchange calendar.
+            warnings.append('Full exchange-session coverage is unverified; only provider observations are available')
+            issues.append({'code': 'UNVERIFIED_HISTORY_SESSION_COVERAGE',
+                           'message': 'No independently pinned exchange-session calendar was supplied',
+                           'blocks_calculation': False, 'blocks_proposals': False,
+                           'blocks_execution_review': False})
             return {
-                "status": "AVAILABLE" if prices and not issues else 'PARTIAL' if prices else 'UNAVAILABLE',
+                "status": status,
                 "prices": prices,
                 "usable_period": {"start": prices[0]["date"], "end": prices[-1]["date"]}
                 if prices
@@ -302,6 +302,8 @@ class MarketClient:
                 "warnings": warnings,
                 'issues': issues,
                 'return_basis': 'DIVIDEND_ADJUSTED_PROVIDER_CLOSE',
+                'coverage': {'history_session_coverage': 'UNVERIFIED',
+                             'observed_adjusted_prices_complete': observed_complete},
             }
 
         return self._cached("history", ticker, refresh, normalize)
