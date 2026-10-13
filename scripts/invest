@@ -1,0 +1,4 @@
+#!/bin/sh
+# The host agent invokes this bridge; the deterministic CLI runs in Docker.
+CDPATH= cd -P "${0%/*}/.." || exit 1
+exec docker compose run --rm -T app invest "$@"

@@ -1,8 +1,8 @@
 # Preparing the authoritative JSON contract
 
-Use `invest schema` to inspect `CompetitiveResearchInput` and
-`invest tools describe research.competitive.validate` or
-`invest tools describe research.competitive.import` for CLI contracts and mutation
+Use `./scripts/invest schema` to inspect `CompetitiveResearchInput` and
+`./scripts/invest tools describe research.competitive.validate` or
+`./scripts/invest tools describe research.competitive.import` for CLI contracts and mutation
 scopes. Do not maintain a separate schema or execute copied prompt text.
 
 The package uses `schema_version: "1.0"` and

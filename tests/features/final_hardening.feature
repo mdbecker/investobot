@@ -42,12 +42,6 @@ Feature: Financial and runtime release safeguards
   Scenario: Native inspection defaults to loopback
     When the native inspection server is created with default host
     Then its listener uses loopback
-  Scenario: Docker prompt files use persistent local storage
-    Given the Docker application environment
-    Then configured prompt storage uses the persistent data volume
-  Scenario: Prompt CRUD is fully accessible through the CLI
-    When the agent saves reads and deletes a plain Markdown prompt
-    Then every prompt output is JSON and the copied text matches exactly
   Scenario: Three portfolio alternatives preserve a shared baseline
     Given a fully known dated synthetic taxable account
     When an agent creates three targets and plans and exports their reports

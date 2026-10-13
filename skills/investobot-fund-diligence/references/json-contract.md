@@ -1,6 +1,6 @@
 # Authoritative JSON and explicit acceptance
 
-Retrieve `invest schema` and `invest tools describe research.funds.import` before
+Retrieve `./scripts/invest schema` and `./scripts/invest tools describe research.funds.import` before
 writing JSON. Their `FundDiligenceInput` schema is authoritative; this reference
 explains semantics without maintaining a second JSON schema.
 
@@ -21,22 +21,23 @@ code/scope/period/observation facts are rejected. Unavailable numerical componen
 and PARTIAL/BLOCKED coverage need meaningful limitations. Findings preserve fact,
 optional interpretation and uncertainty separately.
 
-Save reviewed JSON as `local-data/fund-diligence.json`, then:
+Save reviewed JSON on the host as `local-data/work/fund-diligence.json`, then
+pass its container path:
 
 ```sh
-invest research funds validate local-data/fund-diligence.json
-invest research funds import local-data/fund-diligence.json
+./scripts/invest research funds validate /app/local-data/work/fund-diligence.json
+./scripts/invest research funds import /app/local-data/work/fund-diligence.json
 ```
 
 Both are read-only previews and do not create a selected database. Present the
 preview and original source evidence to the human. After explicit human approval:
 
 ```sh
-invest research funds import local-data/fund-diligence.json --yes
-invest research funds list
-invest research funds show RUN_ID
-invest research funds summary RUN_ID
-invest research funds holdings RUN_ID
+./scripts/invest research funds import /app/local-data/work/fund-diligence.json --yes
+./scripts/invest research funds list
+./scripts/invest research funds show RUN_ID
+./scripts/invest research funds summary RUN_ID
+./scripts/invest research funds holdings RUN_ID
 ```
 
 Acceptance writes immutable research only. Equivalent reordered evidence is

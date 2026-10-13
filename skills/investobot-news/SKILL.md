@@ -7,6 +7,12 @@ metadata:
 
 # News, catalysts and thesis changes
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 Investigate material company developments through your authorized browser and
 research tools. Investobot preserves immutable evidence and compares observations;
 it does not browse, run this skill, score sentiment or make trading decisions.

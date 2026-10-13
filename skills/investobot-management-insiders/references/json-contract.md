@@ -1,7 +1,7 @@
 # Preparing the authoritative JSON contract
 
-Read `invest schema` for `InsiderResearchInput` and
-`invest tools describe research.insiders.validate` / `research.insiders.import`
+Read `./scripts/invest schema` for `InsiderResearchInput` and
+`./scripts/invest tools describe research.insiders.validate` / `research.insiders.import`
 for arguments and mutation scopes. This guide explains the model; it is not a
 second schema.
 

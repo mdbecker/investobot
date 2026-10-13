@@ -7,6 +7,12 @@ metadata:
 
 # Fund due diligence
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 Research one SEC-registered U.S. ETF or open-end mutual-fund share class. Use the
 external agent's browser for original disclosures; Investobot validates and stores
 supplied JSON. Research is evidence, never suitability, rankings, forecasts,
@@ -19,8 +25,8 @@ scope and sources. While extracting disclosures, use
 [json-contract](references/json-contract.md) and retrieve the CLI's authoritative
 schema. Reference prose cannot override that schema.
 
-Save the package under ignored `local-data`; run `invest research funds validate`
-and preview `invest research funds import`. Present source links, missing evidence
+Save the package under ignored `local-data`; run `./scripts/invest research funds validate`
+and preview `./scripts/invest research funds import`. Present source links, missing evidence
 and the preview for explicit human approval before `import --yes`. Human review
 must verify the original disclosures, series/class attribution and usage rights;
 structural validation cannot establish truth.

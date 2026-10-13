@@ -7,6 +7,12 @@ metadata:
 
 # Executive political-contribution research
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 Research publicly identified company executives and permitted U.S. federal
 contribution evidence using your browser and authorized external sources.
 Investobot validates and remembers structured JSON; it does not execute research.
@@ -21,6 +27,6 @@ Public availability and import confirmation do not supply that permission.
 With unresolved rights, retain public executive/recipient metadata but no named
 contributions. Keep uncertainties and partial coverage visible.
 
-Use `invest schema` and `invest tools describe research.political.import` for
+Use `./scripts/invest schema` and `./scripts/invest tools describe research.political.import` for
 current authoritative inputs and mutation scope. Validate, preview, then obtain
 explicit acceptance before `--yes`. Imports change research records only.

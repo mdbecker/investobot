@@ -1,3 +1,0 @@
-# ETF and mutual-fund comparison
-
-Use invest to compare candidate ETFs or mutual funds using normalized holdings, strong security identities, overlap, exposure, and historical correlation where available. Disclose holdings coverage, unresolved weights, dates, currency limitations, and total-return assumptions. Use your browser to verify current fund objectives, costs, liquidity, and restrictions. Avoid treating ticker similarity as proof of identity or wash-sale safety. Simulate alternatives using existing tools and prepare a comparison for human review. Never apply hypothetical actions or execute trades.

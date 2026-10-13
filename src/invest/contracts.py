@@ -103,10 +103,6 @@ PURPOSES = {
     "plan.show": "Retrieve a complete saved plan; potentially large JSON. Prefer report.export for review.",
     "plan.compare": "Compare compact saved financial summaries and disclose incompatible assumptions.",
     "report.export": "Write a persisted plan report and return its path and content hash.",
-    "prompt.list": "List bundled and user Markdown prompts.",
-    "prompt.show": "Read full prompt text without executing it.",
-    "prompt.save": "Save a local user Markdown prompt.",
-    "prompt.delete": "Delete a user prompt while retaining bundled defaults.",
 }
 SCOPES = {
     'portfolio.record-cash-transfer': 'actual_portfolio',
@@ -143,8 +139,6 @@ SCOPES = {
     "target.archive": "targets",
     "plan.generate": "plans",
     "report.export": "requested_output_file",
-    "prompt.save": "user_prompt_files",
-    "prompt.delete": "user_prompt_files",
     "security.register": "security_metadata",
     "security.classify": "security_metadata",
     "account.update": "account_metadata",

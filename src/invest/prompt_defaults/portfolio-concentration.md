@@ -1,3 +1,0 @@
-# Portfolio concentration review
-
-Use invest to inspect accepted household holdings, direct and fund look-through exposure, unresolved exposure, and source freshness. Identify major security, sector, and issuer concentrations using the domain calculations. Use your browser for current qualitative research. Explain incomplete fund coverage and identity confidence. Create hypothetical target alternatives and compare concentration and drift without changing actual holdings. Save reports describing proposed changes and missing information. A human reviews the findings and executes any trades manually.

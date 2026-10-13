@@ -44,7 +44,7 @@ jobs:
             shift
             image_arch=$(docker image inspect "$image" --format '{{.Architecture}}')
             docker run --rm --network none --cpus=2 --memory=4g \
-              -e INVEST_PROMPTS=/data/prompts -e OMP_NUM_THREADS=1 \
+              -e OMP_NUM_THREADS=1 \
               -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
               -e INVEST_PERF_ENGINE_ARCH="$engine_arch" \
               -e INVEST_PERF_ENGINE_ID="$engine_id" \

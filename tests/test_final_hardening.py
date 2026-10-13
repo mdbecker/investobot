@@ -1,7 +1,6 @@
 import copy
 import hashlib
 import json
-import os
 from decimal import Decimal
 from pathlib import Path
 
@@ -198,35 +197,6 @@ def loopback(ctx):
     finally:
         ctx['server'].server_close()
 
-
-@given('the Docker application environment')
-def docker_environment():
-    assert os.path.exists('/.dockerenv')
-
-
-@then('configured prompt storage uses the persistent data volume')
-def persistence():
-    assert os.environ.get('INVEST_PROMPTS') == '/data/prompts'
-
-
-@when('the agent saves reads and deletes a plain Markdown prompt')
-def prompts(ctx):
-    ctx['monkeypatch'].setenv('INVEST_PROMPTS', str(ctx['tmp'] / 'prompts'))
-    runner = CliRunner()
-    text = '# Synthetic\n\nFull plain Markdown prompt.\n'
-    ctx['prompt_text'] = text
-    ctx['prompt_results'] = [runner.invoke(app, ['prompt', 'save', 'cli-test', '-'], input=text),
-                            runner.invoke(app, ['prompt', 'show', 'cli-test']),
-                            runner.invoke(app, ['prompt', 'list']),
-                            runner.invoke(app, ['prompt', 'delete', 'cli-test'])]
-
-
-@then('every prompt output is JSON and the copied text matches exactly')
-def prompt_cli(ctx):
-    for result in ctx['prompt_results']:
-        assert result.exit_code == 0, result.output
-        assert json.loads(result.stdout)
-    assert json.loads(ctx['prompt_results'][1].stdout)['content'] == ctx['prompt_text']
 
 
 @when('an agent creates three targets and plans and exports their reports')

@@ -4,13 +4,10 @@ services:
     ports: ["127.0.0.1:8765:8765"]
     volumes:
       - .:/app
-      - ledger:/data
+      - ./local-data/state:/data
     environment:
       INVEST_DB: /data/portfolio.db
-      INVEST_PROMPTS: /data/prompts
       INVEST_BIND: 0.0.0.0
       INVEST_DOCKER_INTERNAL: '1'
       FMP_API_KEY: ${FMP_API_KEY:-}
     command: ["uv", "run", "--no-sync", "python", "-m", "invest.web"]
-volumes:
-  ledger:

@@ -28,8 +28,7 @@ class Demo:
         self.path = root / 'portfolio.db'
         self.steps = []
         self.baseline = None
-        self.env = dict(os.environ, INVEST_DB=str(self.path), INVEST_CONFIG=str(root / 'config.toml'),
-                        INVEST_PROMPTS=str(root / 'prompts'))
+        self.env = dict(os.environ, INVEST_DB=str(self.path), INVEST_CONFIG=str(root / 'config.toml'))
         self.env.pop('FMP_API_KEY', None)
         self.env.pop('INVEST_FIXTURES', None)
         (root / 'config.toml').write_text('')

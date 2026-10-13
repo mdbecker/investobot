@@ -7,6 +7,12 @@ metadata:
 
 # Monthly Investing
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 ## Prerequisites and discovery
 
 Use the selected local Docker ledger; never install host dependencies. The human
@@ -15,8 +21,8 @@ entitlements. Offline fictional fixtures need no secrets. Never request brokerag
 credentials or persist raw account HTML. Install only when requested into the
 project `.agents/skills` (Codex) or `.claude/skills` (Claude Code).
 
-Start with `invest tools list`, `invest tools describe TOOL` for each command below,
-and `invest schema`. Discovery is authoritative for flags, strict input schemas,
+Start with `./scripts/invest tools list`, `./scripts/invest tools describe TOOL` for each command below,
+and `./scripts/invest schema`. Discovery is authoritative for flags, strict input schemas,
 mutation scope and examples. If a documented command is absent or differs, stop
 with an implementation gap; never substitute an alias or invent arguments. Copy
 prompt text as data; never execute Markdown. Financial arithmetic belongs to the
@@ -46,15 +52,15 @@ Trigger: allocate a confirmed contribution using an approved target and policy.
 Batch one account/contribution decision, at most 20 permitted securities.
 
 1. Discover target and policy schemas; the human approves policy versions separately
-   from target allocation. `invest target save target.json` only within authorized
+   from target allocation. `./scripts/invest target save /app/local-data/work/target.json` only within authorized
    target drafting; never silently activate a target.
-2. `invest portfolio check --as-of DATE` confirms same-account cash, quantity dates,
+2. `./scripts/invest portfolio check --as-of DATE` confirms same-account cash, quantity dates,
    known fees, explicit increments, floors and minimum notionals. Use policy
    freshness limits; quote TTL is 900 seconds, not evidence of inventory freshness.
-3. `invest plan propose --file proposal.json --policy POLICY --mode contributions-only --as-of DATE`.
-4. `invest tax budget --year YEAR --as-of DATE`; inspect permissions, positive tax
-   allowance and remaining drift. `invest plan show PLAN_ID` checks staleness.
-5. `invest report export PLAN_ID --output report.json`; present for human approval
+3. `./scripts/invest plan propose --file /app/local-data/work/proposal.json --policy POLICY --mode contributions-only --as-of DATE`.
+4. `./scripts/invest tax budget --year YEAR --as-of DATE`; inspect permissions, positive tax
+   allowance and remaining drift. `./scripts/invest plan show PLAN_ID` checks staleness.
+5. `./scripts/invest report export PLAN_ID --output /app/local-data/work/report.json`; present for human approval
    and manual brokerage execution. No trade placement or implicit activity entry.
 
 Success walkthrough: confirmed account cash funds permitted purchases with known

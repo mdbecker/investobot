@@ -1,3 +1,0 @@
-# Alternative portfolio comparison
-
-Use invest to create and plan several target portfolios against the same accepted source portfolio. Compare allocations, remaining drift, turnover, account changes, trade count, realized short-term and long-term gains and losses, estimated tax effects, remaining cash, and exposure. Disclose differing snapshot dates, price assumptions, constraints, incomplete data, and wash-sale concerns. Use your browser for qualitative current research. Export reports for each alternative and explain tradeoffs without claiming global optimality. A human chooses an allocation and executes trades manually.

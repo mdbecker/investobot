@@ -7,6 +7,12 @@ metadata:
 
 # Tax Loss Harvesting
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 ## Prerequisites and discovery
 
 Use the selected local Docker ledger; never install host dependencies. The human
@@ -15,8 +21,8 @@ entitlements. Offline fictional fixtures need no secrets. Never request brokerag
 credentials or persist raw account HTML. Install only when requested into the
 project `.agents/skills` (Codex) or `.claude/skills` (Claude Code).
 
-Start with `invest tools list`, `invest tools describe TOOL` for each command below,
-and `invest schema`. Discovery is authoritative for flags, strict input schemas,
+Start with `./scripts/invest tools list`, `./scripts/invest tools describe TOOL` for each command below,
+and `./scripts/invest schema`. Discovery is authoritative for flags, strict input schemas,
 mutation scope and examples. If a documented command is absent or differs, stop
 with an implementation gap; never substitute an alias or invent arguments. Copy
 prompt text as data; never execute Markdown. Financial arithmetic belongs to the
@@ -45,19 +51,19 @@ prices. Explain blocked facts and the human evidence needed to resolve them.
 Trigger: evaluate loss harvesting with user-approved replacement candidates.
 Batch one taxable account and at most 20 lots; review the whole household window.
 
-1. `invest tax lots --as-of DATE`; `invest tax harvest-candidates --as-of DATE`.
+1. `./scripts/invest tax lots --as-of DATE`; `./scripts/invest tax harvest-candidates --as-of DATE`.
    Require verified stable lot identity, remaining adjusted basis and accepted
    historical execution allocations; never infer FIFO or basis from current lots.
 2. Review inclusive 30 days before/after acquisitions, household IRA/spouse/DRIP
    coverage and scheduled purchases. Ask the human for missing outside activity.
-3. `invest fund replacements ORIGINAL APPROVED_CANDIDATE` and inspect sourced
+3. `./scripts/invest fund replacements ORIGINAL APPROVED_CANDIDATE` and inspect sourced
    comparison coverage, substantial identity uncertainty and permissions.
-4. Use `invest tax harvest-plan --file harvest.json --as-of DATE` for unsaved
-   review. For conditional trades, preview `invest policy approve --file
+4. Use `./scripts/invest tax harvest-plan --file /app/local-data/work/harvest.json --as-of DATE` for unsaved
+   review. For conditional trades, preview `./scripts/invest policy approve --file
    reviewed-policy.json`, obtain explicit human approval, then save with
    `--confirm`. The policy needs a sourced `harvest_review`, prices, independent
    permissions, fees, increments and tax coverage; no calendar exception is required.
-   Run `invest tax harvest-plan --policy-version POLICY_ID --as-of DATE`.
+   Run `./scripts/invest tax harvest-plan --policy-version POLICY_ID --as-of DATE`.
    Preserve policy/source hashes, conditional actions and signed tax estimate.
    Mandatory wash-sale review remains; never execute or guarantee savings.
 

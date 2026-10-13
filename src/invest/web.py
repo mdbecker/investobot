@@ -29,15 +29,26 @@ class PersistedHoldings:
             raise DomainError('No compatible persisted constituent observation', 2)
         observation = dict(max(candidates, key=lambda row: row.get('retrieved_at', '')))
         warnings = list(observation.get('warnings', []))
+        issues = list(observation.get('issues', []))
+
+        def evidence_issue(code, message):
+            warnings.append(message)
+            issues.append(dict(code=code, message=message, blocks_calculation=False,
+                blocks_proposals=True, blocks_execution_review=True))
+
+        if not observation.get('source'):
+            evidence_issue('UNKNOWN_HOLDINGS_SOURCE', 'Stored constituent source is unknown; coverage requires review')
         source_date = observation.get('data_as_of')
         try:
             age = (date.today() - date.fromisoformat(str(source_date)[:10])).days
         except ValueError:
-            warnings.append('Stored constituent source date is unknown; coverage requires review')
+            evidence_issue('UNKNOWN_SOURCE_DATE', 'Stored constituent source date is unknown; coverage requires review')
         else:
             if age < 0 or age > 120:
-                warnings.append('Stored constituent source date is future or stale; coverage requires review')
+                evidence_issue('FUTURE_SOURCE_DATE' if age < 0 else 'STALE_HOLDINGS',
+                    'Stored constituent source date is future or stale; coverage requires review')
         observation['warnings'] = warnings
+        observation['issues'] = issues
         return observation
 
 
@@ -120,8 +131,11 @@ def _get_api(ledger, path, query):
     if path == "/api/plans":
         return plans.list_plans(ledger)
     if path == '/api/backtests':
-        return {'runs': [json.loads(row[0]) for row in ledger.connection.execute(
-            'SELECT result_json FROM backtest_runs ORDER BY created_at DESC,id')]}
+        fields = ('id', 'start', 'end', 'status', 'created_at', 'total_return',
+                  'annualized_return', 'volatility', 'max_drawdown', 'final_value', 'turnover')
+        projection = ','.join(f"json_extract(result_json, '$.{field}')" for field in fields)
+        return {'runs': [dict(zip(fields, row)) for row in ledger.connection.execute(
+            f'SELECT {projection} FROM backtest_runs ORDER BY created_at DESC,id')]}
     if path == '/api/backtests/compare':
         return backtest.compare(ledger, query.get('run_id', []))
     parts = path.strip("/").split("/")

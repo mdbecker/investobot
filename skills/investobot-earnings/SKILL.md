@@ -7,6 +7,12 @@ metadata:
 
 # Earnings and financial-statement research
 
+The external host agent reads this skill, retrieves authorized source evidence and
+requests human approval. From the repository root, invoke
+`./scripts/invest tools list`; this bridge runs the deterministic CLI in Docker, including calculations,
+existing provider integrations and approved writes. Pass private file arguments as
+`/app/local-data/...` or use supported stdin `-`; install no host Python packages.
+
 Research company earnings through your browser and authorized disclosures.
 Investobot validates structured facts, retains immutable history and calculates
 descriptive comparisons; it does not fetch filings or execute an LLM.
@@ -20,6 +26,6 @@ Keep exact values, currencies, units, definitions, GAAP/non-GAAP bases and segme
 scopes. Separate historical facts, future guidance and agent interpretation.
 Unknown values remain unknown. A recent retrieval never makes old results current.
 
-Use `invest schema` and `invest tools describe research.earnings.import` for the
+Use `./scripts/invest schema` and `./scripts/invest tools describe research.earnings.import` for the
 authoritative contract. Validate, preview and obtain explicit acceptance before
 `--yes`. Research leaves holdings, tax lots, targets and saved plans untouched.

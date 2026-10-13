@@ -34,11 +34,11 @@
    annualize, derive stand-alone quarters from year-to-date data, interpolate
    private-company results or substitute consensus estimates for reported facts.
 8. Write one `CompetitiveResearchInput` JSON object without Markdown fences.
-   Use `invest schema` and the command descriptions as the authority. Include
+   Use `./scripts/invest schema` and the command descriptions as the authority. Include
    exact citation locators and explicit limitations; record missing facts rather
    than inserting zero. Save under ignored project-local `local-data/`.
-9. Run `invest research competitive validate FILE`, then preview
-   `invest research competitive import FILE`. Explain limitations and obtain
+9. Run `./scripts/invest research competitive validate FILE`, then preview
+   `./scripts/invest research competitive import FILE`. Explain limitations and obtain
    explicit human approval before adding `--yes`. Inspect the accepted run with
    `summary RUN_ID` and `matrix RUN_ID`; use `show RUN_ID` for the full package.
 

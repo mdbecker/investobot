@@ -15,6 +15,7 @@ def exposure(state, client, refresh=False):
         (decimal(c["amount"]) for c in state["cash_balances"]), ZERO
     )
     unknown, entries, warnings, provenance, fund_coverage = ZERO, [], [], {}, {}
+    issues = []
     securities = {s["id"]: s for s in state["securities"]}
     for position in state["positions"]:
         value = decimal(position["market_value"])
@@ -31,6 +32,9 @@ def exposure(state, client, refresh=False):
                 unknown += value
                 continue
             warnings.extend(data["warnings"])
+            source_issues = data.get("issues", [])
+            issues.extend(source_issues)
+            warnings.extend(issue["message"] for issue in source_issues)
             coverage = sum(
                 (decimal(h["weight"]) for h in data["holdings"] if h["weight"] is not None), ZERO
             )
@@ -39,6 +43,10 @@ def exposure(state, client, refresh=False):
                 "represented_weight": "0",
                 "source": data.get("source"),
                 "data_as_of": data.get("data_as_of"),
+                "numeric_complete": False,
+                "evidence_complete": bool(data.get("source") and data.get("data_as_of"))
+                    and not source_issues
+                    and data.get("coverage", {}).get("decision_freshness_complete", True),
             }
             if coverage > 1:
                 warnings.append(
@@ -69,6 +77,7 @@ def exposure(state, client, refresh=False):
             fund_coverage[position["security"]]["represented_weight"] = str(
                 allocated / value if value else ZERO
             )
+            fund_coverage[position["security"]]["numeric_complete"] = allocated == value
             unknown += value - allocated
         elif asset == "OTHER":
             unknown += value
@@ -148,6 +157,7 @@ def exposure(state, client, refresh=False):
         "provenance": provenance,
         "fund_coverage": fund_coverage,
         "warnings": list(dict.fromkeys(warnings)),
+        "issues": list({str(issue): issue for issue in issues}.values()),
     }
 
 

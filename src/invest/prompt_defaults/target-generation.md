@@ -1,3 +1,0 @@
-# Target portfolio generation
-
-Use your browser to research investable securities that fit the user's objectives. Use invest to inspect accepted household holdings, exposure, dates, and unknown data. Create several draft targets with explicit security and cash weights totaling 100 percent. Record account eligibility, restricted fund menus, excluded holdings, cash minimums, trade increments, tolerance, and tax-gain budgets. Do not assume unknown eligibility permits trading. Compare target differences using domain tools and explain rationale. A human selects a target; saving or activating a target executes no trades.

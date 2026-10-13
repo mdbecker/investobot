@@ -36,7 +36,7 @@
    missing plan indicators, indirect holdings and compensation-period differences.
    Explain incomplete coverage; filing availability is not exhaustive coverage.
 9. Emit one complete strict JSON file in ignored `local-data/`. Discover commands
-   with `invest tools describe research.insiders.import`, validate and preview.
+   with `./scripts/invest tools describe research.insiders.import`, validate and preview.
    A human verifies original sources and explicitly approves acceptance before
    any `--yes` import; an agent cannot self-authorize it.
 10. Retrieve deterministic `summary`, `activity` and `ownership` reports. Preserve

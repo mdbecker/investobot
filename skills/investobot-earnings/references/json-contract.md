@@ -1,8 +1,8 @@
 # Authoritative contract and CLI
 
-Inspect `EarningsResearchInput` through `invest schema` and use
-`invest tools describe research.earnings.validate` and
-`invest tools describe research.earnings.import` for current input contracts.
+Inspect `EarningsResearchInput` through `./scripts/invest schema` and use
+`./scripts/invest tools describe research.earnings.validate` and
+`./scripts/invest tools describe research.earnings.import` for current input contracts.
 Do not duplicate schemas in skill text. Return one valid JSON object without
 Markdown fences, with exact decimal strings and original source identifiers.
 
@@ -15,13 +15,13 @@ Use the supported schema's field names and enum values rather than inventing
 period labels or missing measurements.
 
 ```sh
-invest research earnings validate /app/local-data/earnings.json
-invest research earnings import /app/local-data/earnings.json
-invest research earnings import /app/local-data/earnings.json --yes
-invest research earnings list --ticker EXAMPLE
-invest research earnings show RUN_ID
-invest research earnings summary RUN_ID
-invest research earnings compare RUN_A RUN_B
+./scripts/invest research earnings validate /app/local-data/earnings.json
+./scripts/invest research earnings import /app/local-data/earnings.json
+./scripts/invest research earnings import /app/local-data/earnings.json --yes
+./scripts/invest research earnings list --ticker EXAMPLE
+./scripts/invest research earnings show RUN_ID
+./scripts/invest research earnings summary RUN_ID
+./scripts/invest research earnings compare RUN_A RUN_B
 ```
 
 Preview and validation are read-only. Explicit acceptance stores immutable

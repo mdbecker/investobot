@@ -1,7 +1,7 @@
 # Authoritative contract and acceptance
 
-Use `invest schema` to inspect `NewsResearchInput` and
-`invest tools describe research.news.validate` / `research.news.import` for current
+Use `./scripts/invest schema` to inspect `NewsResearchInput` and
+`./scripts/invest tools describe research.news.validate` / `research.news.import` for current
 inputs and mutation scopes. These generated contracts are authoritative; do not
 maintain a separate schema in skill text or add unsupported fields.
 
@@ -12,16 +12,16 @@ from the CLI. Investobot pins trusted bundled skill metadata independently; do n
 supply skill-version assertions. Use fictional evidence only for offline testing.
 
 ```sh
-invest research news context --ticker EXAMPLE
-invest research news validate /app/local-data/news.json
-invest research news import /app/local-data/news.json
+./scripts/invest research news context --ticker EXAMPLE
+./scripts/invest research news validate /app/local-data/news.json
+./scripts/invest research news import /app/local-data/news.json
 # Only after explicit human approval of the reviewed preview:
-invest research news import /app/local-data/news.json --yes
-invest research news list --ticker EXAMPLE
-invest research news show RUN_ID
-invest research news summary RUN_ID
-invest research news changes --ticker EXAMPLE
-invest research news compare RUN_OLD RUN_NEW
+./scripts/invest research news import /app/local-data/news.json --yes
+./scripts/invest research news list --ticker EXAMPLE
+./scripts/invest research news show RUN_ID
+./scripts/invest research news summary RUN_ID
+./scripts/invest research news changes --ticker EXAMPLE
+./scripts/invest research news compare RUN_OLD RUN_NEW
 ```
 
 Validation, preview and inspection are read-only. Confirmation stores research

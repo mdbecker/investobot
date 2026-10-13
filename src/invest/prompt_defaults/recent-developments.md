@@ -1,3 +1,0 @@
-# Recent investment developments
-
-Use your browser to research recent investment developments relevant to the user's holdings and objectives. Verify publication dates and event dates, cite reliable sources, and separate facts from interpretation. Use invest to retrieve accepted exposures, known portfolio values, and source freshness. Explain which holdings may be affected and what remains uncertain. If proposing changes, create hypothetical targets and plans with the existing tools and disclose tax and eligibility limitations. Prepare a concise human review report; no trades execute automatically.

@@ -4,7 +4,7 @@
    segments, research date and monitoring window. Check issuer identity and
    historic ticker changes against sourced accepted aliases; similarly named
    companies and different share classes are not interchangeable.
-2. Run `invest research news context --ticker TICKER`. Review stable event keys,
+2. Run `./scripts/invest research news context --ticker TICKER`. Review stable event keys,
    open catalysts, tracked hypotheses, prior coverage and unresolved questions.
    Context identifies the latest baseline and carries unresolved records from
    compatible older runs. Read `observation_status`, `last_observed_run_id` and

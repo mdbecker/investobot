@@ -1,8 +1,8 @@
 # Authoritative contract and CLI
 
-Use `invest schema` to inspect `PoliticalResearchInput`, and discover inputs and
-scope with `invest tools describe research.political.validate` and
-`invest tools describe research.political.import`. Do not maintain a duplicate
+Use `./scripts/invest schema` to inspect `PoliticalResearchInput`, and discover inputs and
+scope with `./scripts/invest tools describe research.political.validate` and
+`./scripts/invest tools describe research.political.import`. Do not maintain a duplicate
 schema or invent fields. Return one JSON object without Markdown/prose.
 
 The package distinguishes company identity, research period and coverage/rights,
@@ -18,12 +18,12 @@ Use original identifiers and exact decimal strings. Unknowns remain unknown;
 never invent zeros, sources, identities, parties or transaction records.
 
 ```sh
-invest research political validate /app/local-data/political-research.json
-invest research political import /app/local-data/political-research.json
-invest research political import /app/local-data/political-research.json --yes
-invest research political list --ticker EXAMPLE
-invest research political show RUN_ID
-invest research political summary RUN_ID
+./scripts/invest research political validate /app/local-data/political-research.json
+./scripts/invest research political import /app/local-data/political-research.json
+./scripts/invest research political import /app/local-data/political-research.json --yes
+./scripts/invest research political list --ticker EXAMPLE
+./scripts/invest research political show RUN_ID
+./scripts/invest research political summary RUN_ID
 ```
 
 Validation checks structural consistency, not factual truth. Source permissions

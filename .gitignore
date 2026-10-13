@@ -16,3 +16,8 @@ docs/implementation/benchmark-*.json
 docs/benchmark-*.json
 benchmark-results/
 fuzz-results/
+
+# Private SQLite files and generated agent bundles; retain operator skills.
+*.db*
+.agents/skills/investobot-*/
+.claude/skills/investobot-*/
