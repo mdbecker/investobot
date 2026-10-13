@@ -255,3 +255,78 @@ def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_g
         assert list(ledger.connection.iterdump()) == before
     finally:
         ledger.connection.close()
+
+
+@pytest.mark.parametrize('weight', ['1', '0.6'])
+def test_persisted_fund_source_issues_preserve_numeric_coverage_and_exposure(dashboard, weight):
+    # Given a persisted synthetic fund observation with incomplete source-date evidence.
+    from decimal import Decimal
+
+    ledger = accepted(dashboard, asset_type='ETF')
+    issue = {'code': 'PARTIAL_SOURCE_DATE_COVERAGE',
+             'message': 'Some constituent source dates are unverified',
+             'blocks_calculation': False, 'blocks_proposals': True,
+             'blocks_execution_review': True}
+    try:
+        with ledger.connection:
+            ledger.put('fund_holdings_cache', 'synthetic-partial-date', {
+                'id': 'synthetic-partial-date', 'ticker': 'AAA',
+                'data_environment': 'SYNTHETIC', 'source': 'REVIEWED_SYNTHETIC',
+                'retrieved_at': '2026-10-12T12:00:00Z', 'data_as_of': '2026-10-08',
+                'warnings': [], 'issues': [issue], 'holdings': [{
+                    'identifier': 'CUSIP:333333333', 'cusip': '333333333',
+                    'ticker': 'SYNTHETIC-LEAF', 'weight': weight}]})
+        before = list(ledger.connection.iterdump())
+        # When the read-only dashboard calculates exposure from stored evidence.
+        code, result = request(dashboard, '/api/overview')
+        assert code == 200, result
+        exposure = result['exposure']
+        leaf = next(row for row in exposure['exposures'] if row['ticker'] == 'SYNTHETIC-LEAF')
+        # Then known dollars and residual remain exact, separately from evidence quality.
+        assert Decimal(leaf['total_value']) == Decimal('1000') * Decimal(weight)
+        assert Decimal(exposure['unknown_exposure_value']) == Decimal('1000') * (1 - Decimal(weight))
+        assert issue in exposure['issues']
+        assert any('source dates' in warning for warning in exposure['warnings'])
+        coverage = exposure['fund_coverage']['AAA']
+        assert Decimal(coverage['represented_weight']) == Decimal(weight)
+        assert coverage['numeric_complete'] is (weight == '1')
+        assert coverage['evidence_complete'] is False
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
+
+
+def test_many_saved_backtests_list_compact_summaries_and_keep_full_immutable_review(dashboard):
+    # Given many accepted synthetic saved runs with full histories and differing assumptions.
+    ledger = accepted(dashboard)
+    try:
+        sid = ledger.resolve('AAA')['id']
+        sessions = [f'2026-10-{day:02d}' for day in range(1, 21)]
+        saved = [backtest.run(ledger, portfolio={sid: '1'}, start=sessions[0], end=sessions[-1],
+            policy={'starting_value': '1000', 'cash_return': '0', 'fee_per_trade': str(index % 2)},
+            manifest={'id': 'synthetic-long-history', 'data_environment': 'SYNTHETIC',
+                      'sessions': sessions, 'series': {sid: [
+                          {'date': day, 'total_return_index': str(100 + index)}
+                          for index, day in enumerate(sessions)]}}) for index in range(16)]
+        before = list(ledger.connection.iterdump())
+        # When listing saved runs, only a stable small summary crosses the HTTP boundary.
+        code, listing = request(dashboard, '/api/backtests')
+        assert code == 200, listing
+        expected_keys = {'id', 'start', 'end', 'status', 'created_at', 'total_return',
+                         'annualized_return', 'volatility', 'max_drawdown', 'final_value', 'turnover'}
+        assert len(listing['runs']) == len(saved)
+        by_id = {row['id']: row for row in saved}
+        for row in listing['runs']:
+            assert set(row) == expected_keys
+            assert row == {key: by_id[row['id']].get(key) for key in expected_keys}
+        assert len(json.dumps(listing)) < len(json.dumps({'runs': saved})) / 2
+        # Then full inspection and assumption-mismatch comparison retain original records.
+        assert request(dashboard, '/api/backtests/' + saved[0]['id']) == (200, saved[0])
+        query = '&'.join('run_id=' + row['id'] for row in saved[:2])
+        code, comparison = request(dashboard, '/api/backtests/compare?' + query)
+        assert code == 200 and comparison == backtest.compare(ledger, [row['id'] for row in saved[:2]])
+        assert comparison['status'] == 'INCOMPARABLE'
+        assert 'ASSUMPTION_MISMATCH' in {issue['code'] for issue in comparison['issues']}
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
