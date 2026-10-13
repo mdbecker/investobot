@@ -124,7 +124,9 @@ def _activity_change_inplace(state, activity):
         if kind == "SELL" and fee > qty * price:
             raise DomainError("Sale fee exceeds gross proceeds")
         if selling and qty > decimal(p["quantity"]):
-            raise DomainError("Sale/transfer exceeds known position", 3)
+            error = DomainError("Sale/transfer exceeds known position", 3)
+            error.result = {'status': 'BLOCKED', 'issues': [_issue('INSUFFICIENT_SHARES', str(error))]}
+            raise error
         old_qty = decimal(p["quantity"])
         market_price = decimal(p["price"]) if p.get("price") is not None else (
             decimal(p["market_value"]) / old_qty if old_qty else None)
@@ -160,6 +162,14 @@ def _activity_change_inplace(state, activity):
                 p["lot_state"] = "UNRESOLVED"
                 p["cost_basis"] = None
             else:
+                retirement = account.get('tax_status') in {'TAX_FREE', 'TAX_DEFERRED'}
+                if retirement:
+                    represented = sum((decimal(lot['remaining_quantity']) for lot in state['lots']
+                        if lot['account_id'] == account_id and lot['security_id'] == security['id']), Decimal(0))
+                    if represented != old_qty:
+                        error = DomainError('Retirement lot quantities do not reconcile with known shares', 3)
+                        error.result = {'status': 'BLOCKED', 'issues': [_issue('UNRESOLVED_LOTS', str(error))]}
+                        raise error
                 if not isinstance(allocations, list) or not allocations:
                     raise DomainError("Supply nonempty executed lot allocations")
                 if len({a["lot_id"] for a in allocations}) != len(allocations):
@@ -173,7 +183,9 @@ def _activity_change_inplace(state, activity):
                         and l["account_id"] == account_id and l["security_id"] == security["id"]), None)
                     used = decimal(allocation["quantity"])
                     if lot is None or used <= 0 or used > decimal(lot["remaining_quantity"]):
-                        raise DomainError("Executed lot allocation exceeds available lot shares", 3)
+                        error = DomainError("Executed lot allocation exceeds available lot shares", 3)
+                        error.result = {'status': 'BLOCKED', 'issues': [_issue('UNRESOLVED_LOTS', str(error))]}
+                        raise error
                     if lot.get('identity_status') == 'UNRESOLVED' or lot.get('saleable') is False:
                         raise DomainError('Executed lot needs verified saleable identity', 3)
                     if account.get('data_environment') == 'REAL' and (
@@ -185,19 +197,33 @@ def _activity_change_inplace(state, activity):
                     remaining = decimal(lot['remaining_quantity'])
                     available_basis = (decimal(lot['remaining_adjusted_basis'])
                                        if lot.get('remaining_adjusted_basis') is not None else
-                                       decimal(lot['cost_basis']) * remaining / decimal(lot['quantity']))
-                    removed = available_basis if used == remaining else available_basis * used / remaining
-                    basis_removed += removed
-                    lot['remaining_adjusted_basis'] = str(available_basis - removed)
+                                       decimal(lot['cost_basis']) * remaining / decimal(lot['quantity'])
+                                       if lot.get('cost_basis') is not None else None)
+                    if not retirement and (available_basis is None or not lot.get('acquisition_date')):
+                        error = DomainError('Taxable allocated sale requires sourced basis and acquisition date', 3)
+                        error.result = {'status': 'BLOCKED', 'issues': [_issue('UNRESOLVED_LOTS', str(error))]}
+                        raise error
+                    removed = None
+                    if available_basis is not None:
+                        removed = available_basis if used == remaining else available_basis * used / remaining
+                        basis_removed += removed
+                        lot['remaining_adjusted_basis'] = str(available_basis - removed)
+                    else:
+                        lot['remaining_adjusted_basis'] = None
+                        p['cost_basis'] = None
                     lot["remaining_quantity"] = str(remaining - used)
-                    acquired = date.fromisoformat(lot['acquisition_date'])
-                    sold = date.fromisoformat(activity['date'])
-                    anniversary = acquired.replace(year=acquired.year + 1, day=min(acquired.day, 28)) if acquired.month == 2 and acquired.day == 29 else acquired.replace(year=acquired.year + 1)
                     allocated_fee = fee_remaining if allocation is allocations[-1] else fee * used / qty
                     fee_remaining -= allocated_fee
+                    term = gain = None
+                    if not retirement:
+                        acquired = date.fromisoformat(lot['acquisition_date'])
+                        sold = date.fromisoformat(activity['date'])
+                        anniversary = acquired.replace(year=acquired.year + 1, day=min(acquired.day, 28)) if acquired.month == 2 and acquired.day == 29 else acquired.replace(year=acquired.year + 1)
+                        term = 'LONG_TERM' if sold > anniversary else 'SHORT_TERM'
+                        gain = str(used * price - allocated_fee - removed)
                     confirmed_allocations.append(dict(lot_id=lot['id'], quantity=str(used),
-                        basis_removed=str(removed), term='LONG_TERM' if sold > anniversary else 'SHORT_TERM',
-                        realized_gain=str(used * price - allocated_fee - removed), fee_allocated=str(allocated_fee)))
+                        basis_removed=str(removed) if removed is not None else None, term=term,
+                        realized_gain=gain, fee_allocated=str(allocated_fee)))
                 if p.get("cost_basis") is not None:
                     p["cost_basis"] = str(decimal(p["cost_basis"]) - basis_removed)
                 represented = sum((decimal(l["remaining_quantity"]) for l in state["lots"]

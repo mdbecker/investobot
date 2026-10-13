@@ -71,7 +71,7 @@ class Lot(BaseModel):
     model_config = ConfigDict(extra="allow")
     id: str
     security: str
-    acquisition_date: date
+    acquisition_date: date | None = None
     quantity: Decimal = Field(gt=0)
     remaining_quantity: Decimal = Field(ge=0)
     cost_basis: Decimal | None = Field(default=None, ge=0)

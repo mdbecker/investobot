@@ -49,8 +49,6 @@ def conditional_harvest(state, policy, as_of):
         issue('UNAPPROVED_HARVEST_POLICY', 'Resolve an immutable saved policy before proposing trades')
     if scope['loss_sale_date'] != as_of:
         issue('HARVEST_DATE_MISMATCH', 'Policy sale date must match the requested analysis date')
-    if not policy.get('exception_approved') or not policy.get('exception_reason'):
-        issue('HARVEST_EXCEPTION_REQUIRED', 'Loss-harvest sales require an explicitly approved exception')
     environment = policy['data_environment']
     if scope.get('data_environment') != environment:
         issue('MIXED_DATA_ENVIRONMENT', 'Harvest scope and approved policy environments differ')

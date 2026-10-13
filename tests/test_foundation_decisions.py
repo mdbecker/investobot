@@ -22,7 +22,7 @@ def household(tmp_path):
     ledger.apply({'data_environment': 'SYNTHETIC',
         'account': {'id': 'ira', 'name': 'Fictional retirement', 'tax_status': 'TAX_FREE'},
         'positions': [{'security': 'OLD', 'asset_type': 'ETF', 'quantity': '10',
-            'price': '100', 'market_value': '1000', 'cost_basis': '500',
+            'price': '100', 'market_value': '1000', 'cost_basis': '500', 'as_of': '2026-02-01',
             'displayed_price_precision': 2, 'displayed_market_value_precision': 2}],
         'lots': [{'id': 'old-lot', 'security': 'OLD', 'quantity': '10',
             'remaining_quantity': '10', 'cost_basis': '500', 'acquisition_date': '2024-01-01',

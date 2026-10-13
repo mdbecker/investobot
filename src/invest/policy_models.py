@@ -91,16 +91,11 @@ class TradingPolicyInput(BaseModel):
     id: Text | None = None
     minimum_notional: PlainDecimal = '25'
     fee_per_trade: PlainDecimal | None = None
-    quarterly_months: list[Annotated[int, Field(strict=True, ge=1, le=12)]] = Field(
-        default_factory=lambda: [3, 6, 9, 12])
-    drift_trigger: Fraction = '0.05'
     max_position_age_days: int = Field(default=120, strict=True, ge=0)
     max_cash_age_days: int = Field(default=120, strict=True, ge=0)
     cash_floors: dict[Text, PlainDecimal] = Field(default_factory=dict)
     cash_confirmation: dict[Text, StrictBool] = Field(default_factory=dict)
     annual_tax_budget: PolicyTaxBudget | None = None
-    exception_approved: StrictBool = False
-    exception_reason: Text | None = None
     baseline_environment: Environment | None = None
     price_environment: Environment | None = None
     harvest_review: SavedHarvestReview | None = None

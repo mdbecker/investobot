@@ -44,11 +44,6 @@ def _validate(policy):
                 raise DomainError('Execution increment must be positive')
     if decimal(policy.get('minimum_notional', '25')) < 0:
         raise DomainError('Minimum notional must be nonnegative')
-    if not 0 <= decimal(policy.get('drift_trigger', '0.05')) <= 1:
-        raise DomainError('Drift trigger must be a fraction')
-    if set(policy.get('quarterly_months', [3, 6, 9, 12])) != {3, 6, 9, 12}:
-        if policy.get('exception_approved') is not True or not policy.get('exception_reason'):
-            raise DomainError('Nonquarterly windows require an approved reasoned exception policy')
     for floor in policy.get('cash_floors', {}).values():
         if decimal(floor) < 0:
             raise DomainError('Cash floors must be nonnegative')
@@ -242,16 +237,6 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
         issue('INVALID_POLICY', 'Fees must be nonnegative')
     if fee_assumption is None:
         issue('UNKNOWN_EXECUTION_FEES', 'Zero modeled fee is hypothetical; verify actual fees', blocking=False)
-    drift = max((abs(values.get(sid, Decimal(0)) / total - weight)
-                 for sid, weight in weights.items() if sid != 'CASH'), default=Decimal(0)) if total else Decimal(0)
-    quarterly = day.month in policy.get('quarterly_months', [3, 6, 9, 12]) and drift > decimal(policy.get('drift_trigger', '0.05'))
-    cadence = mode == 'contributions-only' or quarterly
-    if not cadence:
-        issue('CADENCE_NOT_ELIGIBLE', 'Rebalance requires approved quarter and drift threshold', blocking=False)
-    used = {event['account_id'] for event in baseline['activities'] if event.get('type') in {'BUY', 'SELL'}
-            and event.get('date', '')[:7] == as_of[:7]}
-    for account in set(eligible) & used:
-        issue('MONTHLY_CADENCE_USED', 'Confirmed trading already used this account month', account=account)
     tax_budget = None
     if policy.get('annual_tax_budget'):
         from invest.tax_policy import annual_budget
@@ -307,18 +292,25 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                 if row.get('remaining_adjusted_basis') is not None:
                     return decimal(row['remaining_adjusted_basis']) / decimal(row['remaining_quantity'])
                 return decimal(row['cost_basis']) / decimal(row['quantity'])
-            lots.sort(key=lambda row: (-basis_per_share(row), row['id']))
+            lots.sort(key=(lambda row: (-basis_per_share(row), row['id'])) if taxable
+                      else lambda row: row['id'])
             consistent_lots = sum((decimal(row['remaining_quantity']) for row in lots), Decimal(0)) == decimal(positions[account, sid]['quantity'])
-            if taxable and not consistent_lots:
+            if not consistent_lots:
                 issue('UNRESOLVED_LOTS', 'Whole-position lots do not reconcile', blocking=False)
+                return
+            if any(row.get('identity_status') != 'VERIFIED' or row.get('saleable') is False
+                   or (environment == 'REAL' and (row.get('saleable') is not True
+                       or not row.get('source_lot_id') or not row.get('identity_source')))
+                   for row in lots):
+                issue('UNVERIFIED_LOT_IDENTITY', 'Sale requires verified saleable lot identity', blocking=False)
                 return
             selected, remaining, cost = [], quantity, Decimal(0)
             for lot in lots:
                 used_quantity = min(remaining, decimal(lot['remaining_quantity']))
                 if used_quantity <= 0:
                     continue
-                basis = basis_per_share(lot) * used_quantity
                 if taxable:
+                    basis = basis_per_share(lot) * used_quantity
                     if headroom is None or tax_budget['status'] == 'BLOCKED' or not lot.get('acquisition_date'):
                         issue('UNKNOWN_TAX_BUDGET', 'Taxable sale requires annual coverage and exact lots', blocking=False)
                         return
@@ -356,13 +348,7 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                     shortage = max(Decimal(0), total * weight - values.get(sid, Decimal(0)))
                     add('BUY', account, sid, min(shortage, available))
         purchases()
-        post_cash_drift = max((abs(values.get(sid, Decimal(0)) / total - weight)
-                               for sid, weight in weights.items() if sid != 'CASH'),
-                              default=Decimal(0))
-        quarterly = (day.month in policy.get('quarterly_months', [3, 6, 9, 12]) and
-                     post_cash_drift > decimal(policy.get('drift_trigger', '0.05')))
-        cadence = mode == 'contributions-only' or quarterly
-        if mode == 'rebalance' and quarterly:
+        if mode == 'rebalance':
             for account, sid in sorted(positions, key=lambda pair: (
                     accounts[pair[0]]['tax_status'] == 'TAXABLE', pair)):
                 if account not in eligible:
@@ -395,7 +381,6 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                                     if isinstance(observation, dict) and observation.get('manifest_id')}),
             'proposed_actions': actions, 'issues': issues, 'simulation': simulation,
             'cash_after': {key: _text(value) for key, value in final_cash.items()},
-            'cadence': {'eligible': cadence and not bool(set(eligible) & used)},
             'tax_budget': tax_budget, 'estimated_tax_budget_consumption': _text(spent),
             'tax_analysis': {'estimated_tax_effect': _text(spent)},
             'assumptions': {'prices': prices, 'fee_per_trade': fee_assumption,
