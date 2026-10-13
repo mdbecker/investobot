@@ -10,6 +10,19 @@ from pathlib import Path
 from benchmarks.financial_fixtures import DATE, build, digest, persist, seed_plans
 from benchmarks.operations import Prepared
 from invest import performance, plans, tax, tax_policy
+
+
+def foundation_projection(value):
+    """Compare the approved removal of eligible calendar metadata, keeping all facts."""
+    if isinstance(value, list):
+        return [foundation_projection(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    plan = value.get('algorithm_version') == 'contribution-first-hifo-1'
+    if plan and 'cadence' in value and value['cadence'] != {'eligible': True}:
+        raise ValueError('Unexpected reference calendar outcome; financial comparison is invalid')
+    return {key: foundation_projection(item) for key, item in value.items()
+            if not (plan and key == 'cadence')}
 from invest.financial_state import state_hash
 from invest.planning import propose
 from invest.simulations import simulate
@@ -139,7 +152,7 @@ def prepare(case_id, root, dimensions, *, reuse=False):
             if isinstance(item,str) and re.fullmatch(r'[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}',item):
                 return identities.setdefault(item,f'generated-identity-{len(identities)}')
             return item
-        return walk(value)
+        return walk(foundation_projection(value))
 
     def operation():
         nonlocal raw_result
