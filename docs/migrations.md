@@ -1,11 +1,8 @@
 # Future schema upgrades
 
-The unified MVP creates schema 1 only on an empty ledger. Development schemas are
-unsupported: opening, backing up or requesting a migration never deletes or
-converts them. Preserve the selected ledger and use a separate disposable path
-when testing a fresh install.
-The runner checks the unified schema's recorded foundation checksum as well as
-its version; a development database merely labeled version 1 is still rejected.
+Fresh host-backed storage initializes schema 1 through the existing application.
+No schema upgrade is required for setup. The schema foundation checksum and
+version are validated independently.
 
 `invest db migrate` currently has no future upgrades to apply. It validates the
 selected existing schema and returns an available no-op. A missing ledger is

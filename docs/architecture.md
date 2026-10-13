@@ -20,9 +20,8 @@ observations, balances, lots, confirmed events, policies, plans and research.
 Financial decimals are exact normalized text. Foreign keys, WAL, synchronous FULL
 and a five-second busy timeout protect related transactional writes. Observation
 evidence is separate from accepted balances and execution facts. Schema 1 is
-checksum-identified and initializes only empty ledgers; incompatible development
-ledgers are rejected unchanged. Future transactional migrations require verified
-pre-migration backups. Shared connection locks exclude restore.
+checksum-identified and initializes fresh state through existing application behavior.
+Shared connection locks exclude restore.
 
 Large immutable Parquet artifacts carry SQLite manifests/hashes. Ephemeral
 DuckDB scans consistent exports; it never writes financial tables. Canonical

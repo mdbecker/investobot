@@ -28,10 +28,8 @@ A market cache write never changes accepted holdings, marks or tax lots.
 
 The host agent uses `./scripts/invest`; Docker executes the CLI. Compose binds host
 `local-data/state` to `/data`, with SQLite `/data/portfolio.db`. Skills are host-readable;
-ordinary context lives in `local-data/agent-notes/`. Checksum-identified SQLite schema 1
-initializes empty ledgers and rejects incompatible development ledgers unchanged. Preserve
-private state; do not reset it to try a feature. Future migrations require a verified
-pre-migration backup. Use disposable synthetic ledgers for evaluation; see
+ordinary context lives in `local-data/agent-notes/`. Fresh checksum-identified SQLite schema 1 initializes through existing application
+behavior. Use disposable synthetic ledgers for evaluation; see
 [operations](operations.md).
 
 ## Research and data provenance
@@ -160,7 +158,7 @@ unrelated older audit history does not. Reports continue to use saved facts.
 `portfolio overview` supplies the same overview domain data as the dashboard.
 Read canonical `skills/` or explicitly install project copies with `./scripts/invest
 research skills install --agent codex --workspace /app`. The prompt CRUD interface is
-retired; preserve any operator overrides as host notes before switching.
+retired; keep operator context in ordinary host notes.
 
 Verification is offline and deterministic. Real anonymized institution samples
 and live FMP checks with user test credentials are still outstanding. Do not

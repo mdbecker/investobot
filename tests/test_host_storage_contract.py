@@ -45,9 +45,9 @@ def test_given_private_files_then_build_and_git_exclude_private_storage():
 
 
 @pytest.fixture
-def old_storage(tmp_path):
-    """A prior storage directory represents a disposable populated source volume."""
-    directory = tmp_path / 'old-volume'
+def synthetic_storage(tmp_path):
+    """An ordinary disposable ledger contains accepted facts, a saved plan and an artifact."""
+    directory = tmp_path / 'synthetic-state'
     directory.mkdir(mode=0o700)
     ledger = Ledger(directory / 'portfolio.db')
     ledger.apply({'account': {'id': 'fictional', 'name': 'Synthetic IRA',
@@ -76,11 +76,11 @@ def old_storage(tmp_path):
     return directory, fingerprint, plan, artifact.read_bytes()
 
 
-def test_given_populated_prior_storage_when_archived_and_restored_then_source_and_records_survive(
-        old_storage, tmp_path):
-    source, fingerprint, plan, artifact_bytes = old_storage
+def test_given_saved_state_when_backed_up_and_restored_then_records_and_artifacts_survive(
+        synthetic_storage, tmp_path):
+    source, fingerprint, plan, artifact_bytes = synthetic_storage
     source_bytes = (source / 'portfolio.db').read_bytes()
-    archive = tmp_path / 'work' / 'pre-bind-volume.tar.gz'
+    archive = tmp_path / 'work' / 'verified.tar.gz'
     assert backup.create(source / 'portfolio.db', archive)['status'] == 'AVAILABLE'
     assert backup.verify(archive)['status'] == 'AVAILABLE'
     target = tmp_path / 'local-data' / 'state' / 'portfolio.db'
@@ -101,8 +101,8 @@ def test_given_populated_prior_storage_when_archived_and_restored_then_source_an
 
 @pytest.mark.parametrize('contents', [None, b'not an archive'])
 def test_given_missing_or_invalid_archive_then_accepted_destination_is_preserved(
-        old_storage, tmp_path, contents):
-    source, _, _, _ = old_storage
+        synthetic_storage, tmp_path, contents):
+    source, _, _, _ = synthetic_storage
     selected = source / 'portfolio.db'
     before = selected.read_bytes()
     archive = tmp_path / 'invalid.tar.gz'

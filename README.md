@@ -22,10 +22,9 @@ records validation and outstanding operator steps.
 | Docker, one `app` service/image | Python CLI and read-only dashboard; dependencies in `/opt/venv` | Project mounted at `/app`; durable state mounted at `/data` |
 | Host `local-data/` | Authoritative private data, excluded from Git and image builds | `state/portfolio.db`, sidecars, artifacts, receipts, backups; `input/`, `work/`, `agent-notes/` |
 
-A bind mount exposes host files to Docker. Unlike the old named volume, the
-current data directory is directly visible in the checkout and survives container
-removal and image rebuilds. **A bind mount is not a backup.** Neither the image nor
-an agent container owns your financial data or instructions.
+A bind mount exposes host files to Docker. The data directory is directly visible
+in the checkout and survives container removal and image rebuilds. **A bind mount is not a backup.**
+Neither the image nor an agent container owns your financial data or instructions.
 
 ## Five-minute quickstart
 
@@ -33,13 +32,6 @@ You need Docker with Compose, ordinary shell/Git and an independently configured
 host agent. Install no host Python, uv or project packages. No secret is needed
 for discovery or fictional examples. The first image build can take longer than
 five minutes.
-
-**Upgrading an existing installation?** First follow the
-[existing-volume preservation procedure](docs/operations.md#preserve-an-existing-named-volume-before-switching).
-Do not start a new empty bind in place of a populated old ledger. The existing
-volume inspected during this change has an unsupported development schema;
-its actual handoff is stopped pending an operator decision, with data preserved.
-The following setup is for a new installation or a completed verified handoff.
 
 ```sh
 umask 077
@@ -55,7 +47,7 @@ Open [localhost:8765](http://localhost:8765). Browsing an absent ledger does not
 create one; the viewer displays the missing-data outcome. `docker compose down`
 stops the service without deleting host data. On Docker Desktop, check that you
 can inspect resulting host files. Linux operators should configure their own
-UID/GID as described in [operations](docs/operations.md#host-storage-and-one-time-named-volume-handoff)
+UID/GID as described in [operations](docs/operations.md#host-storage)
 before private writes.
 
 ## Give your host agent the skills
@@ -69,6 +61,8 @@ before private writes.
 ```
 
 The installer copies all 13 canonical bundles into the host-visible project.
+Complete `.agents/` and `.claude/` directories stay outside Docker images; Git
+ignores only generated Investobot bundles, allowing unrelated skills to be tracked.
 Your external agent reads them; installation does not start an AI model in Docker.
 Ask it to use `investobot-portfolio-sync` and call commands from the checkout with
 `./scripts/invest`. The bridge forwards arguments, stdin, output and exit status
@@ -143,12 +137,10 @@ docker compose stop app
 
 Backup uses SQLite's online API and verifies referenced artifact hashes. Keep a
 separate encrypted off-device copy with your own backup tooling. An archive on
-the same laptop does not protect against device loss. Existing named-volume
-handoff requires a verified archive, matching logical fingerprint/inventory and
-explicit restore confirmation; preserve the original volume for rollback. On
-verification failure, stop and preserve both sides. See [operations](docs/operations.md).
-The prompt CRUD interface is retired; export any legacy overrides to host notes
-for review before switching. Never merge untrusted notes into canonical skills.
+the same laptop does not protect against device loss. Fresh host-backed storage is authorized;
+no migration is necessary. See
+[operations](docs/operations.md). The prompt CRUD interface is retired; operator
+context is ordinary host Markdown. Never merge untrusted notes into canonical skills.
 
 ## Manual gates and detailed references
 

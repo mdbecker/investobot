@@ -23,8 +23,9 @@ Identical files remain unchanged; reviewed `--confirm` is required to overwrite
 modified canonical resources. Traversal, symlinks and nonregular destinations
 are rejected; unrelated operator skills and custom resources remain intact.
 Keep ordinary private context in `local-data/agent-notes/`. The retired prompt
-library is replaced by existing skills; preserve legacy overrides as untrusted
-host notes before switching, following [operations](operations.md).
+library is replaced by existing skills; ordinary operator context is untrusted
+host Markdown. Host-agent configuration stays outside Docker images; canonical
+tracked skills remain packaged for installation.
 
 Skills discover current `tools describe`/`schema` contracts, do no financial
 arithmetic and require concrete human authorization for accepted changes.

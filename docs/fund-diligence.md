@@ -76,10 +76,9 @@ snapshot coverage. Provider-based `invest fund holdings`, `compare` and
 
 ## Database compatibility and human acceptance
 
-Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
-development ledgers unchanged. Preserve private state; do not reset it to try a feature.
-Future migrations require a verified pre-migration backup. Use disposable synthetic
-ledgers for evaluation; see [operations](operations.md).
+Fresh checksum-identified SQLite schema 1 initializes through existing application
+behavior. Use disposable synthetic ledgers for evaluation; see
+[operations](operations.md).
 
 Before claiming real-source acceptance, a human must review one real ETF and
 one real mutual-fund share class. For each, verify original SEC identity and

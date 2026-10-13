@@ -36,4 +36,4 @@ class-specific disclosures. Missing specialty/window coverage remains explicit.
 [Management/insiders](insider-research.md) · [Fund diligence](fund-diligence.md).
 Offline examples are fictional; real disclosures, source permissions and live
 provider responses remain separate manual gates. General prompt CRUD is retired;
-operator overrides belong in ordinary host notes after explicit preservation.
+operator context belongs in ordinary host notes.

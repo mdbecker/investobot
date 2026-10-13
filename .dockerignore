@@ -16,9 +16,9 @@ docs/benchmark-*.json
 benchmark-results
 fuzz-results
 
-# Private source documents and generated host-agent bundles never enter images.
+# Private source documents and external host-agent configuration never enter images.
 *.db*
 *.html
 !src/invest/static/*.html
-.agents/skills/investobot-*
-.claude/skills/investobot-*
+.agents/
+.claude/

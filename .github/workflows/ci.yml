@@ -12,8 +12,17 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare external host-agent privacy fixtures
+        run: |
+          mkdir -p .agents/skills/operator-owned .claude/skills/operator-owned
+          printf 'host-only configuration\n' > .agents/settings.json
+          printf 'host-only configuration\n' > .claude/settings.json
+          printf 'host-only skill\n' > .agents/skills/operator-owned/SKILL.md
+          printf 'host-only skill\n' > .claude/skills/operator-owned/SKILL.md
       - name: Build Python 3.12 runtime with locked dependencies
         run: docker build --tag investobot-ci .
+      - name: Verify external host-agent configuration stays outside the image
+        run: docker run --rm --network none investobot-ci sh -c 'test ! -e /app/.agents && test ! -e /app/.claude'
       - name: Verify locked environment without network access
         run: docker run --rm --network none investobot-ci uv sync --locked
       - name: Run offline behavior and regression tests

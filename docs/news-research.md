@@ -163,10 +163,9 @@ the evidence; disputed claims are research leads, never trading signals.
 
 Accepted runs are immutable, atomic and idempotent. Research changes no holdings,
 prices, classifications, lots, targets, market caches or plan freshness.
-Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
-development ledgers unchanged. Preserve private state; do not reset it to try a feature.
-Future migrations require a verified pre-migration backup. Use disposable synthetic
-ledgers for evaluation; see [operations](operations.md).
+Fresh checksum-identified SQLite schema 1 initializes through existing application
+behavior. Use disposable synthetic ledgers for evaluation; see
+[operations](operations.md).
 
 Store source metadata and concise independently authored facts, not full articles
 or raw pages. Respect copyright and source usage restrictions, strip credentials

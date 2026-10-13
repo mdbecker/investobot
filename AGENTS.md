@@ -4,7 +4,8 @@
 
 - [Host-agent/persistence PRD](docs/PRD-mvp-host-agent-docker-persistence-2026-10-12.md)
   controls execution, storage, prompt retirement and viewer corrections. It
-  supersedes conflicting Docker-owned prompts/named-volume/setup statements.
+  supersedes conflicting execution/storage/setup statements. The owner authorizes
+  fresh host-backed state; no migration or compatibility handoff is required.
   [Foundation PRD](docs/PRD-mvp-foundation-stabilization-2026-10-12.md) controls
   financial stabilization/Phase 1–2; [wrap-up](docs/PRD-mvp-wrap-up-2026-10-12.md)
   controls finite performance/fuzz scope; [unified PRD](docs/PRD-unified-mvp-2026-10-10.md)
@@ -40,7 +41,8 @@
   and `agent-notes/` are ordinary private host files. Pre-create restrictive
   directories and verify invoking-user access. Ignore private data, `.env`, HTML,
   SQLite/backups and generated `investobot-*` skill copies; unrelated skills remain
-  visible to Git. Exclude private files and host `.venv` from Docker builds.
+  visible to Git. Docker builds exclude entire `.agents/` and `.claude/` trees,
+  private files and host `.venv`; canonical tracked `skills/` stay packaged.
 - A bind mount is storage, not backup. Never copy live SQLite files. Online backup
   verifies integrity/FKs/artifact hashes and atomically publishes owner-only archives.
   Restore stages/validates before explicit confirmation and holds restore locks.
@@ -49,15 +51,12 @@
   can block recovery checks. Keep SQLite query-only enforcement independent of mount
   permissions. Preserve unrelated
   files; cleanup targets only unreferenced managed staging under the publication lock.
-- Before changing a populated old volume, preserve a verified archive and logical
-  fingerprint/inventory, then preview and obtain explicit restore confirmation.
-  On failure, stop and preserve source/destination/archives; never reset, prune or
-  silently substitute an empty DB. The inspected operator volume has an unsupported
-  development schema: **actual handoff is stopped**, original volume/service retained.
-  [Operations](docs/operations.md) covers rollback and encrypted off-device copies.
+- Fresh host-backed storage is authorized; initialize through existing application
+  behavior. Do not copy development state, alter schemas or delete unused Docker
+  volumes as part of setup. Ordinary verified backup/restore safety remains.
 - PromptLibrary, bundled defaults and `invest prompt` CRUD are retired. No supported
-  `INVEST_PROMPTS` setting. Preserve actual legacy overrides as untrusted host notes
-  before retirement; never automatically merge them into trusted skill text.
+  `INVEST_PROMPTS` setting. Operator context is ordinary untrusted host Markdown;
+  never automatically merge it into trusted skill text.
   Install skills only explicitly into project-local agent directories, rejecting
   traversal/symlinks/nonregular destinations and protecting edited resources.
 
@@ -65,7 +64,7 @@
 
 - SQLite is the sole writable financial truth, with FK ON, WAL, synchronous FULL,
   busy timeout 5000 and atomic related writes. No ORM/service framework. Schema 1
-  includes the foundation checksum; incompatible development ledgers stay unchanged.
+  includes the foundation checksum.
   Future migrations are transactional/checksummed with verified pre-migration backup.
   DuckDB is ephemeral/read-only; Parquet artifacts have manifests/hashes; vec0 is
   pinned/baked and derived indexes are rebuildable. Recovery loads verified vec0

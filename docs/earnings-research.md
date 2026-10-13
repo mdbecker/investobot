@@ -76,10 +76,9 @@ cache, targets, plans or financial stale status.
 
 ## Database and verification
 
-Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
-development ledgers unchanged. Preserve private state; do not reset it to try a feature.
-Future migrations require a verified pre-migration backup. Use disposable synthetic
-ledgers for evaluation; see [operations](operations.md).
+Fresh checksum-identified SQLite schema 1 initializes through existing application
+behavior. Use disposable synthetic ledgers for evaluation; see
+[operations](operations.md).
 
 All automated earnings data is fictional. No live SEC request is necessary:
 

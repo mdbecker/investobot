@@ -78,12 +78,10 @@ Validation recognizes the same accepted package too. The frozen complete
 offline Docker suite now passes 521 tests and Ruff. Companies lacking comparable
 identifiers still cannot establish cross-run continuity by name alone.
 
-## Current schema preservation
+## Current setup
 
-Checksum-identified schema 1 initializes empty ledgers and rejects incompatible
-development ledgers unchanged. Preserve private state; do not reset it to try a
-feature. Future migrations require verified pre-migration backups. Use disposable
-synthetic ledgers for evaluation; see [operations](operations.md).
+Fresh host-backed storage is authorized and initializes through existing
+application behavior. No migration is required. See [operations](operations.md).
 
 ## PRD v2.3 implementation
 
