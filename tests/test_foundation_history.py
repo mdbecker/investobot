@@ -101,3 +101,15 @@ def test_nonpositive_adjusted_observations_remain_unavailable(ledger, tmp_path):
     assert result['status'] == 'UNAVAILABLE'
     assert result['prices'] == []
     assert any(i['blocks_calculation'] for i in result['issues'])
+
+
+def test_invalid_adjusted_price_blocks_even_with_usable_provider_observations(ledger, tmp_path):
+    # Given a positive adjusted observation followed by a nonpositive adjusted price.
+    result = history(ledger, tmp_path, [{'date': '2026-09-08', 'adjClose': '100'},
+                                      {'date': '2026-09-09', 'adjClose': '0'}])
+    # Then retained observations never disguise invalid adjusted-return evidence as usable coverage.
+    assert result['prices'] == [{'date': '2026-09-08', 'adjusted_close': '100'}]
+    assert result['status'] == 'PARTIAL'
+    assert result['coverage']['observed_adjusted_prices_complete'] is False
+    assert any(i['code'] == 'INVALID_ADJUSTED_PRICE' and i['blocks_calculation']
+               for i in result['issues'])
