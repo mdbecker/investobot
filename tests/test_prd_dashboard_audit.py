@@ -112,5 +112,3 @@ def test_served_dashboard_exposes_preflight_and_actual_performance_affordances(d
     assert 'actual performance' in text, 'Actual returns must be distinct from hypothetical scenarios'
     assert 'hypothetical' in text
     assert parsed.select('input[type="date"]'), 'Dated financial reviews require visible date selection'
-    confirmations = parsed.select('label.confirmation input[type="checkbox"]')
-    assert confirmations, 'Accepted facts require visible explicit confirmation controls'

@@ -208,7 +208,6 @@ def intent(research_ctx, workflow, monkeypatch):
         'id': 'approved-synthetic', 'version': 'approved-synthetic',
         'data_environment': 'SYNTHETIC', 'minimum_notional': '25',
         'fee_per_trade': '0',
-        'quarterly_months': [3, 6, 9, 12], 'drift_trigger': '0.05',
         'max_position_age_days': 120, 'cash_floors': {'synthetic': '0'},
         'permissions': {'synthetic': {security: {'can_buy': True, 'can_sell': False,
                                                 'can_hold': True, 'share_increment': '0.001'}}},

@@ -21,8 +21,8 @@ def policy_context(tmp_path, monkeypatch):
     monkeypatch.setenv('INVEST_CONFIG', str(tmp_path / 'config.toml'))
     payload = {'id': 'fictional-approved-v1', 'version': '1',
         'data_environment': 'SYNTHETIC', 'source': 'Explicit fictional human-reviewed trading policy',
-        'minimum_notional': '25', 'fee_per_trade': '0', 'quarterly_months': [3, 6, 9, 12],
-        'drift_trigger': '0.05', 'max_position_age_days': 30, 'cash_floors': {'synthetic': '100'},
+        'minimum_notional': '25', 'fee_per_trade': '0',
+        'max_position_age_days': 30, 'cash_floors': {'synthetic': '100'},
         'permissions': {'synthetic': {ctx['security']: {'can_buy': True, 'can_sell': False,
             'can_hold': True, 'share_increment': '0.001'}}}}
     file = tmp_path / 'reviewed-policy.json'

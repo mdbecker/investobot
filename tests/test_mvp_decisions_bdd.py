@@ -58,8 +58,7 @@ def household(decision, case):
                                 'permitted_securities': {'ira': [decision['child']]}}})
     decision['target'] = target['id']
     decision['policy'] = {
-        'version': 'fictional-1', 'quarterly_months': [3, 6, 9, 12],
-        'drift_trigger': '0.05', 'max_position_age_days': 120,
+        'version': 'fictional-1', 'max_position_age_days': 120,
         'permissions': {'ira': {
             decision['wrap']: {'can_buy': False, 'can_sell': True, 'can_hold': True,
                                'share_increment': '1'},
@@ -193,8 +192,8 @@ def acceptance(decision, case):
             assert quantity % Decimal('0.001') == 0
             assert 0 < quantity < 1
     elif case in {'B32', 'B33'}:
-        assert not any(action['type'] == 'SELL' for action in actions)
-        assert result['cadence']['eligible'] is False
+        assert any(action['type'] == 'SELL' for action in actions)
+        assert 'cadence' not in result
     elif case == 'B34':
         assert any(action['type'] == 'SELL' and action['security'] == decision['wrap']
                    for action in actions)
@@ -382,12 +381,12 @@ def extended_acceptance(decision, case):
     result = decision['result']
     actions = result.get('proposed_actions', [])
     if case == 'P_CONFIRMED_CADENCE':
-        assert not actions
-        assert any(issue['code'] == 'MONTHLY_CADENCE_USED' for issue in result['issues'])
+        assert actions and all(action['type'] == 'BUY' for action in actions)
+        assert not any(issue['code'] == 'MONTHLY_CADENCE_USED' for issue in result['issues'])
     elif case == 'P_UNCONFIRMED_CADENCE':
         assert actions
         assert decision['repeat']['proposed_actions'] == actions
-        assert decision['repeat']['cadence']['eligible'] is True
+        assert 'cadence' not in decision['repeat']
     elif case == 'P_CASH_FLOOR':
         assert actions
         assert Decimal(result['cash_after']['ira']) >= 1900

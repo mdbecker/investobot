@@ -1,261 +1,210 @@
+"""Read-only dashboard behavior over accepted synthetic facts and saved results."""
+
 import json
 import threading
 from http.client import HTTPConnection
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from pathlib import Path
 
+import httpx
 import pytest
-from pytest_bdd import given, scenarios, then, when
+from bs4 import BeautifulSoup
 
-scenarios("features/web.feature")
-HTML = "<p>PRIVATE_ACCOUNT_12345</p><table><tr><th>Symbol</th><th>Description</th><th>Quantity</th><th>Market Value</th><th>Price</th></tr><tr><td>VTI</td><td>Synthetic ETF</td><td>10</td><td>1000</td><td>100</td></tr></table>"
+from invest import backtest, plans, targets
+from invest.ledger import Ledger
+from invest.market import MarketClient
+from invest.web import create_server
+
+POST_ROUTES = ['/api/import', '/api/reconcile', '/api/apply', '/api/activity',
+               '/api/analyze', '/api/targets/save', '/api/targets/activate',
+               '/api/targets/archive', '/api/plans/generate', '/api/plans/compare',
+               '/api/prompts/save', '/api/prompts/delete', '/api/agent/execute', '/unknown']
 
 
 @pytest.fixture
-def context(tmp_path):
-    from invest.web import create_server
-
-    server = create_server(tmp_path / "ledger.db", host="127.0.0.1", port=0)
+def dashboard(tmp_path, monkeypatch):
+    monkeypatch.setenv('INVEST_CONFIG', str(tmp_path / 'config.toml'))
+    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
+    monkeypatch.setenv('FMP_API_KEY', 'fictional-provider-key')
+    monkeypatch.delenv('INVEST_FIXTURES', raising=False)
+    path = tmp_path / 'ledger.db'
+    server = create_server(path, port=0)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    yield {
-        "server": server,
-        "base": f"http://127.0.0.1:{server.server_port}",
-        "path": tmp_path / "ledger.db",
-    }
+    yield {'path': path, 'server': server, 'tmp': tmp_path}
     server.shutdown()
     server.server_close()
-    thread.join()
+    thread.join(timeout=5)
 
 
-def request(context, path, body=None, origin=None):
-    headers = {"Content-Type": "application/json"}
-    if body is not None:
-        headers["Origin"] = origin or context["base"]
-    data = json.dumps(body).encode() if body is not None else None
-    req = Request(context["base"] + path, data=data, headers=headers)
+def request(ctx, path, *, method='GET', body=None, headers=None):
+    conn = HTTPConnection('127.0.0.1', ctx['server'].server_port, timeout=5)
     try:
-        with urlopen(req) as response:
-            raw = response.read()
-            return response.status, json.loads(raw) if path.startswith("/api") else raw.decode()
-    except HTTPError as error:
-        return error.code, json.loads(error.read())
-
-
-@given("a local inspection server with an empty ledger")
-def server(context):
-    pass
-
-
-@when("I inspect the portfolio summary")
-def summary(context):
-    context["summary"] = request(context, "/api/summary")[1]
-    context["page"] = request(context, "/")[1]
-
-
-@then("the summary reports zero and the page provides an import workflow")
-def empty(context):
-    assert context["summary"]["total_value"] == "0"
-    assert "Preview import" in context["page"]
-    assert "No accounts yet" in context["page"]
-
-
-@when("I preview a synthetic account page")
-def preview(context):
-    context["preview"] = request(
-        context,
-        "/api/import",
-        {
-            "html": HTML,
-            "account_id": "synthetic",
-            "institution": "vanguard",
-            "tax_status": "TAXABLE",
-        },
-    )
-
-
-@then("the normalized preview is available and the ledger is unchanged")
-def preview_only(context):
-    assert context["preview"][0] == 200
-    assert context["preview"][1]["positions"][0]["security"] == "VTI"
-    assert request(context, "/api/summary")[1]["total_value"] == "0"
-
-
-@when("I reconcile and explicitly apply the preview")
-def apply(context):
-    snapshot = dict(context["preview"][1], data_environment='SYNTHETIC')
-    assert request(context, "/api/reconcile", {"snapshot": snapshot})[1]["changes"]
-    assert request(context, "/api/apply", {"snapshot": snapshot})[0] == 400
-    assert request(context, "/api/apply", {"snapshot": snapshot, "confirm": True})[0] == 200
-
-
-@then("the portfolio summary reflects the accepted snapshot")
-def applied(context):
-    summary = request(context, "/api/summary")[1]
-    assert summary['total_value'] is None
-    assert summary['known_value_subtotal'] == '1000'
-    assert summary['status'] == 'PARTIAL'
-
-
-@then("the raw page has not been stored")
-def private(context):
-    assert b"PRIVATE_ACCOUNT_12345" not in context["path"].read_bytes()
-
-
-@when("a foreign origin posts an account page")
-def foreign(context):
-    context["response"] = request(
-        context, "/api/import", {"html": HTML}, origin="https://foreign.example"
-    )
-
-
-@then("the request is rejected without importing it")
-def forbidden(context):
-    assert context["response"][0] == 403
-    assert request(context, "/api/summary")[1]["total_value"] == "0"
-
-
-@when("an oversized body is submitted")
-def oversized(context, monkeypatch):
-    connection = HTTPConnection("127.0.0.1", context["server"].server_port, timeout=5)
-    sent = bytearray()
-    original_send = connection.send
-
-    def record_send(data):
-        sent.extend(data)
-        original_send(data)
-
-    monkeypatch.setattr(connection, "send", record_send)
-    try:
-        connection.putrequest("POST", "/api/import")
-        connection.putheader("Origin", context["base"])
-        connection.putheader("Content-Type", "application/json")
-        connection.putheader("Content-Length", "2100000")
-        connection.endheaders()
-        context["body_bytes_sent"] = len(sent.partition(b"\r\n\r\n")[2])
-        # Keep the connection open: a body read would time out instead of returning 413.
-        response = connection.getresponse()
-        context["response"] = response.status, json.loads(response.read())
+        conn.request(method, path, body=body, headers=headers or {})
+        response = conn.getresponse()
+        raw = response.read().decode()
+        return response.status, json.loads(raw) if response.getheader('Content-Type').startswith(
+            'application/json') else raw
     finally:
-        connection.close()
+        conn.close()
 
 
-@then("the request is rejected before parsing")
-def too_large(context):
-    assert context["response"][0] == 413
+def accepted(ctx, asset_type='STOCK'):
+    ledger = Ledger(ctx['path'])
+    ledger.apply({'data_environment': 'SYNTHETIC',
+        'account': {'id': 'ira', 'name': 'Synthetic IRA', 'tax_status': 'TAX_FREE'},
+        'positions': [{'security': 'AAA', 'asset_type': asset_type, 'quantity': '10',
+                       'price': '100', 'market_value': '1000', 'as_of': '2026-10-08',
+                       'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
+        'cash': '200', 'cash_known': True, 'positions_complete': True,
+        'source_timestamp': '2026-10-08', 'source_hash': 'synthetic-viewer'})
+    return ledger
 
 
-@then("no oversized request body was transmitted")
-def no_oversized_body(context):
-    assert context["body_bytes_sent"] == 0
+@pytest.mark.parametrize('route', POST_ROUTES)
+def test_every_post_is_method_not_allowed_without_creating_selected_ledger(dashboard, route):
+    # Given no ledger, even a malformed body with no Origin cannot start a workflow.
+    code, error = request(dashboard, route, method='POST', body='not JSON')
+    assert code == 405, error
+    assert error['code'] == 1 and isinstance(error['error'], str)
+    assert not dashboard['path'].exists()
 
 
-@when("I request tax lots analysis")
-def tax_lots_request(context):
-    context["response"] = request(
-        context, "/api/analyze", {"tool": "tax_lots", "input": {"as_of": "2026-10-08"}}
-    )
-
-
-@then("the workbench returns structured lot analysis")
-def lots_result(context):
-    assert context["response"][0] == 200
-    assert context["response"][1]["lots"] == []
-    assert "warnings" in context["response"][1]
-
-
-@when("I request an arbitrary execution tool")
-def unknown_tool(context):
-    context["response"] = request(
-        context, "/api/analyze", {"tool": "shell", "input": {"command": "echo unsafe"}}
-    )
-
-
-@then("the workbench rejects the tool as invalid input")
-def unknown_rejected(context):
-    assert context["response"][0] == 400
-    assert context["response"][1]["code"] == 1
-
-
-@given("a synthetic accepted cash-funded account")
-def cash_funded(context):
-    snapshot = request(
-        context,
-        "/api/import",
-        {
-            "html": HTML
-            + "<table><tr><th>Symbol</th><th>Market Value</th></tr><tr><td>CASH</td><td>500</td></tr></table>",
-            "account_id": "synthetic",
-        },
-    )[1]
-    snapshot['data_environment'] = 'SYNTHETIC'
-    assert request(context, "/api/apply", {"snapshot": snapshot, "confirm": True})[0] == 200
-    context["before_bytes"] = context["path"].read_bytes()
-
-
-@when("I simulate buying an existing security through the workbench")
-def simulate_request(context):
-    context["response"] = request(
-        context,
-        "/api/analyze",
-        {
-            "tool": "simulate",
-            "input": {
-                "actions": [
-                    {
-                        "type": "BUY",
-                        "account_id": "synthetic",
-                        "security": "VTI",
-                        "quantity": "1",
-                        "price": "100",
-                        "date": "2026-10-08",
-                        "fee": "0",
-                    }
-                ]
-            },
-        },
-    )
-
-
-@then("the simulation reports the changed cash")
-def simulation_cash(context):
-    assert context["response"][0] == 200
-    assert context["response"][1]["after"]["cash"] == "400"
-
-
-@then("the database bytes are unchanged")
-def db_unchanged(context):
-    assert context["before_bytes"] == context["path"].read_bytes()
-
-
-@given("a household with unsupported mixed currencies")
-def mixed_currency(context):
-    from invest.ledger import Ledger
-
-    ledger = Ledger(context["path"])
-    for alias, currency in [("dollars", "USD"), ("euros", "EUR")]:
-        ledger.apply(
-            {
-                "account": {"id": alias, "name": alias, "currency": currency},
-                "positions": [],
-                "cash": "100",
-                "source_hash": "SYNTHETIC",
-                "data_environment": "SYNTHETIC",
-            }
-        )
-    ledger.connection.close()
-
-
-@when("I inspect that household summary")
-def mixed_summary(context):
+def test_former_posts_preserve_all_records_and_prompt_files(dashboard):
+    # Given accepted financial facts and a user prompt, former commands are inert.
+    ledger = accepted(dashboard)
     try:
-        context["response"] = request(context, "/api/summary")
-    except Exception as exc:
-        context["connection_error"] = exc
+        before = list(ledger.connection.iterdump())
+    finally:
+        ledger.connection.close()
+    prompt = dashboard['tmp'] / 'prompts' / 'human.md'
+    prompt.parent.mkdir()
+    prompt.write_text('Reviewed human prompt')
+    for route in POST_ROUTES:
+        code, value = request(dashboard, route, method='POST', body='{}', headers={
+            'Content-Type': 'application/json',
+            'Origin': f"http://127.0.0.1:{dashboard['server'].server_port}"})
+        assert code == 405, value
+    ledger = Ledger(dashboard['path'])
+    try:
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
+    assert prompt.read_text() == 'Reviewed human prompt'
+    assert list(prompt.parent.iterdir()) == [prompt]
 
 
-@then("the API returns a JSON inconsistent-state error")
-def mixed_error(context):
-    assert "connection_error" not in context
-    assert context["response"][0] == 409
-    assert context["response"][1]["code"] == 3
+def test_absent_dashboard_has_empty_saved_results_without_creating_database(dashboard):
+    for route, key in [('/api/plans', 'plans'), ('/api/targets', 'targets'),
+                       ('/api/backtests', 'runs')]:
+        code, value = request(dashboard, route)
+        assert code == 200, value
+        assert value[key] == []
+    code, value = request(dashboard, '/api/overview')
+    assert code == 200, value
+    assert value['state']['accounts'] == []
+    assert not dashboard['path'].exists()
+
+
+def test_accepted_balances_and_existing_saved_plan_are_viewable(dashboard):
+    ledger = accepted(dashboard)
+    try:
+        sid = ledger.resolve('AAA')['id']
+        target = targets.save(ledger, {'name': 'Hold shares', 'target_allocations': {sid: '1'},
+            'planning_constraints': {'eligible_accounts': ['ira'],
+                                    'permitted_securities': {'ira': [sid]}}})
+        plan = plans.generate(ledger, MarketClient(ledger, fixture_path=Path(
+            'tests/fixtures/fmp-synthetic.json')), target['id'], as_of='2026-10-08')
+        before = list(ledger.connection.iterdump())
+        code, overview = request(dashboard, '/api/overview')
+        assert code == 200, overview
+        assert overview['summary']['total_value'] == '1200'
+        assert overview['summary']['cash'] == '200'
+        assert request(dashboard, '/api/plans')[1]['plans'][0]['id'] == plan['id']
+        assert request(dashboard, '/api/plans/' + plan['id'])[1] == plans.show(ledger, plan['id'])
+        assert request(dashboard, '/api/plans/' + plan['id'] + '/report?format=json')[1] == plan
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
+
+
+def test_saved_backtests_are_listed_read_and_compared_with_assumption_mismatch(dashboard):
+    ledger = accepted(dashboard)
+    try:
+        sid = ledger.resolve('AAA')['id']
+        results = []
+        for fee in ['0', '1']:
+            results.append(backtest.run(ledger, portfolio={sid: '1'}, start='2026-10-01',
+                end='2026-10-02', policy={'starting_value': '1000', 'cash_return': '0',
+                                        'fee_per_trade': fee},
+                manifest={'id': 'synthetic-history', 'data_environment': 'SYNTHETIC',
+                          'sessions': ['2026-10-01', '2026-10-02'], 'series': {sid: [
+                              {'date': '2026-10-01', 'total_return_index': '100'},
+                              {'date': '2026-10-02', 'total_return_index': '101'}]}}))
+        before = list(ledger.connection.iterdump())
+        code, listing = request(dashboard, '/api/backtests')
+        assert code == 200, listing
+        assert {row['id'] for row in listing['runs']} == {row['id'] for row in results}
+        assert request(dashboard, '/api/backtests/' + results[0]['id']) == (200, results[0])
+        query = '&'.join('run_id=' + row['id'] for row in results)
+        code, comparison = request(dashboard, '/api/backtests/compare?' + query)
+        assert code == 200, comparison
+        assert comparison == backtest.compare(ledger, [row['id'] for row in results])
+        assert comparison['status'] == 'INCOMPARABLE'
+        assert 'ASSUMPTION_MISMATCH' in {issue['code'] for issue in comparison['issues']}
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
+
+
+def test_fund_overview_without_cached_holdings_never_contacts_provider(dashboard, monkeypatch):
+    ledger = accepted(dashboard, asset_type='ETF')
+    try:
+        before = list(ledger.connection.iterdump())
+        calls = []
+
+        def unavailable(*args, **kwargs):
+            calls.append(args)
+            raise AssertionError('Dashboard attempted outbound provider request')
+
+        monkeypatch.setattr(httpx, 'get', unavailable)
+        code, value = request(dashboard, '/api/overview')
+        assert calls == [], 'GET must not refresh missing holdings evidence'
+        assert code == 200, value
+        assert value['exposure']['unknown_exposure_percentage'] != '0'
+        assert list(ledger.connection.iterdump()) == before
+    finally:
+        ledger.connection.close()
+
+
+def test_served_viewer_contains_no_retired_forms_or_command_navigation(dashboard):
+    code, html = request(dashboard, '/')
+    assert code == 200
+    page = BeautifulSoup(html, 'html.parser')
+    assert not page.select('form, textarea, input[type="file"], label.confirmation')
+    links = {node.get('href') for node in page.select('#primary-nav a')}
+    assert {'#overview', '#targets', '#plans', '#backtests'} <= links
+    assert not links & {'#prompts', '#import', '#activity', '#analysis'}
+    assert 'saved backtests' in page.get_text(' ', strip=True).lower()
+    script = request(dashboard, '/app.js')[1]
+    assert 'POST' not in script
+    for action in ['targets/save', 'plans/generate', 'prompts/save', 'api/analyze']:
+        assert action not in script
+
+
+def test_get_rejects_foreign_host_and_preserves_safe_headers(dashboard):
+    code, error = request(dashboard, '/api/summary', headers={'Host': 'external.example'})
+    assert code == 403 and error['code'] == 1
+    assert not dashboard['path'].exists()
+
+
+def test_mixed_currency_summary_returns_typed_error(dashboard):
+    ledger = Ledger(dashboard['path'])
+    try:
+        for account, currency in [('dollars', 'USD'), ('euros', 'EUR')]:
+            ledger.apply({'account': {'id': account, 'name': account, 'currency': currency},
+                          'positions': [], 'cash': '100', 'source_hash': account,
+                          'data_environment': 'SYNTHETIC'})
+    finally:
+        ledger.connection.close()
+    code, error = request(dashboard, '/api/summary')
+    assert code == 409 and error['code'] == 3

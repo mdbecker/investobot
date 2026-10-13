@@ -54,7 +54,6 @@ def household(tmp_path, monkeypatch):
         'source': 'Explicit fictional human-reviewed conditional harvest policy',
         'data_environment': 'SYNTHETIC', 'minimum_notional': '25', 'fee_per_trade': '1',
         'cash_floors': {'tax': '220'}, 'max_position_age_days': 30, 'max_cash_age_days': 30,
-        'exception_approved': True, 'exception_reason': 'Reviewed October loss-harvest exception',
         'permissions': {'tax': {
             loss: {'can_buy': False, 'can_sell': True, 'can_hold': True, 'share_increment': '0.001'},
             replacement: {'can_buy': True, 'can_sell': False, 'can_hold': True,
@@ -128,7 +127,7 @@ def test_reviewed_harvest_proposal_has_exact_fee_basis_budget_and_immutable_pins
 @pytest.mark.parametrize(('mutation', 'issue'), [
     ('fee', 'UNKNOWN_FEES'), ('rates', 'UNKNOWN_TAX_RATES'),
     ('sell', 'SELL_PERMISSION_REQUIRED'), ('buy', 'REPLACEMENT_PERMISSION_REQUIRED'),
-    ('increment', 'UNKNOWN_EXECUTION_INCREMENT'), ('cadence', 'HARVEST_EXCEPTION_REQUIRED'),
+    ('increment', 'UNKNOWN_EXECUTION_INCREMENT'),
     ('price_source', 'UNKNOWN_PRICE_PROVENANCE'), ('price_stale', 'STALE_PRICE'),
     ('price_currency', 'CURRENCY_MISMATCH'), ('price_environment', 'MIXED_DATA_ENVIRONMENT'),
     ('history', 'INCOMPLETE_TAXABLE_HISTORY'), ('replacement_source', 'UNVERIFIED_REPLACEMENT'),
@@ -146,9 +145,6 @@ def test_missing_required_facts_block_conditional_trades_without_mutation(househ
         policy['permissions']['tax'][sid][flag] = False
     elif mutation == 'increment':
         policy['permissions']['tax'][ctx['replacement']].pop('share_increment')
-    elif mutation == 'cadence':
-        policy.update(exception_approved=False)
-        policy.pop('exception_reason')
     elif mutation == 'price_source':
         price.pop('source')
     elif mutation == 'price_stale':
