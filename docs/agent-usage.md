@@ -28,8 +28,8 @@ A market cache write never changes accepted holdings, marks or tax lots.
 
 The host agent uses `./scripts/invest`; Docker executes the CLI. Compose binds host
 `local-data/state` to `/data`, with SQLite `/data/portfolio.db`. Skills are host-readable;
-ordinary context lives in `local-data/agent-notes/`. Fresh checksum-identified SQLite schema 1 initializes through existing application
-behavior. Use disposable synthetic ledgers for evaluation; see
+ordinary context lives in `local-data/agent-notes/`. Fresh checksum-identified
+SQLite schema 1 initializes through existing application behavior. Use disposable synthetic ledgers for evaluation; see
 [operations](operations.md).
 
 ## Research and data provenance

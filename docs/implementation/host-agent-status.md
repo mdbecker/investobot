@@ -58,8 +58,8 @@ No benchmark reference, recipe or allowance changed. These measurements describe
 that runtime; the cleanup changes no financial implementation.
 
 Review followed intent → architecture → implementation → polish and independent
-boundary/docs review. The referenced `code_review(8).md` and
-`code_smell_review(9).md` were not supplied; this remains a review-source limitation.
+boundary/docs review. The owner approved the result (LGTM), subject to the final
+cleanup recorded below.
 
 ## Final approved cleanup
 
@@ -73,7 +73,23 @@ Active setup docs and AGENTS now describe fresh host-backed state without obsole
 handoff instructions. Storage scenarios retain ordinary accepted-state/saved-plan/
 artifact recovery, integrity and failed-restore safety; their former transfer-specific
 names and paths are removed. No test exists solely to enforce a volume handoff.
-Final cleanup CI results are recorded below after verification.
+Cleanup green checkpoint `4fdc877`: **41 focused tests passed**, including privacy,
+host bridge/skills and ordinary recovery; Ruff passed. The normal local Docker CI
+sequence then passed from that committed tree with synthetic host-agent fixtures:
+
+- `docker build --tag investobot-cleanup-ci`: native ARM64 image `454ab02a477d`.
+- Direct image inspection: neither `/app/.agents` nor `/app/.claude` exists; tracked
+  canonical skill text remains present.
+- `uv sync --locked`: passes with network disabled.
+- `uv run --locked pytest`: **1,364 passed in 49.65 seconds**.
+- `uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz`:
+  passes.
+
+Only documentation polish/evidence follows that tested tree. Application source,
+Compose host persistence, database schemas and narrow Git rules are unchanged.
+No development state was copied and no existing volume was deleted. The normal CI
+workflow now repeats the seeded real-image privacy check; remote GitHub CI was not
+run because no push was authorized. The finite approved cleanup is complete.
 
 Raw original evidence: ignored `benchmark-results/host-agent-2026-10-12/`.
 Cleanup evidence: ignored `benchmark-results/host-agent-cleanup-2026-10-12/`.
