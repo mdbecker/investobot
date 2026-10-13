@@ -73,6 +73,14 @@ measurement is INVALID. Compare normalized medians; a >25% increase requests
 one complete repeat pair before FAIL. Changed recipes, outputs, counts or runner
 identity fail comparability. No absolute latency, scaling or import stress gate.
 
+Foundation stabilization intentionally removes live calendar metadata. The paired
+financial harness projects only `cadence={eligible:true}` out of native
+`contribution-first-hifo-1` plan outputs, including saved-plan reads, after retaining
+the raw result for independent oracle checks. Any other reference calendar outcome
+fails; all actions, financial values, source/policy evidence and relationships stay
+in the fingerprint. This narrow semantic delta is authorized by foundation package
+H in `benchmarks/reference.json`; the reference SHA and fixture recipe stay pinned.
+
 Example invocations **inside** the offline Docker images, with the current
 checkout mounted at `/harness` and ignored outputs at `/results`:
 
@@ -86,8 +94,8 @@ uv run --locked python /harness/scripts/perf.py compare /results/reference.json 
 The checked-in GitHub job performs both revisions and the conditional complete
 confirmation on a hosted ARM runner; no personal self-hosted machine or Docker
 socket is exposed to untrusted PR code. Local M4 runs are trusted diagnostics.
-The configuration is not an operational required check until a complete remote
-job passes and the human enables repository enforcement. No push was performed.
+Remote CI status is separate from local measurements. Branch protection is optional
+for this personal repository and is not a foundation release gate. No push occurs.
 
 Raw results belong in ignored `benchmark-results/`; CI artifacts expire after
 30 days. The prior generated evidence is archived in ignored

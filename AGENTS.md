@@ -1,5 +1,29 @@
 # Investobot project rules
 
+## Active foundation stabilization
+
+- `docs/PRD-mvp-foundation-stabilization-2026-10-12.md` controls dashboard
+  ownership, live trading cadence, release administration and Phase 1/2 ordering.
+  Prior performance wrap-up scope and all financial safety invariants still apply.
+- Author and record all changed A–F behavior scenarios before production edits.
+  Coordinator commits observed red and verified green checkpoints on `main`.
+- Dashboard is GET-only, with query-only application reads and persisted results.
+  Every POST returns 405 before reading a body or opening application data.
+  Never refresh providers/caches or expose a web command/job interface.
+- Live contributions-only and rebalance proposals have no calendar/month/drift
+  gates. Quarterly strategy remains an explicitly selected historical backtest.
+  Immutable human-approved policy, cash, lot, tax and wash-review gates remain.
+- Retirement allocated sales conserve verified share inventory without requiring
+  tax basis/dates. Unknown basis remains null; never invent retirement gain/term.
+  Taxable allocations still require basis/dates; inconsistent lots block safely.
+- CLI HTML import requires explicit REAL/SYNTHETIC passed into the parser.
+  Blocking parser evidence cannot become clean complete accepted holdings.
+- Look-through preserves known numeric exposure despite missing source evidence;
+  evidence completeness requires matching environment, source and date.
+  Provider history discloses unverified exchange sessions; weekdays are no calendar.
+- Stabilize synthetic architecture first. Reviewed real brokerage HTML and live
+  FMP contracts are separate Phase 2 work; no required branch-protection setup.
+
 ## Current finite wrap-up scope
 
 - `docs/PRD-mvp-wrap-up-2026-10-12.md` supersedes conflicting performance,
@@ -224,10 +248,10 @@
 - Targets are immutable versioned fraction allocations totaling 1 ±0.000001.
   Approved trading policies are separate from targets; buy/sell permissions are
   independent. Same-account confirmed cash only; explicit increments, floors,
-  minimum notionals, freshness and cadence. Unknown fees require review.
-- Default contribution-only monthly; quarterly rebalance March/June/September/
-  December only above 5 percentage-point drift. Exceptions are saved approved
-  policy versions, never bypass flags. No automatic individual bond trades.
+  minimum notionals and freshness. Unknown fees require review.
+- Contributions-only never sells; rebalance uses cash first then permitted
+  sales/buys on any valid supplied date, including small positive drift above
+  minimum notionals. User habits do not enforce a schedule. No automatic bonds.
 - Annual USD positive estimated tax-cost allowance uses confirmed taxable sales
   and explicit ST/LT rates. Losses do not replenish it; saved plans do not spend
   it. Unknown rates/year-to-date coverage block taxable gain-sale proposals.

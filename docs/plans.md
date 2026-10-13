@@ -13,11 +13,12 @@ No report executes trades. Every plan requires a human decision and manual broke
 ## Generate and compare
 
 Use `invest plan propose --file request.json --policy APPROVED_POLICY_ID --mode
-contribution_only --as-of YYYY-MM-DD` for policy-controlled production proposals.
+contributions-only --as-of YYYY-MM-DD` for policy-controlled production proposals.
 The request identifies a saved `target_id` and explicit dated `prices` keyed by
 canonical security IDs, including currency, source and REAL/SYNTHETIC provenance.
 Approve the separate policy through `policy approve --confirm` after preview.
-See [trading policy](trading-policy.md) for cadence, permissions and annual allowance.
+See [trading policy](trading-policy.md) for permissions and annual allowance;
+live proposals have no enforced calendar schedule.
 
 `invest plan generate --target TARGET_ID --as-of YYYY-MM-DD` is a preserved
 unapproved hypothetical scenario primitive, not a production policy bypass.

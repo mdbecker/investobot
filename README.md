@@ -4,7 +4,8 @@ Local portfolio accounting, source-backed research and hypothetical planning.
 Humans review evidence, accept facts and execute decisions manually. Investobot
 never takes brokerage credentials or places trades.
 
-The [active unified PRD](docs/PRD-unified-mvp-2026-10-10.md) is preserved here.
+The [foundation PRD](docs/PRD-mvp-foundation-stabilization-2026-10-12.md)
+governs current architecture and Phase 1/2 ordering; prior PRDs are preserved.
 This is a **development preview** until the software and human gates in the
 [implementation record](docs/implementation/unified-mvp-status.md) are complete.
 Vanguard, Fidelity NetBenefits and PNC adapters remain **PROVISIONAL**. Live FMP
@@ -22,8 +23,9 @@ docker compose run --rm -T app invest tools describe portfolio.check
 ```
 
 Open [the local dashboard](http://localhost:8765). Compose publishes only to
-`127.0.0.1`; keep this single-user interface local. Its domain results and
-confirmation boundaries match the CLI. `docker compose down` stops it.
+`127.0.0.1`; keep this single-user interface local. It reads accepted facts,
+saved plans and saved backtests, including comparisons. All POST requests return
+405. Agents use the CLI for human-authorized changes. `docker compose down` stops it.
 Do not delete a private data volume to fix an incompatible schema.
 
 SQLite at `/data/portfolio.db` owns accepted financial facts. Prompts live at
@@ -35,7 +37,8 @@ schemas are rejected unchanged; future migrations require verified backups.
 ## Safe first use
 
 1. Start with a separate disposable ledger and labelled synthetic fixtures.
-2. Preview supplied HTML and reconcile normalized values. Keep private files
+2. Preview supplied HTML with explicit `--data-environment REAL|SYNTHETIC`
+   and reconcile normalized values. Keep private files
    outside Git; raw account HTML is never stored in the ledger.
 3. Review source dates, displayed precision, canonical identity and independent
    position, lot and cash coverage before explicitly accepting facts.
@@ -65,7 +68,8 @@ through an ignored `.env` or environment variable. Validate actual entitled
 responses before relying on real data. Never supply brokerage credentials,
 cookies or sessions. See [source setup](docs/data-sources.md).
 
-Institution verification needs representative anonymized HTML and human review;
+Phase 1 stabilizes synthetic behavior first. Phase 2 institution verification
+needs representative anonymized original HTML and human review;
 synthetic pages do not establish verified support. External agents research
 original sources; humans review accuracy and reuse rights. Named contribution
 evidence needs an independently reviewed local rights policy. Embeddings need
@@ -87,7 +91,8 @@ docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-test u
 
 Verification uses disposable containers without private ledger volumes.
 [Benchmarks](docs/benchmarks-unified-mvp.md) disclose hashes, hardware and limits.
-Local evidence is not a remote CI result.
+Local evidence is not a remote CI result. Branch protection is optional for this
+personal repository and is not an acceptance gate.
 
 ## Documentation
 
@@ -100,7 +105,8 @@ Local evidence is not a remote CI result.
 
 Work stays on `main`, with conventional observed red/green commits and no remote
 Git operations. Historical specifications remain unmodified references; the
-unified PRD governs financial behavior; the [October 12 wrap-up](docs/PRD-mvp-wrap-up-2026-10-12.md)
+foundation PRD supersedes dashboard mutations, live schedule enforcement and
+real-data/release ordering; the [October 12 wrap-up](docs/PRD-mvp-wrap-up-2026-10-12.md)
 supersedes older performance/campaign requirements. Refactors use existing green
 tests; new behavior and confirmed bugs require red-first tests. See [project rules](AGENTS.md).
 

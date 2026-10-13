@@ -61,5 +61,6 @@ metrics and separately constrained transitions; retain all manifests and policie
 
 Blocked walkthrough: missing dividend adjustment, unequal history coverage,
 future constituents, mixed currencies or unknown fees prevent comparison. Do not
-backfill history or manufacture a ranking. A quarterly cadence/drift restriction
+backfill history or manufacture a ranking. Financial, cash, lot and tax safeguards
 may block a transition while a valid hypothetical comparison remains available.
+Optional quarterly backtests do not impose a live trading schedule.

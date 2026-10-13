@@ -6,6 +6,11 @@
   "recipe_sha256": "7878e0b6ab4ce262a88b85e6927eaa7280d1ca04b9ad0d39089b8cfef219b303",
   "recipe_version": "mvp-representative-v2",
   "legacy_timings_are_gate": false,
+  "approved_output_projection": {
+    "authorization": "docs/PRD-mvp-foundation-stabilization-2026-10-12.md package H",
+    "scope": "Remove only cadence={eligible:true} from contribution-first-hifo-1 plan output; reject any other calendar outcome. Keep every financial, policy, source and relationship field.",
+    "application_reference_changed": false
+  },
   "approval": {
     "procedure": "explicit-reviewed-rebaseline",
     "status": "APPROVED",

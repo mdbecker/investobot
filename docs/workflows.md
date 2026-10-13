@@ -11,17 +11,22 @@ IDs with IDs returned by the CLI. Never place private files or credentials in Gi
 The human signs into Vanguard, Fidelity NetBenefits or PNC directly and saves HTML.
 Institution aliases remain provisional until anonymized real pages pass tests.
 The agent receives only the supplied local file, never broker credentials/cookies.
+Phase 1 uses fictional supplied pages. Phase 2 reviewed original pages and live
+provider validation follow foundation acceptance; the example below is a manual
+real-data intake recipe for that later phase. Use `SYNTHETIC` for fictional pages.
 
 ```sh
 docker compose run --rm -T app invest portfolio import - \
   --account taxable --institution vanguard --tax-status TAXABLE \
-  --as-of 2026-10-08 < local-data/account.html > local-data/snapshot.json
+  --as-of 2026-10-08 --data-environment REAL < local-data/account.html > local-data/snapshot.json
 docker compose run --rm -T app invest portfolio reconcile - < local-data/snapshot.json
 ```
 
 Inspect quantity, valuation, basis, lot quantities, identifiers, cash and warnings.
 The explicit source date above must be supported by the page or human confirmation;
 otherwise omit it. `imported_at` does not prove freshness. Default incomplete
+coverage and typed parser issues remain review evidence; explicitly overriding an
+environment does not resolve omitted or inconsistent source rows. Default incomplete
 coverage updates observed inventory without deleting absent rows. Add
 `--positions-complete` and/or `--lots-complete` only when the human confirms the
 entire relevant inventory is represented. Do not infer activity from differences.
@@ -76,7 +81,7 @@ classifications preserve the correction; contradictory known types require revie
 
 During reconciliation, inspect `classification_reviews`. Each suggestion contains
 the canonical `security_id`, `ticker`, `canonical_type`, `observed_type` and
-`action_required: EXPLICIT_CLASSIFICATION`; the dashboard shows the same review.
+`action_required: EXPLICIT_CLASSIFICATION`; review this through the CLI.
 Accepting an otherwise valid holdings snapshot leaves an existing `OTHER` type
 unchanged. Verify the suggested type against issuer documentation, then run the
 preview and confirmed commands above with the actual ID and sourced provenance.
@@ -223,11 +228,11 @@ history. These operations do not execute trades or change actual account state.
 docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json
 docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json --confirm
 docker compose run --rm -T app invest plan propose --file /app/local-data/conservative-request.json \
-  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
+  --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
 docker compose run --rm -T app invest plan propose --file /app/local-data/balanced-request.json \
-  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
+  --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
 docker compose run --rm -T app invest plan propose --file /app/local-data/growth-request.json \
-  --policy APPROVED_POLICY_ID --mode contribution_only --as-of 2026-10-08
+  --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
 docker compose run --rm -T app invest plan list
 docker compose run --rm -T app invest plan show PLAN_A
 docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C

@@ -16,6 +16,7 @@ reduce available hypothetical capital and remain part of the return calculation.
 Optional `QUARTERLY` rebalancing checks the first eligible session above the pinned
 drift threshold in March, June, September and December, at most once per month.
 Fees apply to each changed security; taxes remain outside this hypothetical model.
+This optional historical strategy never imposes a live trading schedule.
 
 Inputs require positive dated `total_return_index` observations. Unadjusted prices
 and an unexplained adjusted-close field are insufficient. Explicit manifest
@@ -35,3 +36,7 @@ The functions do not refresh quotes, change accepted holdings, spend planning ta
 budgets or write market caches. Saving a calculation writes only `backtest_runs`.
 Provider entitlement, original-source verification and real-data completeness
 remain human review gates.
+
+The dashboard lists saved runs, reads their immutable results and compares selected
+runs through GET requests. Incompatible assumptions remain `INCOMPARABLE` with
+reasons; viewing never runs a new simulation or saves another result.

@@ -53,7 +53,7 @@ Batch one account/contribution decision, at most 20 permitted securities.
    freshness limits; quote TTL is 900 seconds, not evidence of inventory freshness.
 3. `invest plan propose --file proposal.json --policy POLICY --mode contributions-only --as-of DATE`.
 4. `invest tax budget --year YEAR --as-of DATE`; inspect permissions, positive tax
-   allowance, drift and cadence gates. `invest plan show PLAN_ID` checks staleness.
+   allowance and remaining drift. `invest plan show PLAN_ID` checks staleness.
 5. `invest report export PLAN_ID --output report.json`; present for human approval
    and manual brokerage execution. No trade placement or implicit activity entry.
 
@@ -63,6 +63,6 @@ explain amounts calculated by the CLI; saving does not spend tax allowance.
 
 Blocked walkthrough: stale inventory, unknown fee or missing same-account cash
 blocks/requires review. Do not substitute another account's cash or a quote.
-Default monthly investing is contribution-only. Rebalance is quarterly in March,
-June, September and December above 5 percentage-point drift; exceptions require
-saved approved policy versions, never bypass flags. No automatic individual bonds.
+Monthly investing is a user habit. Contributions-only never sells; rebalance has
+no calendar or minimum-drift gate. Saved approved policy and financial safeguards
+remain binding. No automatic individual bonds.

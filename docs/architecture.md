@@ -2,7 +2,9 @@
 
 One Python application exposes a JSON CLI and a thin loopback dashboard. There
 is no ORM, service framework, hosted vector database or brokerage integration.
-Financial domain functions drive both interfaces.
+Financial domain functions drive the CLI and read-only saved-results dashboard.
+The CLI owns human-authorized writes; dashboard reads use query-only connections
+and persisted observations, with no provider refresh or command dispatch.
 
 SQLite holds normalized accounts, identities, observations, current balances,
 lots, immutable confirmed events, policies, plans and research provenance.
@@ -30,4 +32,5 @@ with no runtime download. Prompts are copied text under `/data/prompts`.
 
 Docker contains dependencies and all execution/testing. The host stores source,
 Git history and explicitly mounted local data. Host publication is loopback only.
-The dashboard's same-origin checks are local write safeguards, not authentication.
+Every dashboard POST returns 405. The local viewer has no authentication; loopback
+publication remains required.

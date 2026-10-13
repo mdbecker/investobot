@@ -56,7 +56,7 @@ Batch one taxable account and at most 20 lots; review the whole household window
    review. For conditional trades, preview `invest policy approve --file
    reviewed-policy.json`, obtain explicit human approval, then save with
    `--confirm`. The policy needs a sourced `harvest_review`, prices, independent
-   permissions, fees, increments, tax coverage and a reasoned harvest exception.
+   permissions, fees, increments and tax coverage; no calendar exception is required.
    Run `invest tax harvest-plan --policy-version POLICY_ID --as-of DATE`.
    Preserve policy/source hashes, conditional actions and signed tax estimate.
    Mandatory wash-sale review remains; never execute or guarantee savings.
