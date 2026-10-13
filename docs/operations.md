@@ -105,10 +105,12 @@ docker compose run --rm -T app invest db verify /app/local-data/work/pre-bind-vo
 ```
 
 Retain the command JSON reports in `local-data/work`, including the backup's
-`database_fingerprint`, archive hash and manifest/inventory. The backup archive
+`receipt.database_fingerprint`, archive hash and manifest file inventory. The backup archive
 includes accepted records, saved calculations and referenced immutable artifacts;
-retain it independently of the volume. Check that the archive is readable by the
-host user. Export any operator-authored prompt overrides to
+retain it independently of the volume. Also save `portfolio summary`, `plan list`
+and `target list` outputs with the old configuration and compare them after
+restoration; the logical fingerprint covers all stored tables, including saved
+backtests and research. Check that the archive is readable by the host user. Export any operator-authored prompt overrides to
 `local-data/agent-notes` for human review before retiring their old interface;
 never merge them automatically into trusted skills.
 
@@ -159,9 +161,13 @@ umask 077
 mkdir -p local-data/agent-notes/legacy
 # Run with the retained OLD Compose configuration, before changing its mapping:
 docker compose run --rm -T --entrypoint sh app -c \
-  'test -f /data/prompts/CHOSEN.md && test ! -L /data/prompts/CHOSEN.md && cp -p /data/prompts/CHOSEN.md /app/local-data/agent-notes/legacy/CHOSEN.md'
+  'test -f /data/prompts/CHOSEN.md && test ! -L /data/prompts/CHOSEN.md &&
+   test ! -e /app/local-data/agent-notes/legacy/CHOSEN.md &&
+   test ! -L /app/local-data/agent-notes/legacy/CHOSEN.md &&
+   cp -p /data/prompts/CHOSEN.md /app/local-data/agent-notes/legacy/CHOSEN.md'
 ```
 
+Choose a new destination name if a note already exists; the guard refuses replacement.
 Check the host copy against the source before proceeding. This transfers context,
 not trusted instructions; review it manually, and retain the original volume.
 No overrides were found in the volume inspected during this implementation.

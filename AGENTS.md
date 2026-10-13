@@ -44,7 +44,10 @@
 - A bind mount is storage, not backup. Never copy live SQLite files. Online backup
   verifies integrity/FKs/artifact hashes and atomically publishes owner-only archives.
   Restore stages/validates before explicit confirmation and holds restore locks.
-  Every application DB handle holds the shared lock until close. Preserve unrelated
+  Every application DB handle holds the shared lock until close. Read-only queries
+  still require access to the shared filesystem lock; a read-only directory mount
+  can block recovery checks. Keep SQLite query-only enforcement independent of mount
+  permissions. Preserve unrelated
   files; cleanup targets only unreferenced managed staging under the publication lock.
 - Before changing a populated old volume, preserve a verified archive and logical
   fingerprint/inventory, then preview and obtain explicit restore confirmation.
