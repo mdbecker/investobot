@@ -44,24 +44,48 @@ class PersistedHoldings:
 def overview(ledger):
     """Read accepted balances, coverage and targets using shared domain calculations."""
     from invest import analytics, tax
-    from invest.targets import diff, list_targets
+    from invest.targets import list_targets
 
     targets = list_targets(ledger)["targets"]
     active = next((t for t in targets if t["status"] == "ACTIVE"), None)
     state = ledger.state()
+    summary = ledger.summary()
+    if summary['total_value'] is None:
+        exposure = dict(status='UNAVAILABLE', currency=summary['currency'], total_value=None,
+            exposures=[], unknown_exposure_value=None, unknown_exposure_percentage=None,
+            by_sector={}, by_asset_type_known={}, provenance={}, fund_coverage={},
+            issues=summary['issues'], warnings=summary['warnings'] + [
+                'Exposure percentages require complete accepted valuation and cash coverage'])
+    else:
+        exposure = analytics.exposure(state, PersistedHoldings(ledger))
     latest = {}
     for snapshot in state["snapshots"]:
         account_id = snapshot["account"]["id"]
         if account_id not in latest or snapshot["imported_at"] > latest[account_id]["imported_at"]:
             latest[account_id] = snapshot
-    return dict(summary=ledger.summary(), state=state, active_target=active,
-        target_diff=diff(ledger, active["id"]) if active else None,
-        exposure=analytics.exposure(state, PersistedHoldings(ledger)),
+    return dict(summary=summary, state=state, active_target=active,
+        target_diff=_target_diff(ledger, active["id"]) if active else None,
+        exposure=exposure,
         tax_lots=tax.lots(state, date.today().isoformat()),
         data_freshness=[dict(account_id=a, source_timestamp=s.get("source_timestamp"),
             imported_at=s.get("imported_at"), positions_complete=s.get("positions_complete", False),
             lots_complete=s.get("lots_complete", False), cash_known=s.get("cash_known", False))
             for a, s in sorted(latest.items())])
+
+
+def _target_diff(ledger, target_id, version=None):
+    """Keep saved target evidence viewable when accepted valuation coverage is incomplete."""
+    from invest import targets
+
+    summary = ledger.summary()
+    if summary['total_value'] is None:
+        target = targets.show(ledger, target_id, version=version)
+        return dict(status='UNAVAILABLE', target_id=target_id, target_version=target['version'],
+            target_version_id=target['version_id'], currency=summary['currency'], total_value=None,
+            allocations=[], issues=summary['issues'], proposes_trades=False,
+            warnings=summary['warnings'] + [
+                'Target drift requires complete accepted valuation and cash coverage'])
+    return targets.diff(ledger, target_id, version=version)
 
 
 def _get_api(ledger, path, query):
@@ -112,7 +136,7 @@ def _get_api(ledger, path, query):
         if len(parts) == 3:
             return targets.show(ledger, parts[2], version=version)
         if parts[3] == "diff":
-            return targets.diff(ledger, parts[2], version=version)
+            return _target_diff(ledger, parts[2], version=version)
     if len(parts) in {3, 4} and parts[:2] == ["api", "plans"]:
         if len(parts) == 3:
             return plans.show(ledger, parts[2])
