@@ -67,11 +67,17 @@ async function refreshOverview() {
   table($('freshness'), ['Account', 'Source date', 'Import date', 'Positions complete', 'Lots complete', 'Cash known'],
     result.data_freshness.map(row => [row.account_id, row.source_timestamp, row.imported_at, row.positions_complete, row.lots_complete, row.cash_known]));
   table($('exposure'), ['Exposure', 'Accepted value', 'Portfolio %'], result.exposure.exposures.map(row => [row.ticker || row.identifier, row.total_value, row.percentage]));
-  $('exposure').append(el('p', `Unknown exposure: ${text(result.exposure.unknown_exposure_percentage)}%`, 'muted'));
+  $('exposure').append(el('p', result.exposure.unknown_exposure_percentage === null
+    ? 'Exposure percentages unavailable: accepted valuation or cash coverage is incomplete.'
+    : `Unknown exposure: ${text(result.exposure.unknown_exposure_percentage)}%`, 'muted'));
   warnings($('exposure'), result.exposure.warnings); details($('exposure'), 'Stored source evidence', result.exposure.provenance);
+  if (result.exposure.issues?.length) details($('exposure'), 'Exposure coverage issues', result.exposure.issues);
   warnings($('tax-lots'), result.tax_lots.warnings); details($('tax-lots'), 'Accepted tax-lot facts', result.tax_lots);
   $('active-target').append(el('p', result.active_target?.name || 'No active target.', 'muted'));
-  if (result.target_diff) drift($('active-target'), result.target_diff.allocations);
+  if (result.target_diff) {
+    drift($('active-target'), result.target_diff.allocations);
+    warnings($('active-target'), result.target_diff.warnings);
+  }
 }
 async function loadTarget(id) {
   const target = await api(`targets/${encodeURIComponent(id)}`);
