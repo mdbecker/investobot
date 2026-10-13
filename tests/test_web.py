@@ -218,6 +218,11 @@ def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_g
         ledger.register_security({'ticker': 'UNMARKED', 'name': 'Synthetic unmarked stock',
                                   'asset_type': 'STOCK', 'currency': 'USD',
                                   'source': 'Reviewed synthetic security identity'})
+        sid = ledger.resolve('AAA')['id']
+        target = targets.save(ledger, {'name': 'Accepted active target',
+            'target_allocations': {sid: '1'}, 'planning_constraints': {
+                'eligible_accounts': ['ira'], 'permitted_securities': {'ira': [sid]}}})
+        targets.activate(ledger, target['id'])
         ledger.record_activity({'activity_id': 'synthetic-unmarked-purchase', 'account_id': 'ira',
                                 'type': 'BUY', 'security': 'UNMARKED', 'quantity': '1',
                                 'price': '10', 'fee': '0', 'date': '2026-10-08'}, yes=True)
@@ -239,6 +244,13 @@ def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_g
         assert value['exposure']['total_value'] is None
         assert value['exposure']['unknown_exposure_percentage'] is None
         assert 'MISSING_VALUATION_MARK' in {issue['code'] for issue in value['exposure']['issues']}
+        assert value['active_target']['id'] == target['id']
+        assert value['target_diff']['status'] == 'UNAVAILABLE'
+        assert value['target_diff']['allocations'] == []
+        assert 'MISSING_VALUATION_MARK' in {issue['code'] for issue in value['target_diff']['issues']}
+        assert request(dashboard, '/api/targets/' + target['id'])[1]['id'] == target['id']
+        code, drift = request(dashboard, '/api/targets/' + target['id'] + '/diff')
+        assert code == 200 and drift['status'] == 'UNAVAILABLE'
         assert calls == []
         assert list(ledger.connection.iterdump()) == before
     finally:
