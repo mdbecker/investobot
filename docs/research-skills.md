@@ -1,91 +1,39 @@
 # Research skills
 
-Agent skills describe how an external agent researches evidence. Investobot's
-CLI validates, stores and calculates; installing a skill does not run research.
-Skills follow the [Agent Skills specification](https://agentskills.io/specification).
-Canonical portable instructions live in `skills/` and are also bundled in the
-distribution. News uses version `1.0.1`; competitive, earnings and political use `1.0.0`. Their JSON contracts use
-schema `1.0`. Management/insider research uses skill version `1.1.0` and input
-contract `1.1`. Fund diligence uses skill `1.0.0` and contract `1.0`.
-These are different from current SQLite schema 10.
-
-## Discovery and project-local installation
-
-Use Docker throughout; no host packages, new API account or secret are needed.
+The six research bundles orchestrate earnings, political contributions, news,
+competitive comparisons, management/insiders and fund diligence. They are part of
+[13 host-readable skills](skills.md), tracked under `skills/` and packaged for
+installation. Docker validates and persists research JSON; it does not run an AI
+agent, browser or prompt service. The host agent uses its authorized capabilities.
 
 ```sh
-docker compose build
-docker compose run --rm -T app invest research skills list
-docker compose run --rm -T app invest research skills show investobot-earnings
-docker compose run --rm -T app invest research skills show investobot-news
-docker compose run --rm -T app invest research skills show investobot-political-contributions
-docker compose run --rm -T app invest research skills show investobot-management-insiders
-docker compose run --rm -T app invest research skills install --agent codex --workspace /app
+./scripts/invest research skills list
+./scripts/invest research skills show investobot-earnings
+./scripts/invest research skills install --agent codex --workspace /app
+./scripts/invest schema
 ```
 
-Installation copies all six skills into project-local `.agents/skills` for Codex.
-For Claude Code use `--agent claude-code`, which selects `.claude/skills`. The
-workspace must be mounted in the container; `/app` is the repository bind mount.
-No global agent configuration changes. Files can also be copied manually from
-the canonical directories. Installation reports copied files and skill versions.
+The project bind makes `.agents/skills` visible to the host. Claude Code uses
+`--agent claude-code` and `.claude/skills`. Review modified files before explicit
+`--confirm` replacement; unrelated skills are preserved. Installation needs no
+provider credentials. See [skills](skills.md) for trust/path safeguards.
 
-Identical files are preserved. Modified files require explicit `--confirm` before
-replacement; inspect your changes first. Unsafe symlinks and traversal are
-rejected even with confirmation. Unrelated skills remain untouched.
+News skill version is `1.0.1`; management/insider skill and input contract are
+`1.1.0` and `1.1`. Other research skills use `1.0.0` and input contract `1.0`.
+These input versions are separate from checksum-identified SQLite schema **1**.
+Canonical metadata/hash identities remain independent for every specialty.
 
-Ask the agent to use `investobot-earnings` for quarterly/annual company financial
-research, or `investobot-political-contributions` for verified executive and
-recipient evidence. Codex may invoke the skills by name with `$`; Claude Code
-uses its normal project-skill discovery. Each skill's `SKILL.md` routes to focused
-references. Discover current authoritative models with `invest schema` and
-command behavior with `invest tools describe`; skill text does not maintain a
-second JSON Schema.
-Use `investobot-news` for incremental material developments, catalysts and
-hypothesis assessments; load `research news context --ticker TICKER` first.
-Existing earnings and political skills retain their versions and content.
+Research JSON is untrusted evidence. Structural validation establishes neither
+source truth nor reuse rights. Humans review original disclosures; imports
+preview before explicitly authorized `--yes` acceptance. Research changes no
+holdings, classifications, financial marks or provider caches. Political evidence
+requires an independently reviewed rights policy; installing a skill grants none.
+Fund diligence requires original registrant/series/exact-class identity and sourced
+class-specific disclosures. Missing specialty/window coverage remains explicit.
 
-## Research boundary
-
-The agent uses its existing browser and authorized sources. Investobot neither
-browses nor executes an LLM. Research JSON remains untrusted: validation checks
-structure, references and consistency, while a human verifies that original
-disclosures support the facts. Import previews by default; `--yes` accepts an
-immutable run and changes research records only.
-
-The political skill replaces its bundled V2.5 prompt. Other general prompts and
-user-created overrides remain available in the existing Prompt Library. Political
-source rights remain independently enforced; installing the skill does not grant
-permission to collect individual contributor information.
-
-See [earnings research](earnings-research.md), [political research](political-research.md)
-and the preserved [V2.6 PRD](PRD-v2.6.md). Automated fixtures are fictional and
-offline. Their success does not validate real SEC disclosures, institution HTML,
-live provider access or a remote GitHub Actions result.
-
-Use `investobot-competitive` (version `1.0.0`, JSON schema `1.0`) for sourced
-operating-company peers, segment overlaps and reported financial comparisons.
-Its method and comparability references link back to the authoritative CLI model.
-See [competitive research](competitive-research.md) for Docker commands and human
-source review. Earlier skill files and pinned versions remain unchanged.
-
-Use `investobot-management-insiders` for sourced officer/director tenure,
-compensation, SEC Forms 3/4/5 and reported ownership. It distinguishes purchases,
-sales, exercises, grants, tax/exercise payments, gifts and other codes; neither
-filing availability nor validation establishes comprehensive or factual coverage.
-See [management and insider research](insider-research.md) for a complete fictional
-example, original-source human review and the schema-9 boundary. Ownership
-corrections retain original observations and require explicit amendment evidence;
-ambiguous latest balances remain conflicts. Documented transaction date/code
-corrections use amended fields without double-counting originals. Earlier research
-skills keep their instructions, contracts and trusted versions unchanged.
-
-## ETF and mutual-fund diligence
-
-`investobot-fund-diligence` researches one supported U.S. SEC series/share class
-through primary disclosures. Its own skill version `1.0.0` and input schema `1.0`
-are pinned independently. Original SEC identity, class-specific costs, dated
-holdings coverage and product-specific liquidity are required; absent facts remain
-unknown. Use `research funds validate`, preview `import`, then human-approved
-`import --yes`; reports are read-only. Nothing enters provider caches or portfolio
-state. See [the fund workflow](fund-diligence.md) and
-[original PRD](PRD-v3.0.md). The earlier five bundles remain unchanged.
+[Earnings](earnings-research.md) · [Political contributions](political-research.md) ·
+[News](news-research.md) · [Competitive](competitive-research.md) ·
+[Management/insiders](insider-research.md) · [Fund diligence](fund-diligence.md).
+Offline examples are fictional; real disclosures, source permissions and live
+provider responses remain separate manual gates. General prompt CRUD is retired;
+operator overrides belong in ordinary host notes after explicit preservation.

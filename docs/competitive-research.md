@@ -13,10 +13,10 @@ runtime and discover the authoritative contract and portable instructions:
 
 ```sh
 docker compose build
-docker compose run --rm -T app invest research skills show investobot-competitive
-docker compose run --rm -T app invest research skills install --agent codex --workspace /app
-docker compose run --rm -T app invest schema
-docker compose run --rm -T app invest tools describe research.competitive.import
+./scripts/invest research skills show investobot-competitive
+./scripts/invest research skills install --agent codex --workspace /app
+./scripts/invest schema
+./scripts/invest tools describe research.competitive.import
 ```
 
 Use `--agent claude-code` for project-local Claude Code installation. Installation
@@ -29,14 +29,14 @@ peer identities, segment overlaps, factual bases and separately stated inference
 Save its single JSON object in ignored `local-data/competitive.json`, then:
 
 ```sh
-docker compose run --rm -T app invest research competitive validate /app/local-data/competitive.json
-docker compose run --rm -T app invest research competitive import /app/local-data/competitive.json
+./scripts/invest research competitive validate /app/local-data/competitive.json
+./scripts/invest research competitive import /app/local-data/competitive.json
 # After independent source review and explicit human approval:
-docker compose run --rm -T app invest research competitive import /app/local-data/competitive.json --yes
-docker compose run --rm -T app invest research competitive list --ticker TICKER
-docker compose run --rm -T app invest research competitive show RUN_ID
-docker compose run --rm -T app invest research competitive summary RUN_ID
-docker compose run --rm -T app invest research competitive matrix RUN_ID --peer PEER_ID
+./scripts/invest research competitive import /app/local-data/competitive.json --yes
+./scripts/invest research competitive list --ticker TICKER
+./scripts/invest research competitive show RUN_ID
+./scripts/invest research competitive summary RUN_ID
+./scripts/invest research competitive matrix RUN_ID --peer PEER_ID
 ```
 
 Validation and preview do not create a selected database. Confirmation writes
@@ -62,11 +62,10 @@ numbers are unknown, never zero. A citation's presence cannot prove its truth.
 
 ## Database and release boundaries
 
-Schema 7 initializes fresh ledgers only and rejects schema 6 and earlier without
-migration or deletion. Keep existing private ledgers backed up and unchanged;
-use a separate disposable database to evaluate V2.8. See
-[deliberate reset instructions](development.md#deliberate-schema-reset) only if
-you explicitly choose to discard a selected disposable ledger; preserve prompts.
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
 
 Automated tests use fictional companies and offline sources. They do not establish
 real-world source accuracy. The separate human gate requires a public subject,

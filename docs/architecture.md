@@ -1,36 +1,39 @@
 # Local architecture
 
-One Python application exposes a JSON CLI and a thin loopback dashboard. There
-is no ORM, service framework, hosted vector database or brokerage integration.
-Financial domain functions drive the CLI and read-only saved-results dashboard.
-The CLI owns human-authorized writes; dashboard reads use query-only connections
-and persisted observations, with no provider refresh or command dispatch.
+The independently supplied host AI agent reads tracked/installed skills, retrieves
+permitted sources and requests human approval. A single containerized Python app
+exposes a deterministic JSON CLI and a thin read-only dashboard. The host bridge
+`./scripts/invest` forwards directly to disposable Compose `app` commands. There
+is no agent container, ORM, service framework, scheduler, RPC layer or database
+service. Dependencies and pinned native extensions live in `/opt/venv` and the
+image; no project runtime is installed on the host.
 
-SQLite holds normalized accounts, identities, observations, current balances,
-lots, immutable confirmed events, policies, plans and research provenance.
-Exact financial decimals are normalized text. Foreign keys, WAL, synchronous
-FULL and a five-second busy timeout protect related transactional writes.
-Observation evidence is distinct from authoritative balances and execution facts.
+Compose binds the project to `/app` and host `local-data/state` to `/data`.
+SQLite `/data/portfolio.db`, sidecars, immutable artifacts and receipts share that
+stable mount. Host `input/`, `work/` and `agent-notes/` hold private supplied files,
+candidates and ordinary context. Git/image builds exclude `local-data/`.
+Canonical instructions are tracked `skills/`; project-local installation copies
+are optional host-readable resources. There is no separate prompt library.
 
-The persistence-facing ledger delegates exact activity accounting, read-only
-portfolio summaries and canonical security lookup to cohesive modules. Stable
-financial fingerprints are separate from compact saved-plan retrieval. Preserved
-scenario proposal generation and approved-policy planning share authoritative
-simulation primitives; they are not generic repository or solver abstractions.
+SQLite alone owns writable financial truth: normalized accounts, identities,
+observations, balances, lots, confirmed events, policies, plans and research.
+Financial decimals are exact normalized text. Foreign keys, WAL, synchronous FULL
+and a five-second busy timeout protect related transactional writes. Observation
+evidence is separate from accepted balances and execution facts. Schema 1 is
+checksum-identified and initializes only empty ledgers; incompatible development
+ledgers are rejected unchanged. Future transactional migrations require verified
+pre-migration backups. Shared connection locks exclude restore.
 
-Checksum-identified schema 1 initializes only empty ledgers. Existing incompatible
-development ledgers are rejected without modification. Future migrations require
-a verified pre-migration backup and transactional checksum tracking. Shared
-connection locks exclude restore; restore stages and validates before explicit
-confirmed publication. See [operations](operations.md).
+Large immutable Parquet artifacts carry SQLite manifests/hashes. Ephemeral
+DuckDB scans consistent exports; it never writes financial tables. Canonical
+corpus chunks/vectors live in SQLite; FTS5/sqlite-vec indexes are rebuildable.
+Native extensions are checksum-pinned and baked in, without runtime downloads.
 
-Large immutable Parquet artifacts have SQLite manifests and content hashes.
-Ephemeral DuckDB scans consistent exports/artifacts and never writes financial
-tables. Canonical corpus text and vectors live in SQLite; FTS5 and sqlite-vec
-indexes are rebuildable. Extensions are checksum-pinned and baked into Docker,
-with no runtime download. Prompts are copied text under `/data/prompts`.
-
-Docker contains dependencies and all execution/testing. The host stores source,
-Git history and explicitly mounted local data. Host publication is loopback only.
-Every dashboard POST returns 405. The local viewer has no authentication; loopback
-publication remains required.
+Shared domain calculations drive the CLI and viewer. Every dashboard GET uses
+query-only application reads, closes handles and reads persisted observations;
+no provider/cache refresh or command dispatch occurs. POST returns 405 before
+body/data access. Numeric fund coverage and verified evidence completeness are
+separate, preserving known exposure and unknown residual. Backtest lists project
+compact saved metrics; detail and comparison use immutable stored runs.
+Host publication is loopback only. See [viewer](inspection.md),
+[operations](operations.md) and [data contracts](data-contracts.md).

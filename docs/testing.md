@@ -3,7 +3,7 @@
 All execution, dependency resolution, tests and lint run in disposable Docker
 containers. Install nothing on the host. Use the locked image and offline commands
 in the [quickstart](../README.md); never mount a private ledger for acceptance.
-Set `INVEST_PROMPTS=/data/prompts`. Ruff requires `--config pyproject.toml`.
+Ruff requires `--config pyproject.toml`.
 
 New behavior and confirmed bugs get public-interface tests first, observed intended
 failures and a test-only conventional commit before implementation. Record a
@@ -24,3 +24,21 @@ offline full tests and lint, installed-wheel CLI/skill checks, recovery and the
 synthetic demonstration. Mounted-source results and local measurements are
 explicitly distinct from exact-commit or remote CI evidence. See
 [status](implementation/unified-mvp-status.md) and [benchmarks](benchmarks-unified-mvp.md).
+
+## Current offline commands
+
+```sh
+docker build -t investobot-test .
+docker run --rm --network none investobot-test uv run --locked pytest -q
+docker run --rm --network none investobot-test uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz
+docker run --rm --network none investobot-test uv run --locked python scripts/demo_unified_mvp.py
+```
+
+Never bind the operator's `local-data/state` for acceptance. Host bridge/Compose
+lifecycle validation uses a disposable checkout and synthetic data; financial
+pytest fixtures use temporary real SQLite. The shell forwarding test substitutes
+only the external Docker executable boundary, and is complemented by real
+Compose discovery/stdin/install/persistence checks. Performance retains exactly
+eight paired representative workflows and its confirmed >25% guard, as described
+in [performance](performance.md). Retain raw local evidence outside Git for 90
+days and unresolved failures through resolution. No remote CI result is implied.

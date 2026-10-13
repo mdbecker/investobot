@@ -1,4 +1,9 @@
 # Development evidence
+
+Historical implementation evidence only. Current setup/storage are in
+[README](../README.md), [operations](operations.md) and the
+[host-agent PRD](PRD-mvp-host-agent-docker-persistence-2026-10-12.md).
+Counts/schema/runtime statements below describe their recorded revisions.
 All tests and dependency tools run in Docker. Conventional red/green commits track feature work. Synthetic BDD fixtures need no credentials or internet.
 
 ## V2.7 continuity addendum
@@ -73,36 +78,12 @@ Validation recognizes the same accepted package too. The frozen complete
 offline Docker suite now passes 521 tests and Ruff. Companies lacking comparable
 identifiers still cannot establish cross-run continuity by name alone.
 
-## Deliberate schema reset
+## Current schema preservation
 
-SQLite schema 9 initializes only a fresh database and rejects incompatible older
-schemas with a structured inconsistent-state error. It never deletes a database
-on startup. Version 2/3/4/5/6/7/8 records, including saved plans and research, are not migrated or converted.
-A reset discards all accepted holdings, lots, activity, targets, plans and research in the
-selected ledger. Reimport reviewed source observations and recreate targets after
-resetting. Keep a private backup first if any information may be needed later.
-
-For Compose, stop the application and remove only the ledger database and its
-SQLite sidecars from the mounted data volume after making that decision:
-
-```sh
-docker compose stop app
-docker compose run --rm --no-deps app sh -c 'rm -f /data/portfolio.db /data/portfolio.db-wal /data/portfolio.db-shm'
-docker compose up --build -d
-```
-
-This preserves `/data/prompts` and the separate `/opt/venv` dependency volume.
-If `INVEST_DB` selects another file, identify its actual mounted path first and
-delete only that chosen database and matching sidecars. Do not use
-`docker compose down --volumes` for a database-only reset: it also removes prompts
-and dependency volumes. The application initializes schema 9 on the next access.
-
-For native installations, stop every process using the ledger. Locate the exact
-`INVEST_DB` file or the platformdirs `investobot` data directory, back up anything
-needed, then deliberately delete that database and its matching `-wal`/`-shm`
-files. Retain the sibling `prompts` directory. Restart using the same selected
-path. No native dependency installation is needed for this development workflow;
-all verification below uses fresh disposable Docker ledgers.
+Checksum-identified schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a
+feature. Future migrations require verified pre-migration backups. Use disposable
+synthetic ledgers for evaluation; see [operations](operations.md).
 
 ## PRD v2.3 implementation
 

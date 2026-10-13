@@ -7,10 +7,10 @@ allowance. Approval previews write nothing; explicit policy
 confirmation saves a version. A conflicting repeat ID fails rather than replacing
 an approved policy. Production proposals resolve a saved policy ID.
 
-Use `invest policy approve --file reviewed-policy.json` to preview, then repeat
-with `--confirm` after human review. `invest policy list` returns compact saved
-versions; `invest policy show POLICY_ID` retrieves the exact approved payload.
-Run these commands through the Docker CLI described in the quickstart.
+Use `./scripts/invest policy approve --file reviewed-policy.json` to preview, then repeat
+with `--confirm` after human review. `./scripts/invest policy list` returns compact saved
+versions; `./scripts/invest policy show POLICY_ID` retrieves the exact approved payload.
+The host bridge runs these commands in Docker.
 The JSON requires `version`, `source`, `data_environment` and `permissions`.
 Each canonical account/security permission requires independent JSON booleans
 `can_buy`, `can_sell`, `can_hold` and an exact positive string `share_increment`.
@@ -55,7 +55,7 @@ and marks remain unchanged. The authoritative simulator checks cash and househol
 value before persistence. Plan list/show calculate current staleness separately;
 historical actions and reports remain immutable. No proposal places a trade.
 
-Conditional harvesting uses `invest tax harvest-plan --policy-version POLICY_ID
+Conditional harvesting uses `./scripts/invest tax harvest-plan --policy-version POLICY_ID
 --as-of YYYY-MM-DD`. Approve a policy containing `harvest_review` with the loss
 security/date, household acquisition coverage, sourced replacement comparison and
 `price_observations` keyed by canonical security IDs. Each price supplies exact

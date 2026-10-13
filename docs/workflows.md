@@ -1,6 +1,6 @@
 # Human-operated agent workflows
 
-Run all application commands in Docker from this checkout. `-T` disables terminal
+The host agent invokes `./scripts/invest` from this checkout; the bridge runs the deterministic CLI in Docker. `-T` disables terminal
 allocation so stdin and JSON redirection remain clean. Create an ignored
 `local-data` directory for private files; `/app/local-data` is the same directory
 inside the project bind mount. Replace example dates with known dates and example
@@ -16,10 +16,10 @@ provider validation follow foundation acceptance; the example below is a manual
 real-data intake recipe for that later phase. Use `SYNTHETIC` for fictional pages.
 
 ```sh
-docker compose run --rm -T app invest portfolio import - \
+./scripts/invest portfolio import - \
   --account taxable --institution vanguard --tax-status TAXABLE \
   --as-of 2026-10-08 --data-environment REAL < local-data/account.html > local-data/snapshot.json
-docker compose run --rm -T app invest portfolio reconcile - < local-data/snapshot.json
+./scripts/invest portfolio reconcile - < local-data/snapshot.json
 ```
 
 Inspect quantity, valuation, basis, lot quantities, identifiers, cash and warnings.
@@ -34,8 +34,8 @@ entire relevant inventory is represented. Do not infer activity from differences
 Explicitly accept only after review/authorization:
 
 ```sh
-docker compose run --rm -T app invest portfolio apply - --confirm < local-data/snapshot.json
-docker compose run --rm -T app invest portfolio overview
+./scripts/invest portfolio apply - --confirm < local-data/snapshot.json
+./scripts/invest portfolio overview
 ```
 
 Reconciliation reports `source_date_status`, `latest_known_source_date` and
@@ -49,7 +49,7 @@ undated snapshots superseding dated state fail unless explicitly overridden
 with a recorded justification:
 
 ```sh
-docker compose run --rm -T app invest portfolio apply - --confirm --allow-older \
+./scripts/invest portfolio apply - --confirm --allow-older \
   --justification "Human verified correction to the previously accepted source page" \
   < local-data/corrected-snapshot.json
 ```
@@ -67,9 +67,9 @@ Find the canonical security ID in `portfolio overview`. Verify classification
 using issuer documentation, then preview and explicitly confirm:
 
 ```sh
-docker compose run --rm -T app invest security classify SECURITY_ID \
+./scripts/invest security classify SECURITY_ID \
   --asset-type ETF --source "Human-verified issuer documentation and date"
-docker compose run --rm -T app invest security classify SECURITY_ID \
+./scripts/invest security classify SECURITY_ID \
   --asset-type ETF --source "Human-verified issuer documentation and date" --confirm
 ```
 
@@ -108,9 +108,9 @@ configuration separately, using a file such as `local-data/account-changes.json`
 Replace the example with the account's actual verified fields and provenance:
 
 ```sh
-docker compose run --rm -T app invest account update ACCOUNT_ID \
+./scripts/invest account update ACCOUNT_ID \
   --file /app/local-data/account-changes.json
-docker compose run --rm -T app invest account update ACCOUNT_ID \
+./scripts/invest account update ACCOUNT_ID \
   --file /app/local-data/account-changes.json --yes
 ```
 
@@ -123,13 +123,13 @@ can become STALE while saved assumptions and historical report content remain fi
 ## Tax-loss harvesting and fund comparison
 
 ```sh
-docker compose run --rm -T app invest tax lots --as-of 2026-10-08
-docker compose run --rm -T app invest tax harvest-candidates --as-of 2026-10-08
-docker compose run --rm -T app invest tax analyze \
+./scripts/invest tax lots --as-of 2026-10-08
+./scripts/invest tax harvest-candidates --as-of 2026-10-08
+./scripts/invest tax analyze \
   --account taxable --security VTI --quantity 25 --price 200 \
   --sale-date 2026-10-08 --method HIFO --fee 5
-docker compose run --rm -T app invest fund holdings VTI
-docker compose run --rm -T app invest fund compare VTI ITOT
+./scripts/invest fund holdings VTI
+./scripts/invest fund compare VTI ITOT
 ```
 
 The price/date/quantity are hypothetical inputs to replace with researched
@@ -172,7 +172,7 @@ payload and is not a recommendation. Strong identifiers may be included when
 verified. Registration updates the local security catalogue, never holdings.
 
 ```sh
-docker compose run --rm -T app invest security register - < local-data/security.json
+./scripts/invest security register - < local-data/security.json
 ```
 
 Copy the returned `id` into target/constraint inputs. Research account access:
@@ -210,11 +210,11 @@ balanced and growth, as complete files with their own names, rationale, actual
 security choices and valid weights:
 
 ```sh
-docker compose run --rm -T app invest target save - < local-data/conservative.json
-docker compose run --rm -T app invest target save - < local-data/balanced.json
-docker compose run --rm -T app invest target save - < local-data/growth.json
-docker compose run --rm -T app invest target list
-docker compose run --rm -T app invest target diff BALANCED_TARGET_ID
+./scripts/invest target save - < local-data/conservative.json
+./scripts/invest target save - < local-data/balanced.json
+./scripts/invest target save - < local-data/growth.json
+./scripts/invest target list
+./scripts/invest target diff BALANCED_TARGET_ID
 ```
 
 Editing supplies an existing `id` in a complete new payload and creates an
@@ -225,20 +225,20 @@ history. These operations do not execute trades or change actual account state.
 ## Generate, compare and export manual trade plans
 
 ```sh
-docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json
-docker compose run --rm -T app invest policy approve --file /app/local-data/reviewed-policy.json --confirm
-docker compose run --rm -T app invest plan propose --file /app/local-data/conservative-request.json \
+./scripts/invest policy approve --file /app/local-data/reviewed-policy.json
+./scripts/invest policy approve --file /app/local-data/reviewed-policy.json --confirm
+./scripts/invest plan propose --file /app/local-data/conservative-request.json \
   --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
-docker compose run --rm -T app invest plan propose --file /app/local-data/balanced-request.json \
+./scripts/invest plan propose --file /app/local-data/balanced-request.json \
   --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
-docker compose run --rm -T app invest plan propose --file /app/local-data/growth-request.json \
+./scripts/invest plan propose --file /app/local-data/growth-request.json \
   --policy APPROVED_POLICY_ID --mode contributions-only --as-of 2026-10-08
-docker compose run --rm -T app invest plan list
-docker compose run --rm -T app invest plan show PLAN_A
-docker compose run --rm -T app invest plan compare PLAN_A PLAN_B PLAN_C
-docker compose run --rm -T app invest report export PLAN_A \
+./scripts/invest plan list
+./scripts/invest plan show PLAN_A
+./scripts/invest plan compare PLAN_A PLAN_B PLAN_C
+./scripts/invest report export PLAN_A \
   --format markdown --output /app/local-data/conservative-report.md
-docker compose run --rm -T app invest report export PLAN_A \
+./scripts/invest report export PLAN_A \
   --format json --output /app/local-data/conservative-report.json
 ```
 
@@ -291,7 +291,7 @@ AAA/BBB and amounts here are synthetic examples. Substitute loaded/registered
 identities and explicit assumptions; never fabricate basis or trading eligibility.
 
 ```sh
-docker compose run --rm -T app invest portfolio simulate - < local-data/actions.json
+./scripts/invest portfolio simulate - < local-data/actions.json
 ```
 
 Simulation returns before/after cash, allocations, exposure, selected lots,
@@ -322,9 +322,9 @@ alias. A taxable sale must use the broker's executed lots, not a guessed selecti
 Replace placeholders and example values with confirmed facts. Preview first:
 
 ```sh
-docker compose run --rm -T app invest portfolio record-activity - < local-data/activity.json
+./scripts/invest portfolio record-activity - < local-data/activity.json
 # Only after confirmation that the human executed these exact facts:
-docker compose run --rm -T app invest portfolio record-activity - --yes < local-data/activity.json
+./scripts/invest portfolio record-activity - --yes < local-data/activity.json
 ```
 
 Identical `activity_id` retries are no-ops; different facts with the same ID fail

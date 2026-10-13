@@ -1,343 +1,155 @@
 # Investobot project rules
 
-## Active foundation stabilization
+## Current scope and workflow
 
-- `docs/PRD-mvp-foundation-stabilization-2026-10-12.md` controls dashboard
-  ownership, live trading cadence, release administration and Phase 1/2 ordering.
-  Prior performance wrap-up scope and all financial safety invariants still apply.
-- Author and record all changed A–F behavior scenarios before production edits.
-  Coordinator commits observed red and verified green checkpoints on `main`.
-- Dashboard is GET-only, with query-only application reads and persisted results.
-  Every POST returns 405 before reading a body or opening application data.
-  Never refresh providers/caches or expose a web command/job interface.
-- Live contributions-only and rebalance proposals have no calendar/month/drift
-  gates. Quarterly strategy remains an explicitly selected historical backtest.
-  Immutable human-approved policy, cash, lot, tax and wash-review gates remain.
-- Retirement allocated sales conserve verified share inventory without requiring
-  tax basis/dates. Unknown basis remains null; never invent retirement gain/term.
-  Taxable allocations still require basis/dates; inconsistent lots block safely.
-- CLI HTML import requires explicit REAL/SYNTHETIC passed into the parser.
-  Blocking parser evidence cannot become clean complete accepted holdings.
-- Look-through preserves known numeric exposure despite missing source evidence;
-  evidence completeness requires matching environment, source and date.
-  Provider history discloses unverified exchange sessions; weekdays are no calendar.
-- Stabilize synthetic architecture first. Reviewed real brokerage HTML and live
-  FMP contracts are separate Phase 2 work; no required branch-protection setup.
+- [Host-agent/persistence PRD](docs/PRD-mvp-host-agent-docker-persistence-2026-10-12.md)
+  controls execution, storage, prompt retirement and viewer corrections. It
+  supersedes conflicting Docker-owned prompts/named-volume/setup statements.
+  [Foundation PRD](docs/PRD-mvp-foundation-stabilization-2026-10-12.md) controls
+  financial stabilization/Phase 1–2; [wrap-up](docs/PRD-mvp-wrap-up-2026-10-12.md)
+  controls finite performance/fuzz scope; [unified PRD](docs/PRD-unified-mvp-2026-10-10.md)
+  supplies the remaining product contract. Historical PRDs/reports are evidence,
+  not current setup instructions. See [current handoff](docs/implementation/host-agent-status.md).
+- Keep `main`; conventional commits only. No remotes, fetches or pushes.
+  Coordinator commits observed test-only red before new behavior/confirmed bugs,
+  and verified green afterward. Pure refactors use existing green behavioral tests.
+  Write the complete changed A–D scenario set before any production edits.
+  No skips, xfails, artificial internal mocks or read-count/call-order assertions.
+- When parallel work is requested, agents own separate files/modules and never
+  commit. Coordinator owns shared CLI/models/ledger/schema/contracts/integration.
+  Announce readiness and freeze writes before exact-tree checkpoint verification.
+- All execution, dependency resolution, tests and lint run in Docker; install
+  nothing on the host. Host shell/Git and file editing are allowed. Copy `uv.lock`
+  before locked sync; dependencies live at `/opt/venv`, never beneath project bind.
+  Use offline disposable containers without private ledgers; Ruff always receives
+  `--config pyproject.toml`. Local results are not remote CI evidence.
+- Review intent → architecture → implementation → polish. Investigate bloat,
+  redundant/dead interfaces, leaky boundaries, duplication and coupling without
+  speculative refactors. Stop after finite acceptance; real-source validation is
+  separate Phase 2. Missing referenced review guides must be disclosed.
 
-## Current finite wrap-up scope
+## Host, Docker and durable storage
 
-- `docs/PRD-mvp-wrap-up-2026-10-12.md` supersedes conflicting performance,
-  campaign and evidence requirements below. Keep financial safety unchanged.
-- Use exactly eight fixed representative workflows, one pinned reference
-  (`d0940a12c44831095492efcd7091fb7b937ad6b3`), one warm-up and five batched
-  samples. Confirm a >25% median regression with one complete repeat pair.
-  Retire three-revision, stress/scaling, p95 and aggregate certification gates.
-- Stop import optimization; retain its functional chronology, reconciliation,
-  identity, isolation, atomicity and retry checks. Institution profiles and FMP
-  remain unverified pending reviewed real evidence.
-- Refactors use existing green behavioral tests. Red checkpoints apply only to
-  missing behavior or reproduced bugs, never internal read counts/call ordering.
-- Fuzzing is an explicitly requested agent activity with offline disposable
-  full-scenario JSON replay and actionable reports; no unused random seeds,
-  quotas, novelty scores, providers or CI
-  campaigns. CI may run fixed regressions only.
-- Follow `fuzz/SKILL.md` for explicitly requested adversarial review. It is a
-  development skill source, separate from bundled financial workflow skills.
-- Keep generated evidence outside Git with documented retention. Never run
-  untrusted PR code on a personal self-hosted runner. Complete the finite
-  acceptance checklist and stop; no speculative framework or performance work.
+- The independently supplied **host agent** reads canonical `skills/` or optional
+  project `.agents/skills`/`.claude/skills` copies, gathers authorized evidence and
+  requests human review. `./scripts/invest` is a tiny POSIX shell bridge to
+  `docker compose run --rm -T app invest`; no host Python, agent runtime, scheduler,
+  prompt service, sidecar, RPC layer or second application.
+- One current app image/service. Project bind `/app`; host `local-data/state:/data`
+  holds `portfolio.db`, WAL/SHM, referenced artifacts and receipts. `input/`, `work/`
+  and `agent-notes/` are ordinary private host files. Pre-create restrictive
+  directories and verify invoking-user access. Ignore private data, `.env`, HTML,
+  SQLite/backups and generated `investobot-*` skill copies; unrelated skills remain
+  visible to Git. Exclude private files and host `.venv` from Docker builds.
+- A bind mount is storage, not backup. Never copy live SQLite files. Online backup
+  verifies integrity/FKs/artifact hashes and atomically publishes owner-only archives.
+  Restore stages/validates before explicit confirmation and holds restore locks.
+  Every application DB handle holds the shared lock until close. Preserve unrelated
+  files; cleanup targets only unreferenced managed staging under the publication lock.
+- Before changing a populated old volume, preserve a verified archive and logical
+  fingerprint/inventory, then preview and obtain explicit restore confirmation.
+  On failure, stop and preserve source/destination/archives; never reset, prune or
+  silently substitute an empty DB. The inspected operator volume has an unsupported
+  development schema: **actual handoff is stopped**, original volume/service retained.
+  [Operations](docs/operations.md) covers rollback and encrypted off-device copies.
+- PromptLibrary, bundled defaults and `invest prompt` CRUD are retired. No supported
+  `INVEST_PROMPTS` setting. Preserve actual legacy overrides as untrusted host notes
+  before retirement; never automatically merge them into trusted skill text.
+  Install skills only explicitly into project-local agent directories, rejecting
+  traversal/symlinks/nonregular destinations and protecting edited resources.
 
-## Additional verified lifecycle lessons
+## Financial invariants
 
-- Import/reconciliation chronology selects account history in SQLite before
-  decoding snapshot payloads. Preserve every selected historical observation,
-  fingerprint and source lexeme, including existing status behavior. Read fresh
-  on every command; do not introduce cross-command caches or schema changes.
-- Account-scoped inventory reads preserve normalized presence bits and exact
-  ID ordering. Lot IDs remain globally unique: a missing local lot requires an
-  indexed global ID lookup before acceptance. Keep protected historical lots,
-  independent other-account cash and atomic collision rejection intact.
-  Existing own lot IDs remain known within the writer transaction; avoid
-  redundant global lookups after deletes, but refresh actual remaining rows.
-  Identity membership is not permission to reuse stale financial lot values.
+- SQLite is the sole writable financial truth, with FK ON, WAL, synchronous FULL,
+  busy timeout 5000 and atomic related writes. No ORM/service framework. Schema 1
+  includes the foundation checksum; incompatible development ledgers stay unchanged.
+  Future migrations are transactional/checksummed with verified pre-migration backup.
+  DuckDB is ephemeral/read-only; Parquet artifacts have manifests/hashes; vec0 is
+  pinned/baked and derived indexes are rebuildable. Recovery loads verified vec0
+  when required and verifies corpus retrieval as well as financial facts.
+- Exact Decimal values use plain normalized strings. Scale calculation context to
+  magnitudes; conserve low-order residues. Identifiers/source lexemes stay exact.
+  Printed precision is explicit source evidence, never inferred from storage.
+  Never invent identity, lots, basis, prices, classifications or cash coverage.
+- Explicit REAL/SYNTHETIC provenance reaches parser and accepted facts. Mixed inputs
+  cannot yield actionable proposals; blocking parser evidence cannot become clean
+  accepted holdings. Unknown never means zero/current/complete/safe. Gate on typed
+  issue fields, not warning prose. JSON success stdout/errors stderr use codes
+  1 input, 2 external, 3 blocked/inconsistent, 4 internal; incomplete outcomes retain issues.
+- Human-confirmed idempotent commands alone change facts. No trades, broker credentials
+  or raw account HTML persistence. Partial imports preserve unobserved inventory;
+  old observations cannot erase confirmed activity. Source/import dates differ;
+  date-only same-day ambiguity requires reviewed ordering. Fresh reads on every
+  command; no cross-command caches. Account settings remain authoritative.
+- Strong IDs and sourced aliases share `security_identity.resolve`; ambiguous or
+  conflicting matches fail. OTHER reclassification requires sourced preview/confirm;
+  registration cannot bypass it. Lot IDs are globally unique; missing local IDs
+  require indexed global checks. Protected exhausted confirmed lots remain history;
+  identity membership never permits stale financial values.
+- Specific executions preserve exact remaining adjusted basis and final residues;
+  unknown selection is never FIFO. Fees stay separate; execution prices are not
+  marks. REAL sales require verified sourced broker lot identity, identity review
+  and explicit saleability. Retirement share sales need verified inventory but may
+  have null basis/dates; never invent retirement gain/term. Taxable lots need basis/dates.
+- No currency aggregation without FX. Quote TTL is 900 seconds; dataset TTL differs.
+  Caches are not historical evidence and never update canonical marks/quantities.
+  Hypothetical research/plans/backtests preserve holdings, marks, caches/events and
+  fingerprints. Look-through preserves known numeric exposure and unknown residual,
+  cycles/depth/path/vintage; completeness needs matching environment/source/date and
+  visible persisted typed issues. Numeric coverage is separate from evidence quality.
+- Actual performance needs complete dated checkpoints/flows and boundary marks.
+  Household transfers need explicitly reviewed linked atomic legs with matching
+  currency/environment/order, never inferred balance differences. Dense conventional
+  XIRR retains every flow; nonconventional complexity remains typed review. Risk
+  aligns every requested session; weekdays never establish exchange-calendar evidence.
+- Targets are immutable fractions totaling 1 ±0.000001. Separate approved immutable
+  policies have independent strict buy/sell/hold booleans and exact increments,
+  floors/minimum notionals/freshness. Unknown permissions/fees remain review gates.
+  Contributions-only never sells; rebalance uses cash first on any valid date without
+  calendar/month/drift gates. Quarterly strategy is explicitly historical only.
+- Annual USD positive tax-cost allowance uses confirmed taxable sales and explicit
+  ST/LT rates/coverage. Losses do not replenish it; saved plans do not spend it.
+  Mandatory household/IRA/spouse/DRIP/substantially-identical wash review remains;
+  never certify legality or guaranteed savings. Harvest uses approved policy identity,
+  verified loss lots, sourced replacement prices and both exact cash legs/fee residue.
+- Plans pin source/policy/manifest/algorithm and simulate cash/lots/value before save.
+  Current staleness is separate from immutable history. List/compare use compact
+  projections; full detail stays explicit. No historical recalculation with fresh prices.
 
-- Pure P05 performance fixtures may reuse verified immutable inventory only
-  under SQLite query_only, total_changes and data_version guards. Verify every
-  raw result independently and recheck full inventory/FKs before closing. Keep
-  mutating and cache-writing fixtures on their original per-operation resets.
-  External no-op SQL need not advance data_version; test actual committed
-  mutations, including a committed reversal that leaves final values unchanged.
+## Viewer, research and acceptance
 
-- Paired batch calibration targets 600 ms to leave headroom above the strict
-  200 ms sample floor. Both revisions share the count from the fastest
-  warm-up. Normalize timings by that count; retain and reject short samples.
-  A target margin is not a guarantee against arbitrary measurement noise.
-  Earlier 300 ms runs produced short samples; retain those invalid reports.
-  The wrap-up retires earlier aggregate scheduling allowances.
-
-- Dense conventional cash flows with one chronological sign change use a
-  uniquely bracketed XIRR root without dropping records. Long nonconventional
-  histories retain a typed complexity review. Statistical tolerances never
-  round stored financial values or excuse missing flows.
-- Benchmark fixtures use validated deterministic synthetic identities. Verify
-  full native outputs before projecting incidental generated IDs/timestamps;
-  preserve all financial, source, policy and relationship evidence. Report
-  processed counts separately from recipe parameters and keep oracle work
-  outside timed operations.
-
-- Confirmed cash and adjusted lot effects must reconcile independently from
-  position quantities. Later fixtures must preserve actual recorded lot IDs and
-  cash, rather than inventing balancing changes to produce a desired return.
-- Retry identity normalizes only financial decimal fields; identifiers and
-  source strings stay exact. Precision collectors must distinguish financial
-  scalar values from similarly named provenance structures.
-- Artifact publication and managed-staging cleanup share a filesystem lock.
-  Preview never creates a cleanup lock or removes files; ordinary user files,
-  referenced artifacts and symlink paths are never cleanup candidates.
-- Policy approval previews validate existing canonical references before opening
-  a writer. Nested permissions use strict independent booleans and exact decimal
-  strings; immutable versions retain only explicitly submitted fields.
-- Household cash transfers require one explicitly reviewed paired command,
-  matching currencies/environments and verified event ordering. Both cash changes
-  and event legs commit atomically; household/account performance use the same
-  durable links rather than inferring transfers from balance differences.
-- Hybrid search filters canonical model/dimension/content compatibility before
-  lexical ranking. Keyword-only retrieval remains the explicit fallback.
-- Exhausted lots referenced by confirmed allocations remain historical rows;
-  complete imports must not delete them. Missing positive remaining lots are
-  discrepancies, not permission to replace confirmed inventory.
-- REAL specific-lot sales require verified status, sourced broker lot identity,
-  identity review evidence and explicit saleability. Missing fields are unknown.
-- Financial lookups share security_identity.resolve for strong IDs and sourced
-  aliases; ambiguous matches fail. Dashboard GET uses read_ledger and closes
-  handles before responding, including missing/incompatible ledgers.
-- Recovery integrity checks and logical fingerprints must load checksum-verified
-  baked vec0 when a ledger contains derived vector tables; ordinary SQLite
-  connections otherwise cannot validate or dump them. Recovery must include real
-  corpus retrieval, not only a financial-table roundtrip.
-- The standalone synthetic demo uses real HTML provenance and actual CLI commands.
-  Do not strip source-cell metadata to make simulation pass; numeric collectors
-  accept scalar financial leaves and preserve provenance structures separately.
-
-## Verified implementation lessons
-
-- Accept observations only with explicit REAL/SYNTHETIC source provenance.
-  Propagate it to accepted financial rows; reject conflicting rows/accounts.
-  Fictional fixtures state SYNTHETIC explicitly; parsing must never guess it.
-- Legacy unapproved scenarios carry typed policy review issues; REAL inputs
-  cannot use scenario generation to bypass approved trading policies. Gate on
-  issue fields, never on warning wording.
-- Harvest estimates use immutable approved policy identity, verified loss lots
-  and sourced current replacement prices. Simulate both cash legs, preserve
-  exact fee residue, and keep mandatory human wash review on conditional actions.
-
-- Printed financial precision is source evidence: provide it explicitly in
-  synthetic fixtures; never infer it from normalized decimal storage. Keep
-  quantity, price and value coherent except in deliberate rejection cases.
-- Native analytical extensions must actually load during Docker builds. The
-  pinned sqlite-vec ARM64 wheel is unsuitable here; compile the checksum-pinned
-  official amalgamation in the Docker builder, then verify the runtime binary.
-- Research completeness requires all requested specialty tasks. Filter compact
-  issuer metadata before loading immutable packages; unrelated evidence must
-  not break a selected report. Historical coverage is not current coverage.
-
-- Schema 1 identity includes the foundation migration checksum, not just SQLite
-  user_version. Legacy schema 1 must remain byte-preserved and rejected.
-- All application database connections hold the shared restore lock until close;
-  close write handles before announcing completion to local HTTP clients.
-- Disposable benchmark builders must insert parent accounts before observation
-  rows and query plan_runs. Keep foreign keys enabled during fixture creation.
-- Scale Decimal calculation contexts to supplied financial magnitudes. A fixed
-  100-digit context can erase real low-order cash and value residues.
-- Check unknown permissions before iterating eligible trades. An empty rule map
-  is unknown eligibility; an empty proposal does not establish readiness.
-- Tax inventory and sale analysis use remaining adjusted basis, including when
-  original basis is unknown. Final sales conserve the exact remaining residue.
-- Historical CLI exposure reads accepted immutable vintages before touching a
-  market client. Source publication/observation dates and hashes survive paths.
-- Align risk histories on every requested session; silently dropping missing
-  rows changes the modeled period and must return a typed coverage blocker.
-- Preserve research evidence lexemes and native specialist hashes. Envelope
-  issuer labels cannot override reviewed canonical issuer identities.
-- The plain bond runtime uses SciPy cash flows. Explicit complex instruments
-  remain unavailable; fixed redemption scenarios do not price embedded options.
-
-## Active specification and work order
-
-- The historical additive specification is
-  `docs/PRD-performance-ai-fuzz-2026-10-10.md`; the October 12 wrap-up controls
-  current measurement and fuzz scope. Preserve financial behavior.
-- Fixed performance measurements use offline disposable Docker fixtures and
-  candidate and one reviewed reference. Archived timings are evidence, never a
-  cross-machine comparator. Check native engine/image ARM64 and same-runner facts.
-- Exploratory AI campaigns require explicit human invocation after performance
-  acceptance. CI may test the fixed harness and promoted regressions, but must
-  never generate campaigns, launch providers or publish issues automatically.
-
-- The active rebuild specification is `docs/PRD-unified-mvp-2026-10-10.md`.
-  Historical PRDs/addenda remain unmodified reference documents. Conflicting
-  release-specific architecture decisions are superseded by the unified PRD.
-- New behavior and confirmed bugs require observed test-only red checkpoints
-  before implementation. Pure refactors use existing green behavioral tests.
-  Minimum B01–B66 is not the complete specification. Do not silently replace
-  success workflows with blocked-only examples or leave fixture facts unused.
-- Keep `main`. Conventional commits only. No remotes, fetches or pushes.
-  Coordinator commits red/green checkpoints; agents never commit.
-- Independent agents own separate files/modules. Coordinator owns shared models,
-  ledger, schema, central CLI, descriptors and integration. Announce readiness
-  and freeze test writes before checkpoint verification. Tests must match the
-  exact committed tree; no skips, xfails or artificial internal mocks.
-- All execution, dependency resolution, lint and tests run in Docker. Install
-  nothing on the host. Read/edit files and Git operations may run on the host.
-- Build with `uv.lock` copied before locked sync. Exclude host `.venv`, private
-  data and SQLite `.db`, `-wal`, `-shm` files from build contexts. Dependencies
-  live at `/opt/venv`, never in a volume nested within the project bind mount.
-- Offline CI uses disposable containers, `INVEST_PROMPTS=/data/prompts`, no
-  private ledger volume and `uv run --locked`. Mounted-source development may
-  use `--no-sync` after the locked image is built. Ruff always receives
-  `--config pyproject.toml`. Local evidence is not a remote CI result.
-
-## Authoritative facts and financial safety
-
-- Single local Python app; SQLite is the sole writable source of financial
-  truth. No ORM or service framework. Decimal financial values are exact plain
-  normalized strings; never normalize identifiers as numbers or lose precision.
-- New normalized storage design starts at schema 1 on an empty ledger. Reject
-  old development schemas without changing them. Never reset private databases.
-  Future migrations are transactional and checksum-tracked with a verified
-  pre-migration backup; historical blanket migration prohibitions are obsolete.
-- SQLite writer settings: foreign keys ON, WAL, synchronous FULL, busy timeout
-  5000. Related writes share one transaction. Backup uses SQLite's online API,
-  verified referenced artifacts, owner-only archives and atomic publication.
-  Restore stages/validates first and requires explicit confirmation.
-- DuckDB is ephemeral and read-only over consistent exports/immutable Parquet.
-  SQLite manifests identify artifacts and hashes. No persistent analytical DB.
-  sqlite-vec is a rebuildable index; canonical chunks/vectors remain in SQLite.
-  Extensions are pinned and baked into Docker; no implicit runtime downloads.
-- Never place trades, accept brokerage credentials, persist raw account HTML,
-  invent identities, lots, basis, prices, classifications or cash coverage.
-  Only explicitly confirmed idempotent commands mutate accepted facts.
-- Unknown never means zero, current, complete or safe. Return typed issues with
-  explicit calculation/proposal/review gates; never parse warning prose to gate.
-  Success is JSON stdout; errors JSON stderr with codes 1 input, 2 external,
-  3 inconsistent/blocked state, 4 internal. Incomplete analyses return outcomes.
-- REAL/SYNTHETIC provenance is mandatory. Mixed inputs cannot produce actionable
-  proposals. Research, simulations and backtests cannot change holdings, marks,
-  caches, confirmed events or financial fingerprints.
-- Source and import timestamps are distinct. Positions/lots/cash coverage and
-  chronology are independent. Old observations cannot erase later confirmed
-  activity; date-only same-day ambiguity requires verified ordering. Partial
-  imports never delete unobserved inventory. Accepted account settings remain
-  authoritative; observations cannot silently change them.
-- Canonical identities use sourced strong IDs and reviewed ticker aliases.
-  Conflicting strong IDs never merge by ticker/name. Reuse one resolver.
-  Existing OTHER classification requires sourced preview and explicit confirm;
-  registration cannot bypass classification controls.
-- Stable verified lot identity and remaining adjusted basis survive partial
-  sales; exact final residue is conserved. Unknown executed lot selection never
-  becomes FIFO. Fees remain separate from gross activity prices. Activity IDs
-  make identical repeats no-ops and conflicts atomic errors. Executions do not
-  become portfolio valuation marks. Unknown source precision blocks acceptance.
-- Never aggregate currencies without an FX model. Quote cache refresh never
-  changes canonical marks or quantity freshness. Keep 900-second quote TTL
-  distinct from day/week dataset TTL; caches are not historical evidence.
-- Actual performance requires complete dated checkpoints/external cash flows.
-  Household linked transfers net internally; reinvestment is not a deposit.
-  Missing flow-boundary marks block TWR. Current-weight risk/backtests are
-  hypothetical, with cash/fee/dividend assumptions and coverage disclosed.
-- Targets are immutable versioned fraction allocations totaling 1 ±0.000001.
-  Approved trading policies are separate from targets; buy/sell permissions are
-  independent. Same-account confirmed cash only; explicit increments, floors,
-  minimum notionals and freshness. Unknown fees require review.
-- Contributions-only never sells; rebalance uses cash first then permitted
-  sales/buys on any valid supplied date, including small positive drift above
-  minimum notionals. User habits do not enforce a schedule. No automatic bonds.
-- Annual USD positive estimated tax-cost allowance uses confirmed taxable sales
-  and explicit ST/LT rates. Losses do not replenish it; saved plans do not spend
-  it. Unknown rates/year-to-date coverage block taxable gain-sale proposals.
-  Household IRA/spouse/DRIP/substantially-identical uncertainty requires review;
-  never certify wash-sale safety or guaranteed tax savings.
-- Plans are immutable, source/policy/manifest/algorithm pinned and stale at read
-  time after actual changes. Authoritative simulation validates cash, lots,
-  values and total before save. List/compare use compact projections, not full
-  baselines/details; historical reports never recalculate from fresh prices.
-- Look-through preserves unknown residual, path provenance, cycles, depth limit
-  and holdings vintage/freshness. Do not normalize partial holdings or backfill
-  historical constituents with future knowledge. Issuer mappings are sourced.
-
-## Research, skills and local operation
-
-- External agents research; humans review original sources/rights; Investobot
-  validates strict JSON and stores immutable evidence. Structural validation
-  cannot establish source truth, permissions or legal conclusions. No scraping,
-  FEC/SEC clients, political scoring, forecasts, monitoring or trade signals.
-- Preserve specialty validation and independent trusted skill/hash identities,
-  including the existing fund diligence family. All acceptance inserts are
-  atomic, run-scoped FKs prevent cross-run evidence. Preview/reads must not
-  create the selected ledger. Only explicit import confirmation writes research.
-- Named contributions need independently reviewed local rights policy; agent
-  rights assertions and `--yes` cannot authorize restricted use. Distinguish
-  executive, employee and verified corporate PAC evidence. Fictional fixtures
-  only; no private donor fields, raw pages or unsolicited personal information.
-- Earnings compare exact definition/basis/unit/entity/scope/period/duration;
-  missing/nonpositive baselines do not imply growth. No invented quarterization,
-  adjusted/GAAP mixing or FX. Source locators are narrow, credential-free and
-  issuer-compatible. Research cannot register/reclassify canonical securities.
-- News stable event keys, disputed facts, explicit cited closures and bounded
-  baseline chronology remain authoritative. Absence is NOT_REOBSERVED, never
-  resolution. Terminal observations tombstone older active records; inherited
-  provenance/staleness and overlapping evidence-category counts stay explicit.
-- Competitive comparisons need sourced overlap and exact comparable metrics;
-  no investment rankings/scores. Insider evidence needs exact issuer/owner/
-  filing/person association, effective correction links, separate P/S vs other
-  codes, no inferred venue/intent and no cross-run reconstructed ownership.
-- Fund diligence needs original SEC registrant/series/exact-class identity;
-  exact-class fees/distributions, descending TOP_N <=100, no normalized weights
-  or invented residual. Never update fund-holdings/market caches from research.
-- Corpus indexing requires source permission and no automatic broker/personal
-  embeddings. Explicit authorized adapters only; model/dimension compatibility,
-  float32 normalized vectors, immutable revisions and textual fallback required.
-- Portable skills orchestrate discovered CLI contracts; they do no financial
-  arithmetic. Prompt text is copied, never executed. Install only explicitly
-  to project `.agents/skills` or `.claude/skills`; reject traversal, symlinks,
-  nonregular destinations and unsafe overwrites. Preserve recoverable defaults.
-- Dashboard is thin and local. Native bind must be loopback; Docker may bind
-  internally only with host-loopback publication. Shared domain outputs drive
-  rendering. Same-origin checks/body limits apply to every write route; they
-  are not authentication. Prompts stay at `/data/prompts` beside Docker ledger.
-- Institution adapters remain PROVISIONAL without reviewed real anonymized HTML
-  for Vanguard, Fidelity NetBenefits and PNC. FMP live entitlement is separately
-  UNVERIFIED until human validation. Synthetic acceptance ships development
-  preview only. No secrets are needed for offline acceptance.
-- Benchmark only reproducible disposable synthetic ledgers/corpora. Record
-  hashes/hardware/timings/sizes; never invent measurements. Exclude fixture
-  preparation/builds from measured domain operations. Recovery and synthetic
-  workflow demonstrations remain required gates.
-- Document actual behavior clearly and concisely, including setup/manual gates
-  and outstanding scope. See `docs/implementation/unified-mvp-status.md` for
-  context and `docs/implementation/wrap-up-status.md` for current acceptance;
-  do not describe unimplemented requirements as complete.
-
-## Performance addendum harness lessons
-
-- Fuzz scenarios are allowlisted JSON data, never executable instructions.
-  Use fresh offline Docker subprocesses, independent exact oracles and replayable
-  full scenario JSON/minimized examples. Fixed fixtures do not authorize agent exploration.
-- Resource failures remain environmental/unresolved. Preserve original failure
-  reports and actual exit codes; one reproduction cannot establish a confirmed
-  bug or regression. Report missing oracle evidence as a failure.
-- Historical metric benchmarks call the single adjusted-series calculation,
-  preserving its source/cache evidence; whole-fund comparison is a separate case.
-- The user's native M4/ARM64 scope supersedes x86 requirements in the preserved
-  performance PRD. Check both engine and image architectures; do not certify
-  emulated measurements. Current vector fixtures are prepared synthetic inputs
-  for CPU retrieval, with no embedding provider or GPU acceleration claimed.
-- Specialty output coverage checks actual returned counters and row identities,
-  not just stored run totals. Fund summaries do not read holdings; keep them
-  fixed-size controls rather than claiming holdings-growth coverage.
-- Retain invalid measurements and original failures outside Git; partial reports
-  never establish full acceptance. Close all disposable fixture connections.
-- Profile measured offenders before optimizing. Import acceptance uses call-local
-  inventories; update indexes after actual writes and refresh lots after guarded
-  deletes. Keep ambiguity checks, protected historical lots, exact Decimal
-  accumulation order and partial basis; never cache across commands.
+- Dashboard is GET-only, query-only, persisted/provider-free. Every POST returns 405
+  before body/application-data access; no commands/jobs/agent launch. Close DB handles
+  before responding, including errors. Native bind is loopback; Docker publishes
+  host loopback only. Backtest list is compact; detail/compare use immutable runs.
+- External agents research; humans verify original sources and rights. Investobot
+  validates strict immutable evidence, never establishes source truth/permissions
+  through structure. No scraping, FEC/SEC clients, political scores, forecasts,
+  monitoring or trade signals. Research acceptance is atomic/run-scoped and does
+  not register/reclassify securities or refresh fund/market caches. Named contributor
+  evidence needs independently reviewed rights, never agent assertions or `--yes`.
+- Specialty completeness covers every requested task. Preserve native hashes,
+  exact issuer/entity/period/definition/unit/basis comparability and independent skill
+  identities. News absence is NOT_REOBSERVED, not closure; explicit terminal evidence
+  controls history. Insider corrections preserve filing/owner/person associations and
+  separate transaction codes. Fund diligence requires original exact-class identity,
+  <=100 descending TOP_N, no normalized weights/invented residual.
+- Corpus adapters need explicit permission; no automatic broker/personal embeddings.
+  Canonical model/dimension/content compatibility precedes ranking; keyword-only
+  fallback stays explicit. Plain bonds use SciPy cash flows; complex instruments
+  remain unavailable, and fixed redemption does not price embedded options.
+- Synthetic fixtures and actual CLI demo establish development behavior only.
+  Vanguard, Fidelity NetBenefits and PNC remain PROVISIONAL; live FMP remains
+  UNVERIFIED pending reviewed real evidence/entitlements. No real documents/secrets
+  needed for offline acceptance. See [data sources](docs/data-sources.md).
+- Exactly eight fixed representative paired workflows, reference
+  `d0940a12c44831095492efcd7091fb7b937ad6b3`, native ARM64 same runner, one warm-up,
+  five shared-batch samples. Calibration targets 600 ms; reject raw samples <200 ms.
+  Confirm >25% median slowdown with one complete repeat pair. No p95/scaling/import
+  optimization/general certification. Verify native outputs before projecting only
+  reviewed incidental/semantic deltas; retain invalid evidence, actual failures and
+  exit codes outside Git. Fixtures/reset/oracles stay outside timed operations.
+- Fuzzing requires explicit human invocation and [fuzz/SKILL.md](fuzz/SKILL.md):
+  offline disposable allowlisted full-scenario JSON replay, actionable reports,
+  independent exact oracles. CI runs fixed regressions only, never agent campaigns,
+  providers or issue publication. Never run untrusted PR code on personal runners.

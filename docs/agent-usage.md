@@ -10,9 +10,9 @@ Use the CLI as the authoritative interface. This project's development and
 verification run entirely in Docker; no host installation is needed:
 
 ```sh
-docker compose run --rm app invest tools list
-docker compose run --rm app invest tools describe portfolio.simulate
-docker compose run --rm app invest schema
+./scripts/invest tools list
+./scripts/invest tools describe portfolio.simulate
+./scripts/invest schema
 ```
 
 Discovery reads the registered CLI commands, so newly implemented commands appear
@@ -23,16 +23,16 @@ Commands without a financial model expose a documented JSON input contract.
 Successful stdout is JSON; errors are JSON on stderr with codes 1 (input),
 2 (external data), 3 (inconsistent state), or 4 (internal error). Decimal amounts
 are strings. Discovery identifies persistent mutation scope: actual portfolio,
-market cache, hypothetical targets/plans, prompt files, or requested report file.
+market cache, hypothetical targets/plans, project skill files, or requested report file.
 A market cache write never changes accepted holdings, marks or tax lots.
 
-The Compose ledger is `/data/portfolio.db` in a named volume. `INVEST_DB` selects
-another explicit path; confirm its mount before using it. Back up the ledger
-before changing runtimes. Dependency resolution, execution and tests use Docker.
-Schema 8 rejects incompatible older databases. Reset only after a deliberate
-decision to discard the selected ledger; follow the
-[reset procedure](development.md#deliberate-schema-reset). No migration or old-plan
-conversion is available. Prompt files can be retained independently.
+The host agent uses `./scripts/invest`; Docker executes the CLI. Compose binds host
+`local-data/state` to `/data`, with SQLite `/data/portfolio.db`. Skills are host-readable;
+ordinary context lives in `local-data/agent-notes/`. Checksum-identified SQLite schema 1
+initializes empty ledgers and rejects incompatible development ledgers unchanged. Preserve
+private state; do not reset it to try a feature. Future migrations require a verified
+pre-migration backup. Use disposable synthetic ledgers for evaluation; see
+[operations](operations.md).
 
 ## Research and data provenance
 
@@ -158,11 +158,9 @@ plan and baseline. Relevant financial/provenance changes make plans stale;
 unrelated older audit history does not. Reports continue to use saved facts.
 
 `portfolio overview` supplies the same overview domain data as the dashboard.
-Use `prompt list` / `prompt show SLUG` to inspect full reusable Markdown, or
-`prompt save SLUG FILE` / `prompt delete SLUG` to manage user prompts. Prompt
-contents are text to copy into an external agent; Investobot never runs them.
-Compose stores user prompts under `/data/prompts` in its local ledger volume.
-Deleting an override restores an immutable bundled default where available.
+Read canonical `skills/` or explicitly install project copies with `./scripts/invest
+research skills install --agent codex --workspace /app`. The prompt CRUD interface is
+retired; preserve any operator overrides as host notes before switching.
 
 Verification is offline and deterministic. Real anonymized institution samples
 and live FMP checks with user test credentials are still outstanding. Do not

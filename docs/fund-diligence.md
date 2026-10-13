@@ -17,13 +17,13 @@ or `.claude/skills`. Modified canonical files require review and `--confirm`;
 unrelated user files survive.
 
 For example, after the project's locked Docker image is built, these commands
-use a disposable schema-10 research database under ignored `local-data` and do
-not mount the private Docker ledger volume:
+use a disposable schema-1 research database under ignored `local-data` and do
+not mount the private host ledger:
 
 ```sh
 mkdir -p local-data
-docker run --rm --network none -v "$PWD:/app" -e INVEST_DB=/app/local-data/fund-research.db -e INVEST_PROMPTS=/data/prompts investobot-v3-test invest research skills list
-docker run --rm --network none -v "$PWD:/app" -e INVEST_DB=/app/local-data/fund-research.db -e INVEST_PROMPTS=/data/prompts investobot-v3-test invest research skills install --agent codex --workspace /app
+./scripts/invest research skills list
+./scripts/invest research skills install --agent codex --workspace /app
 ```
 
 Replace `codex` with `claude-code` for Claude Code. Replace the image name with
@@ -76,12 +76,10 @@ snapshot coverage. Provider-based `invest fund holdings`, `compare` and
 
 ## Database compatibility and human acceptance
 
-Fresh ledgers use schema 10. Older nonempty ledgers, including schema 9, are
-rejected without migration or deletion. Preserve private ledgers and their
-backups; choose a new research database rather than resetting private data.
-If deliberately restarting a disposable test database, stop its users and remove
-only its selected database plus the corresponding `-wal`/`-shm` files. Preserve
-prompt overrides and unrelated data. No automatic reset is provided.
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
 
 Before claiming real-source acceptance, a human must review one real ETF and
 one real mutual-fund share class. For each, verify original SEC identity and

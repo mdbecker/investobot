@@ -1,5 +1,12 @@
 # Canonical local data model
 
+Historical pre-unified data-model reference. Table/schema/runtime descriptions
+below belong to earlier revisions. Current normalized checksum-identified
+schema 1 and host persistence are in [architecture](architecture.md),
+[data contracts](data-contracts.md) and [operations](operations.md).
+PromptLibrary is retired; preserve operator overrides as host notes.
+Historical reset/migration statements are not current instructions.
+
 SQLite schema **version 9** uses standard `sqlite3`; no ORM is involved.
 Portfolio and target tables store an `id` primary key and normalized JSON `data`.
 Plans use dedicated baseline, summary and detail columns.

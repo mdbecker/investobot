@@ -14,31 +14,30 @@ Keep research files in ignored `local-data`; container paths begin `/app`.
 
 ```sh
 docker compose build
-docker compose run --rm -T app invest research skills show investobot-political-contributions
-docker compose run --rm -T app invest research skills install --agent codex --workspace /app
-docker compose run --rm -T app invest tools describe research.political.validate
-docker compose run --rm -T app invest tools describe research.political.import
-docker compose run --rm -T app invest schema
-docker compose run --rm -T app invest research political validate /app/local-data/political-research.json
-docker compose run --rm -T app invest research political import /app/local-data/political-research.json
+./scripts/invest research skills show investobot-political-contributions
+./scripts/invest research skills install --agent codex --workspace /app
+./scripts/invest tools describe research.political.validate
+./scripts/invest tools describe research.political.import
+./scripts/invest schema
+./scripts/invest research political validate /app/local-data/political-research.json
+./scripts/invest research political import /app/local-data/political-research.json
 ```
 
 The project-local skill is recognized by the external agent. Ask that agent to
 use `investobot-political-contributions`; for Claude Code install with
 `--agent claude-code`. Investobot does not execute the skill, scrape political
-sites or provide an FEC client. The general Prompt Library and user-created
-political prompt overrides remain available; only the bundled legacy political
-prompt has been removed. See [research skills](research-skills.md).
+sites or provide an FEC client. General prompt CRUD is retired. Preserve operator
+overrides as host notes for review; see [research skills](research-skills.md).
 
 Review the company and executive identity evidence, reporting period, source
 permissions, recipient relationships, ambiguities and transaction identifiers.
 Only then explicitly accept the preview:
 
 ```sh
-docker compose run --rm -T app invest research political import /app/local-data/political-research.json --yes
-docker compose run --rm -T app invest research political list --ticker EXAMPLE
-docker compose run --rm -T app invest research political show RUN_ID
-docker compose run --rm -T app invest research political summary RUN_ID
+./scripts/invest research political import /app/local-data/political-research.json --yes
+./scripts/invest research political list --ticker EXAMPLE
+./scripts/invest research political show RUN_ID
+./scripts/invest research political summary RUN_ID
 ```
 
 `RUN_ID` is returned by import. Identical normalized packages reuse that ID;
@@ -132,23 +131,17 @@ unitemized activity and unresolved findings remain visible limitations.
 
 ## Schema and verification
 
-Schema 6 deliberately rejects older ledgers, including schemas 4/5. There are no migrations, legacy
-readers or automatic deletion. Do not run a reset against the private Docker
-ledger to try this feature. Use a fresh disposable database first; if retaining
-private state matters, keep its backup and postpone switching until a deliberate
-data-recreation decision has been made.
-
-A separately authorized reset must select only the chosen disposable database
-and its SQLite `-wal`/`-shm` sidecars. Preserve `/data/prompts`, the dependency
-volume and every unrelated database. Never remove all Compose volumes for this
-purpose. Older preserved PRDs describe their historical schema versions.
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
 
 All test records are fictional. Reproduce checks without private ledger mounts:
 
 ```sh
 docker build --tag investobot-ci .
-docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked pytest
-docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked ruff check --config pyproject.toml src tests
+docker run --rm --network none investobot-ci uv run --locked pytest
+docker run --rm --network none investobot-ci uv run --locked ruff check --config pyproject.toml src tests
 ```
 
 Local Docker evidence does not establish a GitHub Actions result. Work remains

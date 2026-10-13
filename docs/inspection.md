@@ -39,3 +39,10 @@ Agents use discovered CLI contracts for new calculations and human-authorized
 writes. See [workflows](workflows.md) and [trading policy](trading-policy.md).
 Phase 1 is synthetic foundation acceptance. Reviewed original Vanguard, Fidelity
 NetBenefits and PNC HTML and live FMP validation belong to separate Phase 2 work.
+
+Fund coverage reports numeric completeness separately from verified evidence
+completeness. Persisted typed source issues remain visible even at 100% numeric
+weight; known dollars and unknown residuals are preserved. `/api/backtests` returns
+only IDs, dates, status, creation date and headline metrics. Full immutable
+histories/manifests/curves remain at `/api/backtests/ID`; stored comparison retains
+assumption mismatch outcomes. Host persistence is described in [operations](operations.md).

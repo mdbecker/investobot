@@ -49,21 +49,21 @@ Save agent-produced JSON in ignored `local-data`. Inspect authoritative input
 contracts rather than inventing fields or copying a second schema:
 
 ```sh
-docker compose run --rm -T app invest schema
-docker compose run --rm -T app invest tools describe research.earnings.validate
-docker compose run --rm -T app invest research earnings validate /app/local-data/earnings.json
-docker compose run --rm -T app invest research earnings import /app/local-data/earnings.json
+./scripts/invest schema
+./scripts/invest tools describe research.earnings.validate
+./scripts/invest research earnings validate /app/local-data/earnings.json
+./scripts/invest research earnings import /app/local-data/earnings.json
 ```
 
 Review source support, period boundaries, exact values and limitations before
 explicitly accepting:
 
 ```sh
-docker compose run --rm -T app invest research earnings import /app/local-data/earnings.json --yes
-docker compose run --rm -T app invest research earnings list --ticker EXAMPLE
-docker compose run --rm -T app invest research earnings show RUN_ID
-docker compose run --rm -T app invest research earnings summary RUN_ID
-docker compose run --rm -T app invest research earnings compare RUN_A RUN_B
+./scripts/invest research earnings import /app/local-data/earnings.json --yes
+./scripts/invest research earnings list --ticker EXAMPLE
+./scripts/invest research earnings show RUN_ID
+./scripts/invest research earnings summary RUN_ID
+./scripts/invest research earnings compare RUN_A RUN_B
 ```
 
 Identical normalized packages are idempotent; revisions create new immutable
@@ -76,18 +76,17 @@ cache, targets, plans or financial stale status.
 
 ## Database and verification
 
-Schema 6 deliberately rejects older databases, with no migration, automatic
-deletion or legacy reader. Test first with a fresh disposable ledger. Do not reset
-the private Docker ledger merely to try the feature. A separately authorized reset
-selects only its disposable database plus `-wal`/`-shm` sidecars and preserves
-prompts and unrelated data; never delete all Compose volumes.
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
 
 All automated earnings data is fictional. No live SEC request is necessary:
 
 ```sh
 docker build --tag investobot-ci .
-docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked pytest
-docker run --rm --network none -e INVEST_PROMPTS=/data/prompts investobot-ci uv run --locked ruff check --config pyproject.toml src tests
+docker run --rm --network none investobot-ci uv run --locked pytest
+docker run --rm --network none investobot-ci uv run --locked ruff check --config pyproject.toml src tests
 ```
 
 These containers do not mount private ledger volumes. Passing synthetic checks

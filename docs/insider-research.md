@@ -17,10 +17,10 @@ portable skill before preparing research:
 
 ```sh
 docker compose build
-docker compose run --rm -T app invest research skills show investobot-management-insiders
-docker compose run --rm -T app invest research skills install --agent codex --workspace /app
-docker compose run --rm -T app invest schema
-docker compose run --rm -T app invest tools describe research.insiders.import
+./scripts/invest research skills show investobot-management-insiders
+./scripts/invest research skills install --agent codex --workspace /app
+./scripts/invest schema
+./scripts/invest tools describe research.insiders.import
 ```
 
 For Claude Code use `--agent claude-code`. This copies all bundled instructions
@@ -34,20 +34,20 @@ under ignored `local-data/insiders.json`, without raw filings or personal contac
 details. Validate and preview before a human authorizes acceptance:
 
 The current insider input contract is `1.1`, trusted skill version `1.1.0`, and
-fresh SQLite schema 9. Explicitly review and update older `1.0` JSON before a new
+fresh SQLite schema 1. Explicitly review and update older `1.0` JSON before a new
 import; optional new linkage/locator fields default to null. Accepted historical
 packages are never rewritten. Existing research domains retain their versions.
 
 ```sh
-docker compose run --rm -T app invest research insiders validate /app/local-data/insiders.json
-docker compose run --rm -T app invest research insiders import /app/local-data/insiders.json
+./scripts/invest research insiders validate /app/local-data/insiders.json
+./scripts/invest research insiders import /app/local-data/insiders.json
 # After original-source review and explicit human approval:
-docker compose run --rm -T app invest research insiders import /app/local-data/insiders.json --yes
-docker compose run --rm -T app invest research insiders list --ticker TICKER
-docker compose run --rm -T app invest research insiders show RUN_ID
-docker compose run --rm -T app invest research insiders summary RUN_ID
-docker compose run --rm -T app invest research insiders activity RUN_ID --person PERSON_ID
-docker compose run --rm -T app invest research insiders ownership RUN_ID --person PERSON_ID
+./scripts/invest research insiders import /app/local-data/insiders.json --yes
+./scripts/invest research insiders list --ticker TICKER
+./scripts/invest research insiders show RUN_ID
+./scripts/invest research insiders summary RUN_ID
+./scripts/invest research insiders activity RUN_ID --person PERSON_ID
+./scripts/invest research insiders ownership RUN_ID --person PERSON_ID
 ```
 
 Validation, preview and reads do not create the selected database. Confirmation
@@ -68,7 +68,7 @@ ledger or installing host packages:
 ```sh
 docker build -t investobot-insiders-demo .
 docker run --rm -i --network none \
-  -e INVEST_DB=/tmp/insiders-demo.db -e INVEST_PROMPTS=/data/prompts \
+  -e INVEST_DB=/tmp/insiders-demo.db \
   investobot-insiders-demo sh <<'SH'
 uv run --locked invest research insiders validate tests/fixtures/insiders.json
 uv run --locked invest research insiders import tests/fixtures/insiders.json
@@ -186,9 +186,10 @@ Form 4 purchase/sale/exercise/grant/tax rows, an amendment if available and DEF 
 compensation. Compare originals and footnotes and document mismatches. Offline
 fictional tests do not establish real extraction accuracy or remote CI success.
 
-Schema 9 initializes fresh databases and rejects schema 8 and earlier without
-migration or automatic deletion. Keep private ledgers unchanged and backed up;
-use disposable data for evaluation. If deliberately discarding a selected
-disposable ledger, follow [reset instructions](development.md#deliberate-schema-reset)
-and preserve prompt files. Requirements remain in [PRD-v2.9.md](PRD-v2.9.md) and
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
+
+Historical requirements remain in [PRD-v2.9.md](PRD-v2.9.md) and
 its [corrections addendum](PRD-v2.9-Addendum-Amendment-Corrections.md).

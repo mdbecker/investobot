@@ -1,23 +1,34 @@
-# Portable agent workflows
+# Host agent skills
 
-Discover packaged bundles with `invest research skills list` and inspect one
-with `invest research skills show NAME`. Install explicitly into a project's
-`.agents/skills` or `.claude/skills` using the discovered installation contract.
-Traversal, symlinks, nonregular destinations and unsafe overwrites are rejected.
-Prompt and skill text is copied, never executed by Investobot.
+Tracked `skills/` is the canonical instruction source. Thirteen bundles cover
+seven portfolio workflows (sync, performance, contributions, harvesting,
+screening, portfolio research and strategy) and six research specialties
+(earnings, political contributions, news, competitive, insiders and fund diligence).
+The independently supplied host agent reads these files and retrieves permitted
+sources; Docker performs deterministic calculations and accepted writes.
 
-The seven portfolio skills cover portfolio sync, actual performance, monthly
-investing, tax harvesting, security screening, portfolio research and strategy
-comparison. Six preserved research families cover political contributions,
-earnings, news, competitive position, insiders and fund diligence. Each bundle
-pins its trusted identity and discovers the actual CLI contracts.
+```sh
+./scripts/invest research skills list
+./scripts/invest research skills show investobot-portfolio-sync
+./scripts/invest research skills install --agent codex --workspace /app
+```
 
-Agents obtain permitted original-source evidence and orchestrate deterministic
-commands. They do no financial arithmetic, infer no broker facts, promise no
-wash-sale safety and place no trades. Human confirmation and independently
-reviewed rights remain explicit. Missing evidence produces typed next steps.
+Use `--agent claude-code` for `.claude/skills`; Codex installs to `.agents/skills`.
+`/app` is the host project bind, so the external agent can read the copied files.
+No agent runtime or prompt volume is created. Installing copies does not execute
+instructions or grant source rights. Skill commands use `./scripts/invest` from
+the checkout; file arguments use `/app/local-data/...` or stdin `-`.
 
-Scripted Docker acceptance exercises success and blocked paths for the seven
-portfolio intents. Those tests establish command workflow behavior; source truth,
-rights and whether an external LLM follows the instructions are separate manual
-checks. See [workflows](workflows.md) and [testing](testing.md).
+Identical files remain unchanged; reviewed `--confirm` is required to overwrite
+modified canonical resources. Traversal, symlinks and nonregular destinations
+are rejected; unrelated operator skills and custom resources remain intact.
+Keep ordinary private context in `local-data/agent-notes/`. The retired prompt
+library is replaced by existing skills; preserve legacy overrides as untrusted
+host notes before switching, following [operations](operations.md).
+
+Skills discover current `tools describe`/`schema` contracts, do no financial
+arithmetic and require concrete human authorization for accepted changes.
+Scripted offline tests validate CLI workflows; original-source truth, rights and
+whether a host agent follows instructions require human review.
+See [research skills](research-skills.md), [workflows](workflows.md) and
+[testing](testing.md).

@@ -1,6 +1,8 @@
 # Foundation stabilization — 2026-10-12
 
-Active specification: [foundation PRD](../PRD-mvp-foundation-stabilization-2026-10-12.md).
+Historical foundation checkpoint; current execution/storage/prompt ownership is governed by [host-agent PRD](../PRD-mvp-host-agent-docker-persistence-2026-10-12.md) and [current handoff](host-agent-status.md). Measurements below remain unchanged.
+
+Active specification at this checkpoint: [foundation PRD](../PRD-mvp-foundation-stabilization-2026-10-12.md).
 Phase 1 is synthetic foundation work; Phase 2 original brokerage/provider validation
 has not begun. Historical wrap-up acceptance remains a prior checkpoint.
 

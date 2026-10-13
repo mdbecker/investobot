@@ -1,7 +1,7 @@
 # Company news, catalysts and thesis changes
 
 The [V2.7 continuity addendum](PRD-v2.7-Addendum-Research-Continuity.md) preserves
-schema 7 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
+SQLite schema 1 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
 a changed public URL, fact locator or publication date, the delta records the
 label change with `UNCHANGED_CITATION_REVIEW_REQUIRED` and a supporting-evidence
 warning; it is excluded from newly verified fact updates. Source-ID relabeling
@@ -23,10 +23,10 @@ user files unless an explicit reviewed `--confirm` replacement is requested.
 Discovery and installation do not perform research.
 
 ```sh
-docker compose run --rm -T app invest research skills show investobot-news
-docker compose run --rm -T app invest research news context --ticker EXAMPLE
-docker compose run --rm -T app invest schema
-docker compose run --rm -T app invest tools describe research.news.import
+./scripts/invest research skills show investobot-news
+./scripts/invest research news context --ticker EXAMPLE
+./scripts/invest schema
+./scripts/invest tools describe research.news.import
 ```
 
 For an initial baseline, identify the issuer and declared monitoring window,
@@ -41,15 +41,15 @@ locators, verified/disputed claims, date certainty, implications and limitations
 Then validate and preview; obtain explicit human approval before confirmation.
 
 ```sh
-docker compose run --rm -T app invest research news validate /app/local-data/news.json
-docker compose run --rm -T app invest research news import /app/local-data/news.json
+./scripts/invest research news validate /app/local-data/news.json
+./scripts/invest research news import /app/local-data/news.json
 # Explicitly accepted by the human after reviewing the preview:
-docker compose run --rm -T app invest research news import /app/local-data/news.json --yes
-docker compose run --rm -T app invest research news list --ticker EXAMPLE
-docker compose run --rm -T app invest research news show RUN_ID
-docker compose run --rm -T app invest research news summary RUN_ID
-docker compose run --rm -T app invest research news changes --ticker EXAMPLE
-docker compose run --rm -T app invest research news compare RUN_OLD RUN_NEW
+./scripts/invest research news import /app/local-data/news.json --yes
+./scripts/invest research news list --ticker EXAMPLE
+./scripts/invest research news show RUN_ID
+./scripts/invest research news summary RUN_ID
+./scripts/invest research news changes --ticker EXAMPLE
+./scripts/invest research news compare RUN_OLD RUN_NEW
 ```
 
 Use the generated `NewsResearchInput` schema for exact fields and enums. The fully
@@ -131,8 +131,8 @@ active event carry-forward; historical runs remain retrievable with `show`.
 `compare` and `changes` add `reobserved_events` and `disputed_claim_changes`, with
 matching entries in `counts`. All existing arrays and counts remain available;
 missing-baseline responses include the new arrays as empty and their counts as
-zero. These are additive read-output changes; JSON input remains v1.0 and schema
-6 is unchanged. The bundled news skill is v1.0.1; earnings and political skills
+zero. These are additive read-output changes; JSON input remains v1.0; the current SQLite
+schema is 1. The bundled news skill is v1.0.1; earnings and political skills
 retain their versions.
 
 If C observes A's stable event again after B omitted it, B-versus-C reports
@@ -162,10 +162,11 @@ as distinct business developments. Humans assess significance after reviewing
 the evidence; disputed claims are research leads, never trading signals.
 
 Accepted runs are immutable, atomic and idempotent. Research changes no holdings,
-prices, classifications, lots, targets, market caches or plan freshness. Schema 6
-initializes fresh databases and rejects prior schemas; follow the deliberate
-selected-ledger reset procedure in [development](development.md), with backup and
-an explicit decision. Never delete a private ledger automatically; preserve prompts.
+prices, classifications, lots, targets, market caches or plan freshness.
+Checksum-identified SQLite schema 1 initializes empty ledgers and rejects incompatible
+development ledgers unchanged. Preserve private state; do not reset it to try a feature.
+Future migrations require a verified pre-migration backup. Use disposable synthetic
+ledgers for evaluation; see [operations](operations.md).
 
 Store source metadata and concise independently authored facts, not full articles
 or raw pages. Respect copyright and source usage restrictions, strip credentials
