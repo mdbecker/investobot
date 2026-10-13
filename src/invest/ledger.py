@@ -203,6 +203,12 @@ class Ledger:
         snap = Snapshot.model_validate(snapshot).model_dump(mode="json")
         account_id = snap["account"]["id"]
         issues = []
+        for issue in snap['issues']:
+            if issue.get('blocks_calculation') or issue.get('blocks_acceptance') is True:
+                issues.append(dict(issue, blocks_acceptance=True))
+            elif (snap['positions_complete'] and issue.get('code') in {
+                    'UNRESOLVED_SOURCE_ROW', 'AMBIGUOUS_SUMMARY_ROW', 'UNKNOWN_DATA_ENVIRONMENT'}):
+                issues.append(dict(issue, blocks_acceptance=True))
         environment = snap['data_environment']
         if environment is None:
             issues.append(_issue('UNKNOWN_DATA_ENVIRONMENT',

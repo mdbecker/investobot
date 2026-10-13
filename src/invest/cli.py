@@ -124,15 +124,15 @@ def import_page(
     as_of: str = typer.Option(None),
     positions_complete: bool = False,
     lots_complete: bool = False,
-    data_environment: str = typer.Option(None),
+    data_environment: str = typer.Option(...),
 ):
     def parsed():
-        if data_environment not in {None, 'REAL', 'SYNTHETIC'}:
+        if data_environment not in {'REAL', 'SYNTHETIC'}:
             raise DomainError('Data environment must be REAL or SYNTHETIC')
-        return dict(parse_html(
+        return parse_html(
             sys.stdin.read() if file == '-' else Path(file).read_text(), account,
             institution, tax_status, as_of=as_of,
-            positions_complete=positions_complete, lots_complete=lots_complete),
+            positions_complete=positions_complete, lots_complete=lots_complete,
             data_environment=data_environment)
     emit(
         parsed

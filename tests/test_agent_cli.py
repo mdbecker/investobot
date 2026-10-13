@@ -47,7 +47,8 @@ def page(ctx):
 @when('the agent imports with a known date and confirmed complete coverage')
 def imported(ctx):
     ctx['result'] = ctx['runner'].invoke(app, ['portfolio', 'import', str(ctx['page']),
-        '--account', 'synthetic', '--as-of', '2026-10-08', '--positions-complete', '--lots-complete'])
+        '--account', 'synthetic', '--as-of', '2026-10-08', '--data-environment', 'SYNTHETIC',
+        '--positions-complete', '--lots-complete'])
 
 
 @then('the normalized snapshot confirms source date and both completeness fields')
