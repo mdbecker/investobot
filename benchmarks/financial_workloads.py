@@ -10,6 +10,9 @@ from pathlib import Path
 from benchmarks.financial_fixtures import DATE, build, digest, persist, seed_plans
 from benchmarks.operations import Prepared
 from invest import performance, plans, tax, tax_policy
+from invest.financial_state import state_hash
+from invest.planning import propose
+from invest.simulations import simulate
 
 
 def foundation_projection(value):
@@ -23,9 +26,6 @@ def foundation_projection(value):
         raise ValueError('Unexpected reference calendar outcome; financial comparison is invalid')
     return {key: foundation_projection(item) for key, item in value.items()
             if not (plan and key == 'cadence')}
-from invest.financial_state import state_hash
-from invest.planning import propose
-from invest.simulations import simulate
 
 MANIFEST = json.loads((Path(__file__).parent/'cases.json').read_text())
 CASES = {case['id']:case for case in MANIFEST['cases']}

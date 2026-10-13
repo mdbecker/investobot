@@ -24,8 +24,8 @@ docker compose run --rm -T app invest portfolio reconcile - < local-data/snapsho
 
 Inspect quantity, valuation, basis, lot quantities, identifiers, cash and warnings.
 The explicit source date above must be supported by the page or human confirmation;
-otherwise omit it. `imported_at` does not prove freshness. Default incomplete
-coverage and typed parser issues remain review evidence; explicitly overriding an
+otherwise omit it. `imported_at` does not prove freshness. Typed parser issues
+remain review evidence; explicitly overriding an
 environment does not resolve omitted or inconsistent source rows. Default incomplete
 coverage updates observed inventory without deleting absent rows. Add
 `--positions-complete` and/or `--lots-complete` only when the human confirms the
