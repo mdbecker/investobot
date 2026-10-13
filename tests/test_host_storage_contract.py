@@ -114,3 +114,12 @@ def test_given_missing_or_invalid_archive_then_accepted_destination_is_preserved
     except DomainError:
         pass
     assert selected.read_bytes() == before
+
+
+def test_given_host_agent_configuration_then_docker_image_excludes_entire_directories():
+    # Given external host-agent configuration, including unrelated operator skills,
+    # When Docker copies the checkout, Then both complete trees stay outside images.
+    rules = (ROOT / '.dockerignore').read_text().splitlines()
+    assert '.agents/' in rules
+    assert '.claude/' in rules
+    assert not any(rule.startswith(('!.agents', '!.claude')) for rule in rules)
