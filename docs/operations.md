@@ -86,7 +86,6 @@ service through a local Compose override. Check host access before accepting
 private data. Do not start with inaccessible root-owned directories. Never add
 private files or that local override to Git.
 
-Fresh host-backed storage is authorized; no migration or data transfer is required.
 The existing application initializes an empty ledger when an initializing CLI
 command or confirmed acceptance needs it. Dashboard reads never create a ledger.
 Complete `.agents/` and `.claude/` directories belong to the host agent and are

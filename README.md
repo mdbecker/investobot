@@ -137,8 +137,7 @@ docker compose stop app
 
 Backup uses SQLite's online API and verifies referenced artifact hashes. Keep a
 separate encrypted off-device copy with your own backup tooling. An archive on
-the same laptop does not protect against device loss. Fresh host-backed storage is authorized;
-no migration is necessary. See
+the same laptop does not protect against device loss. See
 [operations](docs/operations.md). The prompt CRUD interface is retired; operator
 context is ordinary host Markdown. Never merge untrusted notes into canonical skills.
 
