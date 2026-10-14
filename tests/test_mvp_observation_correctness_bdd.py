@@ -93,17 +93,21 @@ def issues(ctx):
     result = ctx['ledger'].apply(ctx['snapshot'])
     assert result['issues'] == ctx['snapshot']['issues']
     assert result['status'] == 'APPLIED' and result['evidence_complete'] is False
+    repeated = ctx['ledger'].apply(ctx['snapshot'])
+    assert repeated['issues'] == result['issues']
+    assert repeated['evidence_complete'] is False
 
 
 @when('a partial snapshot omits positions lots and cash')
 def missing(ctx):
     ctx['snapshot'].update(positions=[], lots=[], positions_complete=False, lots_complete=False,
                            cash_known=False)
-    ctx['ledger'].apply(ctx['snapshot'])
+    ctx['accepted_partial'] = ctx['ledger'].apply(ctx['snapshot'])
 
 
 @then('accepted inventory cash and lots remain and repeat is idempotent')
 def preserved(ctx):
+    assert ctx['accepted_partial']['evidence_complete'] is False
     state = ctx['ledger'].state()
     for key in ('positions', 'lots', 'cash_balances'):
         assert state[key] == ctx['before'][key]
@@ -127,3 +131,26 @@ def blocked(ctx):
         ctx['ledger'].apply(ctx['snapshot'])
     assert error.value.code == 3
     assert ctx['ledger'].state() == ctx['before']
+
+
+@when('a large exact mark and two cents cash are accepted')
+def large_mark(ctx):
+    position = ctx['snapshot']['positions'][0]
+    position.update(price='100000000000000000000000000000.001',
+        market_value='1000000000000000000000000000000.01', displayed_price_precision=3)
+    ctx['snapshot']['cash'] = '0.02'
+    ctx['ledger'].apply(ctx['snapshot'])
+
+
+@then('summary retains every cent in totals and known gain')
+def exact_summary(ctx):
+    from fractions import Fraction
+
+    before = ctx['ledger'].state()
+    result = ctx['ledger'].summary()
+    expected = Fraction('1000000000000000000000000000000.01') + Fraction('0.02')
+    assert Fraction(result['total_value']) == expected
+    assert Fraction(result['known_value_subtotal']) == expected
+    assert Fraction(result['by_account']['fictional']) == expected
+    assert Fraction(result['unrealized_gain_loss_known_basis']) == expected - Fraction('0.02') - 800
+    assert ctx['ledger'].state() == before

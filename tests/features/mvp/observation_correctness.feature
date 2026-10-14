@@ -28,3 +28,8 @@ Feature: Canonical observation and valuation safety
     Given accepted fictional holdings and cash
     When source values exceed their printed precision tolerance
     Then acceptance is blocked without mutation
+
+  Scenario: Summary preserves low order money at large magnitudes
+    Given accepted fictional holdings and cash
+    When a large exact mark and two cents cash are accepted
+    Then summary retains every cent in totals and known gain
