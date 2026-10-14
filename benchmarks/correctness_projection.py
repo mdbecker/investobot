@@ -10,6 +10,9 @@ def project(value):
     if not isinstance(value, dict):
         return value
     result = {key: project(item) for key, item in value.items()}
+    if 'snapshots' in result:
+        result['snapshots'] = sorted(result['snapshots'], key=lambda row: json.dumps(
+            row, sort_keys=True, default=str))
     if 'account' in value and 'source_hash' in value and 'positions_complete' in value:
         if value.get('issues') == []:
             result.pop('issues', None)
