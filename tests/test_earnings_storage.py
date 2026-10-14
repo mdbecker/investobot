@@ -103,11 +103,12 @@ def test_storage_rollback_and_cross_run_source_integrity(ctx):
 
 
 def test_research_preserves_real_saved_plan(ctx):
+    from planning_fixtures import saved_proposal
     from test_storage_stabilization import snapshot
 
     from invest.earnings import import_research
     from invest.market import MarketClient
-    from invest.plans import generate, show
+    from invest.plans import show
     from invest.targets import save
     db = ctx['db']
     db.apply(snapshot(10, 'synthetic-original', '2026-10-08'))
@@ -115,7 +116,7 @@ def test_research_preserves_real_saved_plan(ctx):
     target = save(db, {'name': 'Synthetic allocation',
         'target_allocations': {security: '.5', 'CASH': '.5'},
         'planning_constraints': {'eligible_accounts': ['ira'], 'permitted_securities': {'ira': [security]}}})
-    plan = generate(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
+    plan = saved_proposal(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
                     target['id'], as_of='2026-10-08')
     state = copy.deepcopy(db.planning_state())
     saved = copy.deepcopy(show(db, plan['id']))

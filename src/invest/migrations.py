@@ -143,7 +143,7 @@ def migrate(path, migrations=None):
         return _blocked('VERIFIED_BACKUP_REQUIRED',
                         'Create a verified backup of the current selected ledger before upgrading')
     try:
-        connection = db.connect(path, initialize=False)
+        connection = db.connect(path, initialize_schema=False)
     except (DomainError, sqlite3.DatabaseError, OSError):
         return _blocked('DATABASE_CHANGED_DURING_PREFLIGHT',
                         'The selected ledger became unavailable or changed during preflight')

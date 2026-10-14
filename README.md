@@ -10,8 +10,8 @@ credentials or places orders.
 
 This is a synthetic-tested **development preview**. Vanguard, Fidelity NetBenefits
 401(k) and PNC HTML adapters remain PROVISIONAL; live FMP contracts are UNVERIFIED.
-The [current PRD](docs/PRD-mvp-host-agent-docker-persistence-2026-10-12.md)
-governs execution and storage; [handoff evidence](docs/implementation/host-agent-status.md)
+The [current PRD](docs/PRD-mvp-correctness-simplification-2026-10-13.md)
+governs correctness and workflow simplification; [handoff evidence](docs/implementation/correctness-status.md)
 records validation and outstanding operator steps.
 
 ## Where things run

@@ -195,8 +195,6 @@ must not become unrestricted trading. A complete target file has this shape:
       "ira": ["VERIFIED_EQUITY_SECURITY_ID", "VERIFIED_BOND_FUND_SECURITY_ID"]
     },
     "cash_minimums": {"taxable": "500", "ira": "0"},
-    "short_term_gain_budget": "0",
-    "long_term_gain_budget": "5000",
     "target_tolerance": "0.01"
   }
 }
@@ -204,7 +202,7 @@ must not become unrestricted trading. A complete target file has this shape:
 
 Replace every placeholder with actual canonical IDs and loaded account aliases.
 The allocation is an illustrative template, not an investment recommendation.
-Weights total one within `0.000001`; dollar gain budgets and weights are Decimal
+Weights total one within `0.000001`; financial amounts and weights are Decimal
 strings. Save three separately researched candidates, for example conservative,
 balanced and growth, as complete files with their own names, rationale, actual
 security choices and valid weights:
@@ -242,39 +240,56 @@ history. These operations do not execute trades or change actual account state.
   --format json --output /app/local-data/conservative-report.json
 ```
 
-Replace returned target and plan IDs. Keep actual source state and price/date/tax
-assumptions the same across alternatives for a common baseline; comparison flags
-differences and supplies no single ranking score. Optional `--version N` fixes a
-target version. Optional `--prices /app/local-data/prices.json` supplies observations
-keyed by canonical security ID, each containing `price`, `as_of`, `currency` and
-`source`. Hypothetical prices never overwrite portfolio marks; stale/unknown
-prices can block trades. Individual bonds do not receive automatic trade proposals.
+Each request contains a previously saved `target_id` and sourced `prices` keyed
+by canonical security ID, with `price`, `as_of`, `currency`, `data_environment`
+and `source`. Inline targets are rejected; save/activate and policy approval are
+separate commands. `plan propose` saves an immutable hypothetical plan and returns
+full actions with account, units, price, notional, fee and specific lot allocations.
+List/compare use compact summaries; show/export retain full detail and caveats.
 
-Generate, list and compare return compact summaries: plan identifiers, current
-and generated statuses, saved financial metrics and a preview of up to five
-warnings. Comparison flags incompatible assumptions without ranking alternatives.
-`plan show` intentionally retrieves the full saved plan and can return large JSON;
-use it when detailed actions or assumptions are needed. Prefer the Markdown export
-above for human review without loading complete portfolio histories into the
-agent's conversation. Full warnings and analyses remain in show/report outputs.
+For fictional exploration, put explicitly SYNTHETIC unapproved assumptions in
+`policy` and sourced observations in `prices`, with optional `mode`:
 
-Each request includes a saved `target_id` and explicit sourced `prices`; inspect
-`tools describe plan.propose` and [trading policy](trading-policy.md) before filling
-the request. Contribution-only planning uses confirmed same-account cash and
-never sells. Quarterly rebalancing requires an approved window and sufficient
-drift, prioritizes permitted retirement sales, and bounds taxable sales by annual
-positive estimated tax-cost headroom. Known losses do not replenish headroom.
-Review exact lots, fees, permissions, unknowns and remaining drift. Every proposal
-requires a human decision and manual execution.
+```sh
+./scripts/invest plan preview --file /app/local-data/work/scenario.json \
+  --target SAVED_TARGET_ID --as-of 2026-10-08
+```
 
-The preserved `plan generate` command is an unapproved hypothetical scenario
-primitive. Its synthetic outputs always require typed policy review; REAL inputs
-are blocked without actions or saving. It cannot substitute for policy approval.
+Preview uses the same planner and saves nothing. Approved proposals need saved
+policy IDs. Contributions-only never sells; rebalance uses account cash first on
+any valid date with permissions, fees, increments, floors and freshness safeguards.
+Specific-lot estimates use remaining adjusted basis and allocated sale fees;
+positive estimated tax dollars consume annual allowance, losses never replenish it.
+Saving plans spends nothing and does not establish wash-sale legality or guaranteed
+savings. This deterministic heuristic is not globally optimal.
 
-Report export returns a JSON path/content-hash confirmation. Exports reproduce
-saved inputs and calculations without recomputation; status in an old report is
-historical. Recheck `plan show` for `STALE` before acting. Generate a new plan when
-actual state changes instead of silently editing the old plan.
+Prefer one routine discretionary trading session per month and at most four
+rebalances per year. Confirmed recent activity supplies context; necessary
+exceptions may use any valid date with an explanation and human manual execution.
+Historical backtest comparison saves only immutable runs: explicitly save a chosen
+target and propose its transition separately. Saved reports never recalculate with
+fresh prices. Recheck current staleness before acting.
+
+## Publish reviewed dataset evidence
+
+```sh
+./scripts/invest data snapshot --file /app/local-data/work/manifest.json
+./scripts/invest data snapshot --file /app/local-data/work/manifest.json --confirm
+./scripts/invest data list
+./scripts/invest data verify --file /app/local-data/work/manifest.json
+./scripts/invest fund holdings FUND_TICKER
+./scripts/invest portfolio exposure
+./scripts/invest portfolio exposure --as-of 2026-10-08
+```
+
+The first invocation validates/previews without writing; confirmation publishes
+and identical repeats are idempotent. Confirmation establishes neither rights nor
+source truth. Fund retrieval is separate from persisted reporting. Current exposure
+uses today's UTC date with eligible caches labeled provisional; explicit historical
+cutoffs use eligible pinned evidence available then. Neither report fetches or writes.
+Missing marks give null total with known subtotal; source-only constituents keep
+observed amounts and paths without invented issuer matches. Unknown weights remain
+unknown, never redistributed. See [look-through](lookthrough.md).
 
 ## Simulate without accepting activity
 

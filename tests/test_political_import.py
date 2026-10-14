@@ -146,10 +146,11 @@ def test_equivalent_decimal_research_is_idempotent(tmp_path):
 
 
 def test_research_preserves_saved_plan_and_cli_readonly_checks(tmp_path, monkeypatch):
+    from planning_fixtures import saved_proposal
     from test_storage_stabilization import snapshot
 
     from invest.market import MarketClient
-    from invest.plans import generate, show
+    from invest.plans import show
     from invest.political import import_research
     from invest.targets import save
     db_path = tmp_path / 'plan.db'
@@ -162,7 +163,7 @@ def test_research_preserves_saved_plan_and_cli_readonly_checks(tmp_path, monkeyp
                           'planning_constraints': {'eligible_accounts': ['ira'],
                                                    'permitted_securities': {'ira': [identity]}}})
         client = MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json')
-        plan = generate(db, client, target['id'], as_of='2026-10-08')
+        plan = saved_proposal(db, client, target['id'], as_of='2026-10-08')
         before = show(db, plan['id'])
         incoming = package()
         incoming['limitations'] = ['Synthetic limitation ' + str(i) + 'x' * 3000 for i in range(700)]

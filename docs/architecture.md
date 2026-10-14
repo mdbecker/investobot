@@ -36,3 +36,11 @@ separate, preserving known exposure and unknown residual. Backtest lists project
 compact saved metrics; detail and comparison use immutable stored runs.
 Host publication is loopback only. See [viewer](inspection.md),
 [operations](operations.md) and [data contracts](data-contracts.md).
+
+One `lookthrough.exposure` engine serves persisted household/research/viewer reads;
+one `planning.propose` engine serves synthetic preview and approved proposals.
+One Decimal sale estimator allocates fees/remaining basis and reports positive tax
+cost. Confirmed executions retain recorded allocations. Household performance
+combines compatible calendar-date valuations; ambiguous flow boundaries remain
+typed, while independently supported XIRR may remain available.
+See [current PRD](PRD-mvp-correctness-simplification-2026-10-13.md).

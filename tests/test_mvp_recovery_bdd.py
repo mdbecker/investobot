@@ -19,7 +19,6 @@ scenarios("features/mvp/recovery.feature")
 def recovery(tmp_path, monkeypatch):
     path = tmp_path / "ledger.db"
     monkeypatch.setenv("INVEST_DB", str(path))
-    monkeypatch.setenv("INVEST_PROMPTS", str(tmp_path / "prompts"))
     return {"path": path, "tmp": tmp_path, "runner": CliRunner()}
 
 

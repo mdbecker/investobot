@@ -115,17 +115,16 @@ def test_schema_seven_rejects_six_without_touching_files(tmp_path):
 
 
 def test_existing_saved_plan_and_financial_fingerprint_remain_current(ctx):
-    from test_account_planning import setup
+    from planning_fixtures import account_fixture, saved_proposal
 
     from invest.market import MarketClient
     from invest.plan_storage import load_plan
-    from invest.plans import generate
     from invest.targets import save
     portfolio = {'ledger': ctx['db']}
-    setup(portfolio, 'TAX_FREE')
+    account_fixture(portfolio, 'TAX_FREE')
     target = save(ctx['db'], portfolio['payload'])
     client = MarketClient(ctx['db'], fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
-    plan = generate(ctx['db'], client, target['id'], as_of='2026-10-08')
+    plan = saved_proposal(ctx['db'], client, target['id'], as_of='2026-10-08')
     before_plan = load_plan(ctx['db'], plan['id'])
     before = ctx['db'].planning_state()
     accept(ctx)

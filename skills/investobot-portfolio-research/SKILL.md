@@ -55,7 +55,7 @@ Trigger: research the companies underlying a portfolio. Batch deterministic top
    path provenance, cycles, depth and constituent vintage.
 2. `./scripts/invest portfolio research-universe --as-of DATE --top 20 --min-exposure 0`.
    Use the discovered canonical frozen-universe contract without agent arithmetic;
-   retain unknown and filtered exposure. `./scripts/invest data snapshot --file /app/local-data/work/universe.json`.
+   retain unknown and filtered exposure. `./scripts/invest data snapshot --file /app/local-data/work/universe.json` previews; obtain independent human source review before repeating with `--confirm`.
 3. `./scripts/invest research portfolio plan --universe-manifest MANIFEST_ID` with discovered
    window flags. Follow existing earnings/news/competitive/political-contributions/
    management-insiders skills for every requested issuer; fund diligence remains

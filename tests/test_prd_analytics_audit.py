@@ -21,7 +21,6 @@ from invest.portfolio_research_inputs import universe
 def ledger(tmp_path, monkeypatch):
     path = tmp_path / 'fictional-analytics-audit.db'
     monkeypatch.setenv('INVEST_DB', str(path))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     instance = Ledger(path)
     instance.apply({
         'account': {'id': 'fictional', 'name': 'Fictional audit account',

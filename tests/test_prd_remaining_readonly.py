@@ -15,7 +15,6 @@ def context(tmp_path, monkeypatch):
     fixture.write_text(json.dumps({'history': {}, 'holdings': {}, 'quote': {}}))
     monkeypatch.setenv('INVEST_DB', str(selected))
     monkeypatch.setenv('INVEST_FIXTURES', str(fixture))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     monkeypatch.setenv('INVEST_CONFIG', str(tmp_path / 'absent-config.toml'))
     return {'path': selected, 'directory': tmp_path, 'runner': CliRunner()}
 

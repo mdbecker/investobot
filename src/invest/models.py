@@ -138,8 +138,6 @@ class PlanningConstraints(BaseModel):
     excluded_positions: list[str] = Field(default_factory=list)
     cash_minimums: dict[str, Nonnegative] = Field(default_factory=dict)
     target_tolerance: Weight = Decimal("0.01")
-    short_term_gain_budget: Nonnegative | None = None
-    long_term_gain_budget: Nonnegative | None = None
     trade_increments: dict[str, dict[str, Positive]] = Field(default_factory=dict)
     price_max_age_days: int = Field(default=1, ge=0)
 

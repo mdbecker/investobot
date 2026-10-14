@@ -578,10 +578,11 @@ def test_deferred_same_run_ownership_foreign_keys_and_link_check(ctx):
 
 
 def test_corrected_research_preserves_saved_plan_holdings_and_lots(ctx):
+    from planning_fixtures import saved_proposal
     from test_storage_stabilization import snapshot
 
     from invest.market import MarketClient
-    from invest.plans import generate, show
+    from invest.plans import show
     from invest.targets import save
     ownership_pair(ctx)
     transaction_pair(ctx)
@@ -593,7 +594,7 @@ def test_corrected_research_preserves_saved_plan_holdings_and_lots(ctx):
         'target_allocations': {security: '.5', 'CASH': '.5'},
         'planning_constraints': {'eligible_accounts': ['ira'],
                                  'permitted_securities': {'ira': [security]}}})
-    plan = generate(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
+    plan = saved_proposal(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
                     target['id'], as_of='2026-10-08')
     before, planning_before = copy.deepcopy(db.state()), copy.deepcopy(db.planning_state())
     plan_before = show(db, plan['id'])

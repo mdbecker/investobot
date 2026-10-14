@@ -12,7 +12,6 @@ from invest.cli import app
 def context(tmp_path, monkeypatch):
     selected = tmp_path / 'absent-fictional-ledger.db'
     monkeypatch.setenv('INVEST_DB', str(selected))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     return {'directory': tmp_path, 'path': selected, 'runner': CliRunner()}
 
 

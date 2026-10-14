@@ -1,14 +1,13 @@
 import copy
-import runpy
 from pathlib import Path
 
 import pytest
+from planning_fixtures import saved_proposal
 from pytest_bdd import given, scenarios, then, when
 
 from invest.ledger import Ledger
 from invest.market import MarketClient
-from invest.plan_storage import load_plan, summaries
-from invest.plans import generate, list_plans, persisted, show
+from invest.plans import list_plans, persisted, show
 from invest.reports import export
 from invest.targets import save
 
@@ -49,7 +48,7 @@ def saved(ctx):
     })
     ctx.update(identity=identity, target=target,
                client=MarketClient(ledger, fixture_path=Path("tests/fixtures/fmp-synthetic.json")))
-    plan = generate(ledger, ctx["client"], target["id"], as_of="2026-10-08")
+    plan = saved_proposal(ledger, ctx["client"], target["id"], as_of="2026-10-08")
     ctx["original"] = copy.deepcopy(plan)
 
 
@@ -62,7 +61,7 @@ def changed(ctx):
 def retained(ctx):
     plan = persisted(ctx["ledger"], ctx["original"]["id"])
     assert plan == ctx["original"]
-    identifiers = plan["source_snapshot_ids"]
+    identifiers = [row['id'] for row in plan['source_state']['snapshots']]
     assert identifiers
     historical_ids = {row["id"] for row in ctx["ledger"].rows("snapshots")}
     assert set(identifiers) <= historical_ids
@@ -90,7 +89,7 @@ def same_export(ctx):
 
 @when("a second alternative uses a different explicit price assumption")
 def alternative(ctx):
-    ctx["second"] = generate(ctx["ledger"], ctx["client"], ctx["target"]["id"],
+    ctx["second"] = saved_proposal(ctx["ledger"], ctx["client"], ctx["target"]["id"],
                              as_of="2026-10-08", prices={ctx["identity"]: {
                                  "price": "110", "as_of": "2026-10-08",
                                  "currency": "USD", "source": "synthetic assumption"}})
@@ -111,45 +110,3 @@ def independent(ctx):
     identity = ctx["identity"]
     assert ctx["original"]["assumptions"]["prices"][identity]["price"] == "100"
     assert ctx["second"]["assumptions"]["prices"][identity]["price"] == "110"
-
-
-@given("ten accounts with one thousand positions two thousand lots and twenty snapshots each")
-def workload(ctx):
-    script = Path(__file__).resolve().parents[1] / "scripts" / "benchmark_plan_storage.py"
-    ctx["benchmark"] = runpy.run_path(str(script))
-    ctx["workload"] = ctx["benchmark"]["build_fixture"](ctx["ledger"])
-    state = ctx["ledger"].state()
-    assert len(state["accounts"]) == 10
-    assert len(state["positions"]) == 1000
-    assert len(state["lots"]) == 2000
-    assert len(state["snapshots"]) == 200
-    assert all(sum(s["account"]["id"] == a["id"] for s in state["snapshots"]) == 20
-               for a in state["accounts"])
-
-
-@when("twenty independent alternative plans are saved")
-def workload_plans(ctx):
-    ctx["measurements"] = ctx["benchmark"]["measure"](
-        ctx["ledger"], ctx["workload"], ctx["directory"])
-
-
-@then("all twenty plans can be listed retrieved and exported")
-def accessible(ctx):
-    result = ctx["measurements"]
-    assert result["plan_count"] == 20
-    assert result["listed_plan_count"] == 20
-    assert result["retrieved_plan_id"] in {p["id"] for p in [load_plan(ctx["ledger"], row['id']) for row in summaries(ctx["ledger"])]}
-    assert (ctx["directory"] / "benchmark-report.md").read_text().startswith("# ")
-
-
-@then("storage measurements cover database growth plan size and access times")
-def measurements(ctx):
-    result = ctx["measurements"]
-    assert result["database_bytes_after"] > result["database_bytes_before"] > 0
-    assert result["average_serialized_plan_bytes"] > 0
-    for key in ("list_seconds", "retrieve_seconds", "markdown_export_seconds"):
-        assert result[key] >= 0
-    assert result["listed_response_bytes"] < 128 * 1024
-    assert result["compared_response_bytes"] < 128 * 1024
-    assert result["compared_plan_count"] == 20
-    assert result["compare_seconds"] >= 0

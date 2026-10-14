@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
-from invest.analytics import exposure, risk
+from invest.analytics import risk
 from invest.tax import analyze
 
 scenarios("features/household_tax.feature")
@@ -191,85 +191,6 @@ def taxfree(ctx):
     assert ctx["result"]["status"] == "NOT_TAXABLE"
     assert ctx["result"]["realized_short_term_gain_loss"] == "0"
     assert ctx["result"]["realized_long_term_gain_loss"] == "0"
-
-
-class FundClient:
-    def __init__(self):
-        self.data = {
-            "holdings": [
-                {
-                    "identifier": "ISIN:US0378331005",
-                    "ticker": "AAPL",
-                    "isin": "US0378331005",
-                    "weight": ".20",
-                }
-            ],
-            "source": "synthetic",
-            "data_as_of": "2026-10-08",
-            "weight_coverage": ".20",
-            "warnings": [],
-        }
-
-    def holdings(self, ticker, refresh=False):
-        return self.data
-
-
-@given("direct shares and a partially reported fund holding the same security")
-def lookthrough(ctx):
-    ctx["client"] = FundClient()
-    ctx["state"] = {
-        "securities": [{"id": "apple", "ticker": "AAPL", "isin": "US0378331005"}],
-        "cash_balances": [],
-        "positions": [
-            {
-                "security_id": "apple",
-                "security": "AAPL",
-                "account_id": "tax",
-                "market_value": "100",
-                "asset_type": "STOCK",
-            },
-            {
-                "security_id": "fund",
-                "security": "FUND",
-                "account_id": "ira",
-                "market_value": "1000",
-                "asset_type": "ETF",
-            },
-        ],
-    }
-
-
-@given("the fund security has a conflicting ISIN")
-def identifiers(ctx):
-    ctx["client"].data["holdings"][0].update(isin="US0000000001", identifier="ISIN:US0000000001")
-
-
-@when("household look-through is computed")
-def compute_exposure(ctx):
-    ctx["result"] = exposure(ctx["state"], ctx["client"])
-
-
-@then("direct and indirect exposure combine with strong identity confidence")
-def merged(ctx):
-    row = ctx["result"]["exposures"][0]
-    assert Decimal(row["total_value"]) == 300
-    assert row["identifier_confidence"] == "STRONG"
-    assert len(row["contributions"]) == 2
-
-
-@then("unresolved fund value and dated source coverage remain visible")
-def coverage(ctx):
-    assert Decimal(ctx["result"]["unknown_exposure_value"]) == 800
-    source = ctx["result"]["fund_coverage"]["FUND"]
-    assert Decimal(source["represented_weight"]) == Decimal(".20")
-    assert source["source"] == "synthetic"
-    assert source["data_as_of"] == "2026-10-08"
-
-
-@then("two strong identities remain distinct")
-def separate(ctx):
-    assert len(ctx["result"]["exposures"]) == 2
-    assert all(row["identifier_confidence"] == "STRONG" for row in ctx["result"]["exposures"])
 
 
 class HistoryClient:

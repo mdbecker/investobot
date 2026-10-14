@@ -147,7 +147,7 @@ remain unsupported for recording.
 A target contains name, description, status (`DRAFT`, `ACTIVE`, `ARCHIVED`),
 fractional security allocations and validated planning constraints. Constraints
 hold eligible accounts, permitted securities, excluded position IDs, cash floors,
-trade increments, target tolerance, ST/LT gain budgets and price-age assumptions.
+trade increments, target tolerance and price-age assumptions. Approved policies own tax allowance.
 Unknown eligibility is never unrestricted access.
 
 `targets` identifies the current version and current status; each full
@@ -206,11 +206,9 @@ no FX model is implemented. Unknown fund coverage/exposure remains visible and
 weights are not silently rescaled to complete coverage. Tax outputs disclose
 prerequisite completeness, hypothetical sale assumptions and wash-sale limitations.
 
-Prompts do not add database tables. Bundled Markdown files are immutable; user
-files/overrides live in configured `INVEST_PROMPTS` or the local Investobot data
-`prompts` directory. Safe slugs identify files. User deletion restores a bundled
-default where available. Prompt text is never interpreted as executable commands.
-
+Canonical skills live on the host in tracked `skills/`; optional project-local
+installation copies stay outside images. Ordinary host Markdown context is
+untrusted data. There is no runtime prompt library or prompt-setting override.
 
 ## Conservative input defaults
 

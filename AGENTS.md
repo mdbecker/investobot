@@ -2,6 +2,14 @@
 
 ## Current scope and workflow
 
+- [Correctness/simplification PRD](docs/PRD-mvp-correctness-simplification-2026-10-13.md)
+  controls explicit later decisions; Gate 0 covers A-F. Use one recursive exposure
+  engine and one planner; synthetic preview saves nothing. Real proposals need
+  saved targets and approved policies; dataset publication needs confirmation.
+  Preserve source-only constituent amounts without ticker-based identity claims.
+  Combine compatible household dates without inventing flow chronology.
+
+
 - [Host-agent/persistence PRD](docs/PRD-mvp-host-agent-docker-persistence-2026-10-12.md)
   controls execution, storage, prompt retirement and viewer corrections. It
   supersedes conflicting execution/storage/setup statements. The owner authorizes
@@ -14,7 +22,7 @@
 - Keep `main`; conventional commits only. No remotes, fetches or pushes.
   Coordinator commits observed test-only red before new behavior/confirmed bugs,
   and verified green afterward. Pure refactors use existing green behavioral tests.
-  Write the complete changed A–D scenario set before any production edits.
+  Write the complete changed A-F scenario set before any production edits.
   No skips, xfails, artificial internal mocks or read-count/call-order assertions.
 - When parallel work is requested, agents own separate files/modules and never
   commit. Coordinator owns shared CLI/models/ledger/schema/contracts/integration.

@@ -5,7 +5,7 @@ import hashlib
 import json
 import uuid
 from datetime import date, datetime, timezone
-from decimal import ROUND_FLOOR, Decimal, localcontext
+from decimal import ROUND_FLOOR, Decimal, InvalidOperation, localcontext
 
 from invest.ledger import household_currency
 from invest.models import DomainError, decimal
@@ -110,23 +110,33 @@ def propose(ledger, target_id, *, policy, mode, as_of, prices):
                     'message': 'Confirm independent valuation evidence before whole-household planning',
                     'blocks_calculation': True, 'blocks_proposals': True,
                     'blocks_execution_review': True} for row in missing_marks]}
+    preview = isinstance(policy, dict)
+    resolved_policy = policy if preview else get_policy(ledger, policy)
+    target = show(ledger, target_id)
+
+    def precision(value):
+        if isinstance(value, dict):
+            return sum(precision(cell) for cell in value.values())
+        if isinstance(value, (list, tuple)):
+            return sum(precision(cell) for cell in value)
+        try:
+            number = Decimal(str(value))
+        except (InvalidOperation, ValueError):
+            return 0
+        return len(number.as_tuple().digits) + abs(number.as_tuple().exponent) if number.is_finite() else 0
+
     with localcontext() as context:
-        amounts = [decimal(row['market_value']) for row in baseline['positions']]
-        amounts.extend(decimal(row['amount']) for row in baseline['cash_balances'])
-        context.prec = max(100, sum(len(value.as_tuple().digits) + abs(value.as_tuple().exponent)
-                                   for value in amounts) + 64)
-        return _propose(ledger, target_id, policy, mode, as_of, prices, baseline)
+        context.prec = max(100, precision([baseline, resolved_policy, target, prices]) + 64)
+        return _propose(ledger, target, resolved_policy, mode, as_of, prices, baseline, preview)
 
 
-def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
+def _propose(ledger, target, supplied, mode, as_of, prices, baseline, preview):
     from invest.simulations import simulate
 
     day = date.fromisoformat(as_of)
     if mode not in {'contributions-only', 'rebalance'}:
         raise DomainError('Plan mode must be contributions-only or rebalance')
-    preview = isinstance(supplied, dict)
-    policy = copy.deepcopy(supplied if preview else get_policy(ledger, supplied))
-    target = show(ledger, target_id)
+    policy = copy.deepcopy(supplied)
     accounts = {row['id']: row for row in baseline['accounts']}
     securities = {row['id']: row for row in baseline['securities']}
     positions = {(row['account_id'], row['security_id']): row for row in baseline['positions']}
@@ -167,6 +177,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
         identity = account['id']
         observation = next((row for row in baseline['snapshots']
                             if row['account']['id'] == identity), {})
+        issues.extend(dict(source_issue, account_id=identity)
+                      for source_issue in observation.get('issues', []))
         if observation.get('positions_complete') is not True:
             issue('INCOMPLETE_POSITION_COVERAGE', 'Whole-household proposals require complete position coverage', account=identity)
         balance = next((row for row in baseline['cash_balances']
@@ -340,7 +352,8 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
         values[sid] = values.get(sid, Decimal(0)) + (delta if kind == 'BUY' else -delta)
         cash[account] += -delta - fee if kind == 'BUY' else delta - fee
 
-    blocking = any(item['blocks_calculation'] for item in issues)
+    blocking = any(item.get('blocks_calculation', False) or item.get('blocks_proposals', False)
+                   or item.get('blocks_proposal', False) for item in issues)
     if not blocking and total > 0:
         def purchases():
             for sid, weight in sorted(weights.items(), key=lambda pair: (
@@ -394,7 +407,7 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                             'policy_approval': 'SYNTHETIC_DOMAIN_PREVIEW' if preview else 'APPROVED'},
             'remaining_target_drift': proposed['allocations'], 'trade_count': len(actions),
             'turnover': _text(sum((decimal(action['quantity']) * decimal(action['price']) for action in actions), Decimal(0))),
-            'warnings': [item['message'] for item in issues],
+            'warnings': [item.get('message', item['code']) for item in issues],
             'status': 'BLOCKED' if blocking else 'REVIEW_REQUIRED' if issues else 'READY_FOR_HUMAN_REVIEW'}
     plan['saved'] = not preview
     if not preview:

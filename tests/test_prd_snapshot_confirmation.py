@@ -23,7 +23,6 @@ def snapshot(cash='100'):
 def context(tmp_path, monkeypatch):
     path = tmp_path / 'fictional-confirmation.db'
     monkeypatch.setenv('INVEST_DB', str(path))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     return {'path': path, 'directory': tmp_path, 'runner': CliRunner()}
 
 

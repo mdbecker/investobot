@@ -68,11 +68,14 @@ def persisted_observations(ledger, state, *, as_of, current=False):
                 row.pop('issuer_id', None)
                 row.pop('issuer_verified', None)
             holdings.append(row)
+        source_issues = list(entry.get('issues', []))
+        for metadata in (entry.get('metadata', {}), entry.get('coverage', {})):
+            source_issues.extend(metadata.get('issues', []))
         observations[security['id']] = {'as_of': entry.get('data_as_of'),
             'source_id': entry['id'], 'data_environment': entry.get('data_environment'),
             'published_at': entry.get('published_at'), 'observed_at': entry.get('observed_at'),
             'source_hash': entry.get('sha256'),
-            'provisional': entry.get('provisional', False), 'issues': entry.get('issues', []),
+            'provisional': entry.get('provisional', False), 'issues': source_issues,
             'holdings': holdings}
     return observations
 

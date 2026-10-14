@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from planning_fixtures import saved_proposal
+
 from invest import plans, targets
 from invest.ledger import Ledger
 from invest.market import MarketClient
@@ -21,7 +23,7 @@ def test_saved_plan_gets_preserve_compact_summary_and_full_report(tmp_path):
         target = targets.save(ledger, {'name': 'Hold shares', 'target_allocations': {sid: '1'},
             'planning_constraints': {'eligible_accounts': ['ira'],
                                     'permitted_securities': {'ira': [sid]}}})
-        saved = plans.generate(ledger, MarketClient(ledger, fixture_path=Path(
+        saved = saved_proposal(ledger, MarketClient(ledger, fixture_path=Path(
             'tests/fixtures/fmp-synthetic.json')), target['id'], as_of='2026-10-08')
         before = list(ledger.connection.iterdump())
         summary = _get_api(ledger, '/api/plans', {})['plans'][0]

@@ -23,7 +23,7 @@ Final verification uses an image built from the exact committed Git tree, locked
 offline full tests and lint, installed-wheel CLI/skill checks, recovery and the
 synthetic demonstration. Mounted-source results and local measurements are
 explicitly distinct from exact-commit or remote CI evidence. See
-[status](implementation/unified-mvp-status.md) and [benchmarks](benchmarks-unified-mvp.md).
+[status](implementation/correctness-status.md) and [benchmarks](benchmarks-unified-mvp.md).
 
 ## Current offline commands
 
@@ -42,3 +42,9 @@ Compose discovery/stdin/install/persistence checks. Performance retains exactly
 eight paired representative workflows and its confirmed >25% guard, as described
 in [performance](performance.md). Retain raw local evidence outside Git for 90
 days and unresolved failures through resolution. No remote CI result is implied.
+
+The current correctness PRD requires the complete A-F BDD set before production
+edits. Red and green checkpoints are local conventional commits on main. Real
+adapters/providers remain human gates; synthetic tests cannot certify them.
+Retired engine-specific tests and the older broad storage benchmark are removed;
+fixed eight-workflow performance and meaningful storage/recovery coverage remain.

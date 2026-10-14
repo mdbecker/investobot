@@ -7,9 +7,8 @@ from pathlib import Path
 
 from benchmarks.financial_fixtures import DATE, build
 from fuzz import oracles
-from invest import analytics, backup, performance, search, tax
+from invest import backup, performance, search, tax
 from invest.ledger import Ledger
-from invest.market import MarketClient
 from invest.models import DomainError
 from invest.parsers.generic import parse_html
 from invest.planning import propose
@@ -123,7 +122,8 @@ def execute(case,root):
                         value=performance.calculate(payload)
                     elif kind=='exposure':
                         provider=root/'provider.json';provider.write_text('{}')
-                        value=analytics.exposure(ledger.planning_state(),MarketClient(ledger,fixture_path=provider))
+                        from invest.portfolio_research_inputs import exposure_report
+                        value=exposure_report(ledger)
                     else:raise DomainError('Unsupported fixed query kind')
                 elif name=='tax':
                     if params.get('kind')!='lots':raise DomainError('Unsupported fixed tax kind')

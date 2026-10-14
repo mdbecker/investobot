@@ -17,7 +17,7 @@ def sourced_nested_holdings():
                         'issuer_identity_evidence': 'Reviewed fictional issuer source'}],
         'positions': [{'account_id': 'ira', 'security_id': 'outer', 'market_value': '1000',
                        'as_of': '2026-10-01'}],
-        'cash_balances': [],
+        'cash_balances': [{'account_id': 'ira', 'amount': '0'}],
     }
     observations = {
         'outer': {'as_of': '2026-10-01', 'source_id': 'fictional-outer-source',

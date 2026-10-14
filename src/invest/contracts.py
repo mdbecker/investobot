@@ -115,6 +115,7 @@ SCOPES = {
     'backtest.run': 'hypothetical_backtests',
     'backtest.compare': 'hypothetical_backtests',
     'portfolio.research-universe': 'read',
+    'portfolio.exposure': 'read',
     'data.snapshot': 'analytical_manifests',
     'data.list': 'read',
     'data.verify': 'read',
@@ -144,7 +145,7 @@ SCOPES = {
     "account.update": "account_metadata",
 }
 CACHE_TOOLS = {
-    "portfolio.exposure", "portfolio.risk", "fund.holdings", "fund.compare", "fund.search",
+    "portfolio.risk", "fund.holdings", "fund.compare", "fund.search",
     "fund.replacements", "market.history", "market.quote", "security.screen",
 }
 JSON_MODELS = {
@@ -156,6 +157,9 @@ JSON_MODELS = {
     "account.update": "AccountUpdate",
 }
 JSON_CONTRACTS = {
+    'plan.propose': 'Object with previously saved target_id and sourced prices keyed by canonical security ID. Inline targets are rejected; approved policy ID is a separate command option.',
+    'plan.preview': 'Object with explicitly SYNTHETIC unapproved policy assumptions, sourced prices and optional contributions-only/rebalance mode. Uses a previously saved target; writes nothing.',
+    'data.snapshot': 'Strict immutable manifest. Default validates/previews only; --confirm publishes reviewed evidence idempotently.',
     "portfolio.simulate": "Nonempty array of BUY, SELL or MOVE_CASH hypothetical actions. "
     "Supply account_id, quantity/amount and explicit hypothetical prices; no actual trades occur.",
     "security.screen": "Object of supported structured security filters.",

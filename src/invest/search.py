@@ -25,7 +25,7 @@ METADATA_FIELDS = {'chunk_id', 'document_id', 'issuer_id', 'source_url', 'source
 def open_search_connection(path, *, readonly=False):
     from invest.sqlite_extensions import load_vector
 
-    connection = connect(path, readonly=readonly, initialize=not readonly)
+    connection = connect(path, readonly=readonly, initialize_schema=not readonly)
     try:
         load_vector(connection)
         return connection
@@ -194,7 +194,7 @@ def search(path, *, query='', top_k=10, issuer_id=None, date_from=None, date_to=
     if not Path(path).exists():
         return blocked('CORPUS_UNAVAILABLE', 'UNAVAILABLE')
     connection = (open_search_connection(path, readonly=True) if vector is not None
-                  else connect(path, readonly=True, initialize=False))
+                  else connect(path, readonly=True, initialize_schema=False))
     try:
         result['coverage'] = {'excluded_permission_chunks': connection.execute(
             "SELECT count(*) FROM document_chunks WHERE permission!='PERMITTED'").fetchone()[0]}

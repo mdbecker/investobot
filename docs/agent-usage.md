@@ -127,7 +127,7 @@ Use target commands to save/version household
 security weights, activate a target and inspect allocation differences. Target
 activation does not execute trades. Unknown account eligibility must not mean
 unrestricted trading. Use plan commands to generate and compare proposed trades;
-check target version, source snapshots, prices, specific lots, ST/LT gain budgets,
+check target version, source snapshots, prices, specific lots, annual positive estimated tax-cost allowance,
 account restrictions, cash floors, unresolved drift and review status. A stale
 plan needs regeneration; saved plans are immutable. The heuristic is not globally
 optimal and may leave an incomplete plan when constraints prevent progress.

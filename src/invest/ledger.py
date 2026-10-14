@@ -104,15 +104,20 @@ class Ledger:
             for row in state[table]:
                 row.pop(field, None)
         query = """SELECT id, account_id, imported_at, source_timestamp, source_hash,
-                          positions_complete, lots_complete,cash_known,data_environment FROM (
+                          positions_complete, lots_complete,cash_known,data_environment,
+                          issues,institution_status FROM (
             SELECT id,account_id,imported_at,source_timestamp,source_hash,
                 positions_complete,lots_complete,cash_known,data_environment,
+                json_extract(payload_json, '$.issues') AS issues,
+                json_extract(payload_json, '$.institution_status') AS institution_status,
                 ROW_NUMBER() OVER (PARTITION BY account_id
-                    ORDER BY imported_at DESC,id DESC) AS ordinal
+                    ORDER BY imported_at DESC,rowid DESC) AS ordinal
             FROM snapshot_observations WHERE status!='EVIDENCE_ONLY') WHERE ordinal=1 ORDER BY account_id"""
         state['snapshots'] = [dict(id=r[0], account={'id': r[1]}, imported_at=r[2],
             source_timestamp=r[3], source_hash=r[4], positions_complete=bool(r[5]),
-            lots_complete=bool(r[6]),cash_known=bool(r[7]),data_environment=r[8]) for r in self.connection.execute(query)]
+            lots_complete=bool(r[6]),cash_known=bool(r[7]),data_environment=r[8],
+            issues=json.loads(r[9] or '[]'), institution_status=r[10])
+            for r in self.connection.execute(query)]
         return state
 
     def resolve(self, alias):

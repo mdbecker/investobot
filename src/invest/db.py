@@ -275,7 +275,7 @@ def initialize(connection):
         connection.execute(f'PRAGMA user_version={SCHEMA_VERSION}')
 
 
-def connect(path, readonly=False, initialize=True):
+def connect(path, readonly=False, initialize_schema=True):
     """Validate existing files before any write-capable pragmas or initialization."""
     memory = str(path) == ':memory:'
     selected = Path(path)
@@ -295,7 +295,7 @@ def connect(path, readonly=False, initialize=True):
             validate_schema(check)
         finally:
             check.close()
-    elif not initialize:
+    elif not initialize_schema:
         raise DomainError('Database is unavailable', 3)
     if not memory:
         selected.parent.mkdir(parents=True, exist_ok=True)
@@ -308,8 +308,7 @@ def connect(path, readonly=False, initialize=True):
         if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table'").fetchone():
             connection.close()
             raise DomainError('UNSUPPORTED_DEVELOPMENT_SCHEMA: nonempty unversioned ledger', 3)
-        # initialize is the function as well as the public flag name.
-        globals()['initialize'](connection)
+        initialize(connection)
     return connection
 
 

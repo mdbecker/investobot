@@ -22,7 +22,6 @@ scenarios('features/mvp/accounting.feature')
 def accounting(tmp_path, monkeypatch):
     path = tmp_path / 'fictional-accounting.db'
     monkeypatch.setenv('INVEST_DB', str(path))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     ledger = Ledger(path)
     yield {'ledger': ledger, 'directory': tmp_path, 'runner': CliRunner()}
     ledger.connection.close()

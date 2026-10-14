@@ -27,7 +27,6 @@ scenarios('features/mvp/research_workflows.feature')
 def research_ctx(tmp_path, monkeypatch):
     path = tmp_path / 'synthetic-research.sqlite'
     monkeypatch.setenv('INVEST_DB', str(path))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     monkeypatch.delenv('FMP_API_KEY', raising=False)
     return {'path': path, 'tmp': tmp_path, 'runner': CliRunner(), 'trace': []}
 
@@ -283,9 +282,17 @@ def scripted(research_ctx):
     if workflow in {'sync', 'screening'}:
         args = [*args, str(research_ctx['file'])]
     elif workflow == 'research':
-        manifest = invoke(research_ctx, ['data', 'snapshot', '--file', str(research_ctx['file'])])
+        manifest = invoke(research_ctx, ['data', 'snapshot', '--confirm', '--file', str(research_ctx['file'])])
         args = [*args, '--universe-manifest', manifest['manifest_id']]
     elif workflow == 'monthly':
+        request = json.loads(research_ctx['file'].read_text())
+        target_input = write_input(research_ctx, 'explicit-target.json', {
+            'name': 'Fictional explicit monthly target', 'data_environment': 'SYNTHETIC',
+            'target_allocations': request.pop('target')['weights'],
+            'planning_constraints': {'eligible_accounts': ['synthetic'],
+                'permitted_securities': {'synthetic': [research_ctx['security']]}}})
+        request['target_id'] = invoke(research_ctx, ['target', 'save', target_input])['id']
+        research_ctx['file'].write_text(json.dumps(request))
         args = [*args, '--file', str(research_ctx['file'])]
     elif workflow == 'strategy':
         args = [*args, str(research_ctx['file'])]
@@ -301,7 +308,8 @@ def workflow_outcome(research_ctx, workflow):
         assert result['status'] in {'UNAVAILABLE', 'BLOCKED', 'REVIEW_REQUIRED', 'PARTIAL'}
     assert all(isinstance(i['blocks_execution_review'], bool)
                                     for i in result['issues'])
-    assert all('--yes' not in step['argv'] and '--confirm' not in step['argv']
+    assert all('--yes' not in step['argv'] for step in research_ctx['trace'])
+    assert all('--confirm' not in step['argv'] or step['argv'][:2] == ['data', 'snapshot']
                for step in research_ctx['trace'])
     if workflow == 'performance':
         assert result['mode'] == 'ACTUAL'
@@ -312,9 +320,10 @@ def workflow_outcome(research_ctx, workflow):
         assert result['id']
         assert result['policy_id'] == 'approved-synthetic'
         assert result['manifest_ids'] == ['price-synthetic-2026-10-10']
-        assert result['proposed_actions'] == [{'type': 'BUY', 'account_id': 'synthetic',
-                                              'security': research_ctx['security'],
-                                              'quantity': '20', 'notional': '2000'}]
+        action, = result['proposed_actions']
+        assert (action['type'], action['account_id'], action['security'], action['quantity'],
+                action['notional'], action['price'], action['fee']) == (
+                    'BUY', 'synthetic', research_ctx['security'], '20', '2000', '100', '0')
         assert result['estimated_tax_budget_consumption'] == '0'
     elif workflow == 'harvest':
         assert result['wash_sale_certified'] is False
@@ -331,8 +340,7 @@ def workflow_outcome(research_ctx, workflow):
         assert result['manifest_ids'] == ['history-synthetic-2020']
         assert result['period'] == {'start': '2020-01-02', 'end': '2020-01-06'}
         assert [row['total_return'] for row in result['candidates']] == ['0.1', '0.05']
-        assert len(result['transition_plans']) == 2
-        assert all(plan['executed'] is False for plan in result['transition_plans'])
+        assert 'transition_plans' not in result
 
 
 @given('a registered portfolio performance command')
@@ -914,7 +922,11 @@ def full_driver(research_ctx):
         ctx['result'] = workflow_step(ctx, ['portfolio', 'performance', '--as-of', '2026-10-10',
                                              '--from', '2025-10-10', '--to', '2026-10-10'])
     elif workflow == 'monthly':
-        workflow_step(ctx, ['target', 'save', ctx['target_file']])
+        saved_target = workflow_step(ctx, ['target', 'save', ctx['target_file']])
+        request = json.loads(ctx['file'].read_text())
+        request.pop('target', None)
+        request['target_id'] = saved_target['id']
+        ctx['file'].write_text(json.dumps(request))
         workflow_step(ctx, ['portfolio', 'check', '--as-of', '2026-10-10'])
         ctx['result'] = workflow_step(ctx, ['plan', 'propose', '--file', str(ctx['file']),
                                              '--policy', 'approved-synthetic',
@@ -947,7 +959,7 @@ def full_driver(research_ctx):
             row['issuer_id'] for row in universe['companies']]
         assert frozen['coverage']['unknown_exposure_value'] == universe['unknown_exposure_value']
         assert frozen['coverage']['filtered_exposure_value'] == universe['filtered_exposure_value']
-        manifest = workflow_step(ctx, ['data', 'snapshot', '--file',
+        manifest = workflow_step(ctx, ['data', 'snapshot', '--confirm', '--file',
                                       write_input(ctx, 'research-universe.json', frozen)])
         plan = workflow_step(ctx, ['research', 'portfolio', 'plan', '--universe-manifest',
                                   manifest['manifest_id']])
@@ -963,8 +975,12 @@ def full_driver(research_ctx):
         workflow_step(ctx, ['backtest', 'run', str(ctx['file'])])
         ctx['result'] = workflow_step(ctx, ['backtest', 'compare', str(ctx['file'])])
         for candidate in json.loads(ctx['file'].read_text())['candidates']:
+            target_file = write_input(ctx, candidate['id'] + '-target.json', {
+                'name': candidate['id'], 'target_allocations': candidate['weights'],
+                'data_environment': 'SYNTHETIC'})
+            saved_target = workflow_step(ctx, ['target', 'save', target_file])
             transition = write_input(ctx, candidate['id'] + '-transition.json', {
-                'target': candidate, 'data_environment': 'SYNTHETIC',
+                'target_id': saved_target['id'], 'data_environment': 'SYNTHETIC',
                 'as_of': '2026-10-10', 'mode': 'rebalance'})
             workflow_step(ctx, ['plan', 'propose', '--file', transition,
                                '--policy', 'approved-synthetic', '--mode', 'rebalance',
@@ -975,6 +991,8 @@ def full_driver(research_ctx):
 def full_boundary(research_ctx, workflow, mode):
     ctx, result = research_ctx, research_ctx['result']
     for step in ctx['trace']:
+        if step['argv'][:2] == ['data', 'snapshot'] and '--confirm' in step['argv']:
+            continue  # Manifest fixture has independent explicit source review.
         if '--yes' in step['argv'] or '--confirm' in step['argv']:
             assert mode == 'success' and ctx.get('authorization_granted') is True
             assert workflow in {'sync', 'research'}

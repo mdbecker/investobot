@@ -101,7 +101,7 @@ def logical_fingerprint(connection):
 def _connect(path):
     from invest.db import connect
 
-    return connect(path, readonly=True, initialize=False)
+    return connect(path, readonly=True, initialize_schema=False)
 
 
 def _artifacts(connection):

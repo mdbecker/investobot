@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from planning_fixtures import saved_proposal
 from pytest_bdd import given, parsers, scenarios, then, when
 from typer.testing import CliRunner
 
@@ -11,7 +12,7 @@ from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
 from invest.plan_storage import load_plan, summaries
-from invest.plans import generate, show
+from invest.plans import show
 from invest.targets import save
 
 scenarios('features/stabilization.feature')
@@ -50,7 +51,7 @@ def populated(ctx):
                           'planning_constraints': {'eligible_accounts': ['a', 'b'],
                           'permitted_securities': {'a': [ctx['sid']], 'b': [ctx['sid']]}}})
     client = MarketClient(ledger, fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
-    ctx['plan'] = generate(ledger, client, target['id'], as_of='2026-10-08')
+    ctx['plan'] = saved_proposal(ledger, client, target['id'], as_of='2026-10-08')
     ctx['before'] = ledger.state()
 
 

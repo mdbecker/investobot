@@ -16,7 +16,6 @@ def test_retired_prompt_commands_leave_host_notes_untouched(tmp_path, monkeypatc
     notes.mkdir(parents=True)
     original = notes / 'concentration.md'
     original.write_text('# Operator note\nDo not merge this into trusted skills.\n')
-    monkeypatch.setenv('INVEST_PROMPTS', str(notes))
     before = original.read_bytes()
     args = ['prompt', command]
     if command != 'list':

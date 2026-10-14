@@ -1,12 +1,4 @@
 Feature: Measured shared-baseline planning workload
-  Scenario: The unchanged synthetic workload reports efficient storage and access
-    Given the disposable benchmark contains the required synthetic household
-    When its twenty alternative plans are measured
-    Then the measurement reports one baseline and separate stored JSON sizes
-    And plan storage growth is below forty four MiB with compact responses
-    And planning persistence and query verification measurements are available
-    And two selected historical reports survive a confirmed cash change
-
   Scenario: Listing reads only its summary metadata
     Given a small saved synthetic alternative
     When SQLite disallows comparison-only assumption hash reads

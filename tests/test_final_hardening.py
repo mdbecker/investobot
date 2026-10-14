@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from planning_fixtures import saved_proposal
 from pydantic import ValidationError
 from pytest_bdd import given, scenarios, then, when
 from typer.testing import CliRunner
@@ -14,7 +15,7 @@ from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
 from invest.plan_storage import load_plan, summaries
-from invest.plans import compare, generate, persisted
+from invest.plans import compare, persisted
 from invest.reports import export
 from invest.targets import save
 from invest.web import create_server
@@ -131,7 +132,7 @@ def excess_fee(ctx):
 def price_shape(ctx):
     target = save(ctx['ledger'], ctx['payload'])
     try:
-        generate(ctx['ledger'], ctx['client'], target['id'], as_of='2026-10-08', prices=[])
+        saved_proposal(ctx['ledger'], ctx['client'], target['id'], as_of='2026-10-08', prices=[])
     except DomainError as exc:
         ctx['error'] = exc
 
@@ -149,12 +150,12 @@ def old_quantities(ctx):
     t = save(ctx['ledger'], ctx['payload'])
     prices = {sid: {'price': '100', 'as_of': '2026-10-08', 'currency': 'USD', 'source': 'fresh synthetic quote'}
               for sid in [ctx['aaa'], ctx['bbb']]}
-    ctx['plan'] = generate(ctx['ledger'], ctx['client'], t['id'], as_of='2026-10-08', prices=prices)
+    ctx['plan'] = saved_proposal(ctx['ledger'], ctx['client'], t['id'], as_of='2026-10-08', prices=prices)
 
 
 @then('the plan requires review of source freshness')
 def quantity_freshness(ctx):
-    assert ctx['plan']['status'] == 'REVIEW_REQUIRED'
+    assert ctx['plan']['status'] == 'BLOCKED'
     assert any('freshness' in w.lower() or 'stale' in w.lower() for w in ctx['plan']['warnings'])
 
 
@@ -174,13 +175,13 @@ def retirement(ctx):
 @when('an otherwise eligible replacement target is planned')
 def replacement(ctx):
     t = save(ctx['ledger'], ctx['payload'])
-    ctx['plan'] = generate(ctx['ledger'], ctx['client'], t['id'], as_of='2026-10-08')
+    ctx['plan'] = saved_proposal(ctx['ledger'], ctx['client'], t['id'], as_of='2026-10-08')
 
 
 @then('the plan is ready for human review with zero taxable gain')
 def ready(ctx):
     assert ctx['plan']['status'] == 'REVIEW_REQUIRED'
-    assert ctx['plan']['issues'][0]['code'] == 'UNAPPROVED_TRADING_POLICY'
+    assert 'UNRESOLVED_LOTS' in {issue['code'] for issue in ctx['plan']['issues']}
     assert Decimal(ctx['plan']['tax_analysis']['realized_gain_loss']) == 0
     assert ctx['ledger'].state() == ctx['before']
 
@@ -206,7 +207,7 @@ def acceptance(ctx):
         payload = copy.deepcopy(ctx['payload'])
         payload.update(name=name, target_allocations={ctx['aaa']:weights[0],ctx['bbb']:weights[1],'CASH':weights[2]})
         target = save(ctx['ledger'], payload)
-        plan = generate(ctx['ledger'], ctx['client'], target['id'], as_of='2026-10-08')
+        plan = saved_proposal(ctx['ledger'], ctx['client'], target['id'], as_of='2026-10-08')
         plans.append(plan)
         export(plan, ctx['tmp'] / (name+'.md'))
     ctx['plans'] = plans

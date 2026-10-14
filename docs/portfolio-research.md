@@ -14,7 +14,8 @@ source manifest IDs, unknown/filtered exposure and existing issues survive the
 adapter. Missing environment, nonpositive denominator or duplicate issuer
 identity blocks freezing. Freezing alone changes no accepted financial facts.
 
-Save the frozen universe as a `RESEARCH_UNIVERSE` data snapshot, with its flat
+Preview, obtain source review, then explicitly confirm the frozen universe as a
+`RESEARCH_UNIVERSE` data snapshot, with its flat
 contents under `metadata.universe`. `plan(ledger, universe_manifest_id)` verifies
 that accepted manifest and pins the issuer order, cutoff, research window and
 bundled skill versions. Its queue includes news, political contributions,

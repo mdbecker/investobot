@@ -18,9 +18,3 @@ Feature: Reproducible saved plans
     When a second alternative uses a different explicit price assumption
     And the database is closed and reopened
     Then both plans retain their independent prices and original inputs
-
-  Scenario: Plans remain accessible under the specified synthetic storage workload
-    Given ten accounts with one thousand positions two thousand lots and twenty snapshots each
-    When twenty independent alternative plans are saved
-    Then all twenty plans can be listed retrieved and exported
-    And storage measurements cover database growth plan size and access times

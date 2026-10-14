@@ -67,9 +67,8 @@ Unregistered accounts, investments and excluded position IDs are rejected.
 `trade_increments` maps account IDs to canonical security IDs and positive share
 increments. Known cash is required when specifying an account cash minimum.
 
-Constraints also include separate ST/LT gain budgets, target tolerance and
-`price_max_age_days` (default one). An omitted tax budget is distinct from zero.
-Restricted retirement plans must name only permitted investments. Do not infer
-fractional trading availability: the planner uses whole-share defaults for stocks
-and ETFs unless an increment is explicitly configured. See persisted plans and
-reports for infeasible constraints, remaining drift and required human review.
+Target constraints describe eligibility, tolerance and source-age assumptions.
+Approved policy supplies independent buy/sell/hold permissions, exact increments,
+fees, cash floors and the annual positive estimated tax-cost allowance. Unknown
+permissions never mean unrestricted access. See [workflows](workflows.md) and
+[trading policy](trading-policy.md) for the authoritative proposal path.

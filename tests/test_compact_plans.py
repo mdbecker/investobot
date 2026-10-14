@@ -4,11 +4,10 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from planning_fixtures import saved_proposal
 from pytest_bdd import given, parsers, scenarios, then, when
-from typer.testing import CliRunner
 
 from invest import plans
-from invest.cli import app
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
@@ -184,30 +183,9 @@ def target(ctx):
     ctx['client'] = MarketClient(ledger, fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
 
 
-@when('the agent generates a plan through the CLI')
-def generated_cli(ctx):
-    result = CliRunner().invoke(app, ['plan', 'generate', '--target', ctx['target']['id'],
-                                     '--as-of', '2026-10-08'])
-    assert result.exit_code == 0, result.output
-    ctx['result'] = json.loads(result.stdout)
-
-
-@then('the generation response contains the saved compact summary')
-def generated_summary(ctx):
-    assert set(ctx['result']) == {'plan'}
-    summary = ctx['result']['plan']
-    assert set(summary) == SUMMARY_KEYS | {'mode', 'data_environment', 'issues'}
-    assert summary['mode'] == 'HYPOTHETICAL'
-    assert summary['issues'][0]['code'] == 'UNAPPROVED_TRADING_POLICY'
-    saved = plans.persisted(ctx['ledger'], summary['id'])
-    assert summary['trade_count'] == len(saved['proposed_actions'])
-    assert saved['source_state']['snapshots']
-    assert summary == plans.list_plans(ctx['ledger'])['plans'][0]
-
-
 @given('its complete plan and historical reports are saved')
 def historical(ctx):
-    ctx['original'] = copy.deepcopy(plans.generate(ctx['ledger'], ctx['client'],
+    ctx['original'] = copy.deepcopy(saved_proposal(ctx['ledger'], ctx['client'],
         ctx['target']['id'], as_of='2026-10-08'))
     ctx['reports'] = {format: render(ctx['original'], format) for format in ('json', 'markdown')}
 

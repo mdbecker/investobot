@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 from bs4 import BeautifulSoup
+from planning_fixtures import saved_proposal
 
 from invest import backtest, plans, targets
 from invest.ledger import Ledger
@@ -23,7 +24,6 @@ POST_ROUTES = ['/api/import', '/api/reconcile', '/api/apply', '/api/activity',
 @pytest.fixture
 def dashboard(tmp_path, monkeypatch):
     monkeypatch.setenv('INVEST_CONFIG', str(tmp_path / 'config.toml'))
-    monkeypatch.setenv('INVEST_PROMPTS', str(tmp_path / 'prompts'))
     monkeypatch.setenv('FMP_API_KEY', 'fictional-provider-key')
     monkeypatch.delenv('INVEST_FIXTURES', raising=False)
     path = tmp_path / 'ledger.db'
@@ -112,7 +112,7 @@ def test_accepted_balances_and_existing_saved_plan_are_viewable(dashboard):
         target = targets.save(ledger, {'name': 'Hold shares', 'target_allocations': {sid: '1'},
             'planning_constraints': {'eligible_accounts': ['ira'],
                                     'permitted_securities': {'ira': [sid]}}})
-        plan = plans.generate(ledger, MarketClient(ledger, fixture_path=Path(
+        plan = saved_proposal(ledger, MarketClient(ledger, fixture_path=Path(
             'tests/fixtures/fmp-synthetic.json')), target['id'], as_of='2026-10-08')
         before = list(ledger.connection.iterdump())
         code, overview = request(dashboard, '/api/overview')
@@ -240,7 +240,7 @@ def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_g
         assert value['summary']['cash'] == '190'
         holding = next(row for row in value['state']['positions'] if row['security'] == 'UNMARKED')
         assert holding['quantity'] == '1' and holding['market_value'] is None
-        assert value['exposure']['status'] == 'UNAVAILABLE'
+        assert value['exposure']['status'] == 'PARTIAL'
         assert value['exposure']['total_value'] is None
         assert value['exposure']['unknown_exposure_percentage'] is None
         assert 'MISSING_VALUATION_MARK' in {issue['code'] for issue in value['exposure']['issues']}
@@ -285,9 +285,9 @@ def test_persisted_fund_source_issues_preserve_numeric_coverage_and_exposure(das
         # Then known dollars and residual remain exact, separately from evidence quality.
         assert Decimal(leaf['total_value']) == Decimal('1000') * Decimal(weight)
         assert Decimal(exposure['unknown_exposure_value']) == Decimal('1000') * (1 - Decimal(weight))
-        assert issue in exposure['issues']
+        assert any(row['code'] == issue['code'] and row['blocks_proposals'] for row in exposure['issues'])
         assert any('source dates' in warning for warning in exposure['warnings'])
-        coverage = exposure['fund_coverage']['AAA']
+        coverage = next(iter(exposure['fund_coverage'].values()))
         assert Decimal(coverage['represented_weight']) == Decimal(weight)
         assert coverage['numeric_complete'] is (weight == '1')
         assert coverage['evidence_complete'] is False

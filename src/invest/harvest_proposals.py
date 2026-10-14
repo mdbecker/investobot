@@ -24,8 +24,9 @@ def _planning_fingerprint(state):
         if row.get('status') != 'EVIDENCE_ONLY':
             latest[row['account']['id']] = row
     fields = ('id', 'imported_at', 'source_timestamp', 'source_hash', 'positions_complete',
-              'lots_complete', 'cash_known', 'data_environment')
-    inputs['snapshots'] = [dict({key: row.get(key) for key in fields}, account={'id': account})
+              'lots_complete', 'cash_known', 'data_environment', 'institution_status')
+    inputs['snapshots'] = [dict({key: row.get(key) for key in fields},
+                              issues=row.get('issues', []), account={'id': account})
                           for account, row in latest.items()]
     return state_hash(inputs)
 

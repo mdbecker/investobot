@@ -419,10 +419,11 @@ def test_previous_schema_is_rejected_without_mutation(ctx):
 
 
 def test_saved_plan_and_actual_lots_remain_unchanged(ctx):
+    from planning_fixtures import saved_proposal
     from test_storage_stabilization import snapshot
 
     from invest.market import MarketClient
-    from invest.plans import generate, show
+    from invest.plans import show
     from invest.targets import save
     db = Ledger(ctx['path'])
     db.apply(snapshot(10, 'fictional-original', '2026-10-08'))
@@ -431,7 +432,7 @@ def test_saved_plan_and_actual_lots_remain_unchanged(ctx):
         'target_allocations': {security: '.5', 'CASH': '.5'},
         'planning_constraints': {'eligible_accounts': ['ira'],
                                  'permitted_securities': {'ira': [security]}}})
-    plan = generate(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
+    plan = saved_proposal(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
                     target['id'], as_of='2026-10-08')
     before = copy.deepcopy(db.state())
     plan_before = show(db, plan['id'])

@@ -39,19 +39,21 @@ def household(ctx):
 
 @when("an agent checks concentration and a loss sale")
 def check(ctx):
-    from invest.analytics import exposure
+    from invest.portfolio_research_inputs import exposure_report
     from invest.tax import analyze
 
+    ctx['holdings_client'].holdings('AAA')
+    ctx['holdings_client'].holdings('BBB')
     state = ctx["ledger"].state()
-    ctx["exposure"] = exposure(state, ctx["holdings_client"])
+    ctx["exposure"] = exposure_report(ctx["ledger"], state=state)
     ctx["sale"] = analyze(state, "demo-taxable", "AAA", "5", "100", "2026-10-08", method="HIFO")
 
 
 @then("direct and indirect exposure and IRA conflicts are reported")
 def risk(ctx):
-    apple = next(r for r in ctx["exposure"]["exposures"] if r["ticker"] == "AAPL")
+    apple = next(r for r in ctx["exposure"]["exposures"] if r["ticker"] == "AAPL" and Decimal(r["direct_value"]) > 0)
     assert Decimal(apple["direct_value"]) == 200
-    assert Decimal(apple["indirect_value"]) > 0
+    assert sum(Decimal(r["indirect_value"]) for r in ctx["exposure"]["exposures"] if r["ticker"] == "AAPL") > 0
     assert ctx["sale"]["wash_sale"]["status"] == "POTENTIAL_CONFLICT"
     assert "demo-traditional" in ctx["sale"]["wash_sale"]["affected_accounts"]
     assert Decimal(ctx["sale"]["long_term_gain_loss"]) == -200

@@ -1,29 +1,23 @@
 # Fund look-through
 
-Recursive exposure is a read-only calculation over canonical accepted positions and
-pinned fund observations. Observation weights are fractions, not percentages. The
-calculation preserves every account and fund contribution path, source dates and
-unknown residual; a partially disclosed fund is never normalized to 100%.
+`lookthrough.exposure` is the single recursive numeric engine shared by household,
+research, simulation and viewer reads. [Operational walkthrough](workflows.md)
+contains the authoritative commands. Reports preserve source dates, currency,
+account/fund paths, cycles/depth limits, known amounts and undisclosed residuals.
 
-The default decision freshness limit is 120 calendar days. Missing dates, stale
-holdings, future observations/publications, cycles and recursion beyond eight fund
-levels leave their full affected value unresolved. Currency differences require a
-verified FX model and otherwise block aggregation. Cash remains visible.
+Observed constituents need not be registered securities. Their weights remain
+visible, with source identity and original paths. Equal tickers or names do not
+prove issuer equivalence; only canonical/verified identity allows aggregation.
+`unresolved_identity_value` describes represented amounts lacking that identity;
+`unknown_exposure_value` describes unrepresented weight. Neither is redistributed.
+Weights above one block the observation. Stale or unavailable evidence stays typed.
 
-Companies aggregate only through explicitly verified issuer identities. Names and
-tickers alone cannot establish issuer equivalence. Missing issuer evidence remains
-an unresolved issuer amount, separately from unknown constituent amounts.
+Omitted cutoff means current UTC reporting date. Pinned immutable observations take
+precedence; eligible persisted provider caches support labeled provisional current
+exploration only. Explicit historical dates never consume current caches or later
+published evidence. Provider retrieval is a separate operation.
 
-`research_universe` selects verified operating companies by descending exposure,
-then canonical issuer ID. The default minimum is 1% of the entire known household
-value, including cash. It returns fewer than the requested count when fewer qualify
-and reports unknown, stale, unresolved and filtered exposure separately. Adapters
-must preserve these coverage fields when freezing a research manifest; research of
-the selected companies does not establish whole-portfolio coverage.
-
-The domain functions accept `state`, observations keyed by canonical security ID,
-and an explicit reporting date. A fund observation contains `as_of`, `currency`,
-`holdings` with `security_id` and fractional `weight`, plus supplied source metadata.
-Operating-company rows require reviewed `issuer_id` and `issuer_verified=true`.
-Provider ticker rows must be resolved before calculation. These functions do not
-fetch data, create identities, write caches, or certify original source truth.
+Missing valuation/cash gives `total_value: null`, `known_value_subtotal`, and null
+coverage ratios. Numeric coverage and evidence quality remain separate.
+Research selects only verified issuer rows and retains unresolved/filtered coverage.
+No automatic constituent registration, provider call, cache write or source certification.

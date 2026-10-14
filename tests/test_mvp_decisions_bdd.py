@@ -69,7 +69,7 @@ def household(decision, case):
             {'security_id': decision['child'], 'weight': '0.5'}]},
         decision['child']: {'as_of': '2026-10-01', 'currency': 'USD', 'holdings': [
             {'security_id': decision['stock'], 'weight': '0.4',
-             'issuer_id': 'CIK:0000123456', 'issuer_verified': True}]}}
+             'issuer_id': 'CIK:0000123456', 'issuer_verified': True, 'issuer_identity_evidence': {'reviewed': True, 'source': 'Reviewed fictional issuer identity', 'source_locator': 'https://example.invalid/issuer'}}]}}
 
 
 @when('the pinned decision is evaluated')
@@ -99,6 +99,10 @@ def evaluate(decision):
             decision['policy']['cash_confirmation'] = {'ira': False}
         if case == 'B31_UNKNOWN_POLICY':
             decision['policy']['permissions']['ira'][decision['child']]['can_buy'] = 'true'
+        if case == 'B37':
+            from invest.planning import save_policy
+            decision['policy'].update(data_environment='SYNTHETIC', source='Explicit fictional reviewed policy')
+            decision['policy'] = save_policy(decision['ledger'], decision['policy'], confirm=True)['id']
         decision['result'] = propose(decision['ledger'], decision['target'],
                                      policy=decision['policy'], mode=mode, as_of=as_of,
                                      prices=prices)
@@ -122,7 +126,7 @@ def evaluate(decision):
         if case == 'B41':
             observations[decision['wrap']]['holdings'] = [
                 {'security_id': decision['stock'], 'weight': '0.65',
-                 'issuer_id': 'CIK:0000123456', 'issuer_verified': True}]
+                 'issuer_id': 'CIK:0000123456', 'issuer_verified': True, 'issuer_identity_evidence': {'reviewed': True, 'source': 'Reviewed fictional issuer identity', 'source_locator': 'https://example.invalid/issuer'}}]
         if case == 'B42':
             observations[decision['wrap']]['as_of'] = '2026-01-01'
         state = decision['ledger'].state()
@@ -326,7 +330,7 @@ def extended_evaluate(decision):
             observations[previous] = {
                 'as_of': '2026-10-01', 'currency': 'USD', 'holdings': [
                     {'security_id': decision['stock'], 'weight': '1',
-                     'issuer_id': 'CIK:0000123456', 'issuer_verified': True}]}
+                     'issuer_id': 'CIK:0000123456', 'issuer_verified': True, 'issuer_identity_evidence': {'reviewed': True, 'source': 'Reviewed fictional issuer identity', 'source_locator': 'https://example.invalid/issuer'}}]}
         if case == 'L_UNKNOWN_ISSUER':
             observations[decision['child']]['holdings'][0].update(
                 issuer_verified=False, issuer_name='Fictional Company')
@@ -335,7 +339,7 @@ def extended_evaluate(decision):
         if case == 'L_MINIMUM_TIES':
             observations[decision['wrap']]['holdings'] = [
                 {'security_id': f'company-{issuer}', 'weight': weight,
-                 'issuer_id': issuer, 'issuer_verified': True, 'asset_type': 'STOCK'}
+                 'issuer_id': issuer, 'issuer_verified': True, 'issuer_identity_evidence': {'reviewed': True, 'source': 'Reviewed fictional issuer identity', 'source_locator': 'https://example.invalid/issuer'}, 'asset_type': 'STOCK'}
                 for issuer, weight in [('CIK:0000000002', '0.1'),
                                       ('CIK:0000000001', '0.1'),
                                       ('CIK:0000000003', '0.001')]]

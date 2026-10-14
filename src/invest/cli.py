@@ -1072,6 +1072,7 @@ research.add_typer(portfolio_research, name='portfolio')
 @data.command('snapshot')
 def data_snapshot(file: str = typer.Option(...), confirm: bool = False):
     from invest.analytics_store import snapshot
+    from invest.research_identity import read_ledger
 
     def result():
         payload = read_json(file)
@@ -1080,9 +1081,12 @@ def data_snapshot(file: str = typer.Option(...), confirm: bool = False):
                        'as_of': payload.get('as_of'),
                        'data_environment': payload.get('data_environment'),
                        'purpose': 'RESEARCH_UNIVERSE', 'metadata': {'universe': payload}}
+        if not confirm:
+            with read_ledger(database_path()) as selected:
+                return snapshot(selected, payload)
         selected = ledger()
         with closing(selected.connection):
-            return snapshot(selected, payload, confirm=confirm)
+            return snapshot(selected, payload, confirm=True)
     emit(result)
 
 

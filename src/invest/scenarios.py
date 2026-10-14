@@ -1,14 +1,35 @@
 """Hypothetical actions use copied household state and a read-only provider cache."""
 
 import copy
+import json
+from contextlib import nullcontext
 from decimal import Decimal
 
-from invest.portfolio_research_inputs import exposure_report
 from invest.ledger import activity_change_inplace, household_currency, summarize
 from invest.models import DomainError, decimal
+from invest.portfolio_research_inputs import exposure_report
 from invest.tax import analyze
 
 ZERO = Decimal("0")
+
+
+class ReadonlyCache:
+    """Allow explicit scenario history retrieval without persisting provider caches."""
+    def __init__(self, ledger):
+        self.ledger = ledger
+        self.connection = nullcontext()
+
+    def rows(self, table):
+        return self.ledger.rows(table)
+
+    def put(self, table, key, data):
+        pass
+
+
+def readonly_client(client):
+    cloned = copy.copy(client)
+    cloned.ledger = ReadonlyCache(client.ledger)
+    return cloned
 
 
 def simulate(state, client, actions, rates=None):
@@ -82,8 +103,12 @@ def simulate(state, client, actions, rates=None):
         working["activities"].append(dict(action, id=f"scenario-{len(working['activities'])}"))
     before_exposure = exposure_report(client.ledger, state=before_state)
     after_exposure = exposure_report(client.ledger, state=working)
-    before_map = {r["identifier"]: r for r in before_exposure["exposures"]}
-    after_map = {r["identifier"]: r for r in after_exposure["exposures"]}
+    def exposure_identity(row):
+        return row.get('issuer_id') or json.dumps([
+            row['security_id'], [entry['path'] for entry in row['contributions']]], sort_keys=True)
+
+    before_map = {exposure_identity(row): row for row in before_exposure['exposures']}
+    after_map = {exposure_identity(row): row for row in after_exposure['exposures']}
     changes = []
     for identity in before_map.keys() | after_map.keys():
         b, a = before_map.get(identity, {}), after_map.get(identity, {})
@@ -119,7 +144,7 @@ def simulate(state, client, actions, rates=None):
         tax_analyses=analyses,
         estimated_tax_effect=tax_effect,
         warnings=list(
-            dict.fromkeys(warnings + before_exposure["warnings"] + after_exposure["warnings"])
+            dict.fromkeys(warnings + before_exposure.get("warnings", []) + after_exposure.get("warnings", []))
         ),
         **totals,
     )

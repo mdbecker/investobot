@@ -184,9 +184,14 @@ def aliased(ctx, tmp_path):
 
 @when("I compute aliased exposure")
 def alias_exposure(ctx):
-    from invest.analytics import exposure
+    from invest.lookthrough import exposure
 
-    ctx["result"] = exposure(ctx["state"], ctx["client"])
+    ctx['state']['securities'].append({'id': 'fund', 'ticker': 'ALIAS', 'asset_type': 'ETF'})
+    ctx['state']['positions'][1]['security_id'] = 'fund'
+    ctx['state']['accounts'] = [{'id': 'synthetic', 'data_environment': 'SYNTHETIC'}]
+    ctx['result'] = exposure(ctx['state'], {'fund': {'as_of': '2026-10-08',
+        'source_id': 'fictional-reviewed-strong-bridge', 'data_environment': 'SYNTHETIC',
+        'holdings': [{'security_id': 'uuid', 'weight': '1'}]}}, as_of='2026-10-08')
 
 
 @then("the direct and indirect values belong to one company")

@@ -34,7 +34,7 @@ def financial_state(path):
 
 
 def corpus_state(path):
-    connection = connect(path, readonly=True, initialize=False)
+    connection = connect(path, readonly=True, initialize_schema=False)
     try:
         return {table: connection.execute(f'SELECT * FROM {table} ORDER BY 1').fetchall()
                 for table in ('document_chunks', 'embeddings')}

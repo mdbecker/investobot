@@ -426,7 +426,7 @@ def analytical_connection(ledger, manifest, *, artifact_root=None):
         raise DomainError('Pinned artifacts failed verification', 2)
     with tempfile.TemporaryDirectory(prefix='investobot-analysis-') as temporary:
         exported = Path(temporary) / 'consistent.sqlite'
-        with contextlib.closing(connect(ledger.path, readonly=True, initialize=False)) as source:
+        with contextlib.closing(connect(ledger.path, readonly=True, initialize_schema=False)) as source:
             source.execute('BEGIN')
             source.execute('SELECT count(*) FROM sqlite_master').fetchone()
             with contextlib.closing(sqlite3.connect(exported)) as destination:

@@ -405,19 +405,18 @@ def atomic(ctx):
 
 @given('accepted household positions and a saved plan')
 def household(ctx):
-    from test_account_planning import setup
+    from planning_fixtures import account_fixture, saved_proposal
 
     from invest.market import MarketClient
     from invest.plan_storage import load_plan
-    from invest.plans import generate
     from invest.targets import save
 
     db = Ledger(ctx['path'])
     portfolio = {'ledger': db}
-    setup(portfolio, 'TAX_FREE')
+    account_fixture(portfolio, 'TAX_FREE')
     target = save(db, portfolio['payload'])
     client = MarketClient(db, fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
-    plan = generate(db, client, target['id'], as_of='2026-10-08')
+    plan = saved_proposal(db, client, target['id'], as_of='2026-10-08')
     ctx['plan_id'] = plan['id']
     ctx['financial_before'] = db.planning_state()
     ctx['state_before'] = db.state()

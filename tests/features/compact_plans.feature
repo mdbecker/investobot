@@ -25,11 +25,6 @@ Feature: Compact plan results for coding agents
       | analysis date |
       | source snapshot |
 
-  Scenario: Generation returns a saved identifier and compact summary
-    Given a target is ready for synthetic retirement planning
-    When the agent generates a plan through the CLI
-    Then the generation response contains the saved compact summary
-
   Scenario: Full retrieval and reports preserve historical details
     Given a target is ready for synthetic retirement planning
     And its complete plan and historical reports are saved

@@ -41,9 +41,11 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
     unknown = Decimal(0)
     stale = Decimal(0)
     unresolved = Decimal(0)
-    sectors, assets = {}, {}
+    sectors, assets, fund_coverage = {}, {}, {}
+    missing_cash = [account_id for account_id in accounts if not any(
+        row['account_id'] == account_id for row in state.get('cash_balances', []))]
     valuation_complete = all(row.get('market_value') is not None
-                             for row in state.get('positions', []))
+                             for row in state.get('positions', [])) and not missing_cash
     values = [decimal(row['market_value']) for row in state.get('positions', [])
               if row.get('market_value') is not None]
     values.extend(decimal(row['amount']) for row in state.get('cash_balances', []))
@@ -67,10 +69,21 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             stale += value
         issue(code, sid, value, path)
 
+    for account_id in missing_cash:
+        issue('UNKNOWN_CASH_COVERAGE', None, Decimal(0), [{'account_id': account_id}])
+        issues[-1]['value'] = None
+    for snapshot in state.get('snapshots', []):
+        issues.extend(dict(diagnostic) for diagnostic in snapshot.get('issues', []))
+        if snapshot.get('positions_complete') is False:
+            valuation_complete = False
+            issue('INCOMPLETE_POSITION_COVERAGE', None, Decimal(0),
+                  [{'account_id': snapshot.get('account', {}).get('id')}])
+            issues[-1]['value'] = None
+
     def visit(sid, value, path, evidence, depth, ancestors, direct=False):
-        nonlocal unresolved
+        nonlocal unresolved, stale
         security = securities.get(sid, {})
-        asset = security.get('asset_type', evidence.get('asset_type', 'OTHER'))
+        asset = security.get('asset_type') or evidence.get('asset_type') or 'OTHER'
         observation = observations.get(sid)
         if asset in FUNDS or observation is not None:
             if sid in ancestors:
@@ -80,7 +93,7 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             if observation is None:
                 return missing('UNKNOWN_HOLDINGS', sid, value, path)
             for diagnostic in observation.get('issues', []):
-                issue(diagnostic['code'], sid, value, path)
+                issues.append(dict(diagnostic, security_id=sid, value=_text(value), path=path))
             if observation.get('provisional'):
                 issue('PROVISIONAL_PROVIDER_HOLDINGS', sid, value, path)
             environments = {row.get('data_environment') for row in accounts.values()}
@@ -96,6 +109,9 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 raise DomainError('Underlying holdings currency differs; FX model required', 3)
             if observation.get('published_at') and _day(observation['published_at']) > reporting_day:
                 return missing('FUTURE_PUBLICATION', sid, value, path)
+            if observation.get('observed_at') and _day(observation['observed_at']) > reporting_day:
+                return missing('FUTURE_OBSERVATION', sid, value, path)
+            observation_stale = False
             if not observation.get('as_of'):
                 issue('UNKNOWN_HOLDINGS_DATE', sid, value, path)
             else:
@@ -103,7 +119,12 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 if observed > reporting_day:
                     return missing('FUTURE_OBSERVATION', sid, value, path)
                 if (reporting_day - observed).days > max_age_days:
-                    return missing('STALE_HOLDINGS', sid, value, path)
+                    observation_stale = True
+                    if not any(hop.get('stale') for hop in path):
+                        stale += value
+                    if not any(diagnostic.get('code') == 'STALE_HOLDINGS'
+                               for diagnostic in observation.get('issues', [])):
+                        issue('STALE_HOLDINGS', sid, value, path)
             holdings = observation.get('holdings', [])
             holdings = [row for row in holdings if row.get('weight') is not None]
             weights = [decimal(row['weight']) for row in holdings]
@@ -114,23 +135,52 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 return missing('DUPLICATE_HOLDINGS_IDENTITY', sid, value, path)
             provenance = {key: observation.get(key) for key in (
                 'as_of', 'published_at', 'source_id', 'source_hash', 'data_environment')}
-            next_path = path + [{'security_id': sid, **provenance}]
+            unknown_before = unknown
+            issues_before = len(issues)
+            next_path = path + [{'security_id': sid, **provenance,
+                                'stale': observation_stale,
+                                'provisional': bool(observation.get('provisional'))}]
             for index, (holding, weight) in enumerate(zip(holdings, weights, strict=True)):
                 observed_id = holding.get('security_id') or f'OBSERVED:{source_id}:{sid}:{index}'
+                if observation.get('provisional'):
+                    holding = dict(holding, provisional=True,
+                        asset_type=holding.get('asset_type') or
+                        securities.get(observed_id, {}).get('asset_type', 'OTHER'))
+                    if holding['asset_type'] not in FUNDS:
+                        observed_id = f'OBSERVED:{source_id}:{sid}:{index}'
                 visit(observed_id, value * weight, next_path,
                       holding, depth + 1, ancestors | {sid})
             residual = value * (1 - sum(weights, Decimal(0)))
             if residual:
                 missing('PARTIAL_HOLDINGS', sid, residual, next_path)
+            represented = 1 - (unknown - unknown_before) / value if value else sum(weights, Decimal(0))
+            fund_coverage[sid] = {
+                'reported_weight': _text(sum(weights, Decimal(0))),
+                'represented_weight': _text(represented),
+                'source': source_id, 'data_as_of': observation.get('as_of'),
+                'numeric_complete': represented == 1,
+                'evidence_complete': represented == 1 and not observation.get('issues')
+                    and not observation.get('provisional') and not observation_stale
+                    and source_environment in {'REAL', 'SYNTHETIC'} and bool(source_id)
+                    and bool(observation.get('as_of')) and len(issues) == issues_before,
+            }
             return
         observed_identity = not security and bool(evidence.get('identifier') or
             evidence.get('ticker') or evidence.get('name') or evidence.get('security_id'))
         if asset not in {'STOCK', 'CASH', 'BOND', 'TREASURY'} and not observed_identity:
             return missing('UNRESOLVED_SECURITY', sid, value, path)
-        issuer = evidence.get('issuer_id') if evidence.get('issuer_verified') is True else None
-        if not issuer and security.get('issuer_identity_evidence') and security.get('issuer_id'):
-            issuer = security['issuer_id']
-        key = issuer or sid
+        canonical_issuer = security.get('issuer_id') if security.get('issuer_identity_evidence') else None
+        source_issuer = evidence.get('issuer_id')
+        if source_issuer and canonical_issuer and source_issuer != canonical_issuer:
+            issue('ISSUER_IDENTITY_CONFLICT', sid, value, path)
+            issuer = None
+        elif evidence.get('provisional') or any(hop.get('provisional') for hop in path):
+            issuer = None
+        else:
+            issuer = canonical_issuer or (source_issuer if evidence.get('issuer_verified') is True
+                and evidence.get('issuer_identity_evidence') else None)
+        provisional_path = any(hop.get('provisional') for hop in path)
+        key = issuer or (f"OBSERVED:{path!r}:{sid}" if provisional_path else sid)
         row = rows.setdefault(key, {'security_id': sid, 'ticker': security.get('ticker') or evidence.get('ticker'),
                                     'name': security.get('name') or evidence.get('name'),
                                     'observed_identifier': evidence.get('identifier'),
@@ -174,7 +224,7 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             result['percentage'] = _text(row['total_value'] / total * 100) if total and valuation_complete else None
             output.append(result)
         output.sort(key=lambda row: (-decimal(row['total_value']),
-                                     row['issuer_id'] or row['security_id']))
+                                     str(row['issuer_id'] or row['security_id'] or '')))
         return {'as_of': str(reporting_day), 'currency': currency,
                 'total_value': _text(total) if valuation_complete else None,
                 'known_value_subtotal': _text(total), 'exposures': output,
@@ -187,6 +237,8 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 'complete': unknown == 0 and unresolved == 0 and not issues,
                 'by_sector': {key: _text(value) for key, value in sorted(sectors.items())},
                 'by_asset_type': {key: _text(value) for key, value in sorted(assets.items())},
+                'fund_coverage': fund_coverage,
+                'warnings': list(dict.fromkeys(row.get('message') or row['code'] for row in issues)),
                 'issues': issues, 'status': 'PARTIAL' if issues else 'AVAILABLE'}
 
 

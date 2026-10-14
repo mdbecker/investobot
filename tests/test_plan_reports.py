@@ -49,7 +49,7 @@ def plan(ctx):
                 }
             },
             "tax_rates": None,
-            "planning_constraints": {"long_term_gain_budget": "100"},
+            "planning_constraints": {"annual_positive_tax_cost_allowance": "100"},
             "algorithm": "deterministic heuristic",
         },
         "proposed_actions": [
@@ -162,7 +162,7 @@ def sections(ctx):
         "-21",
         "USD",
         "ledger",
-        "long_term_gain_budget",
+        "annual_positive_tax_cost_allowance",
         "INSUFFICIENT_DATA",
         "Outside accounts unknown",
         "Unknown household history",

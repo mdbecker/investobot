@@ -48,18 +48,6 @@ Feature: Conservative household tax and exposure accuracy
     When the household sale is estimated
     Then taxable short and long term gains are zero
 
-  Scenario: Look-through reports identity confidence and partial source coverage
-    Given direct shares and a partially reported fund holding the same security
-    When household look-through is computed
-    Then direct and indirect exposure combine with strong identity confidence
-    And unresolved fund value and dated source coverage remain visible
-
-  Scenario: Shared tickers never merge conflicting strong identities
-    Given direct shares and a partially reported fund holding the same security
-    And the fund security has a conflicting ISIN
-    When household look-through is computed
-    Then two strong identities remain distinct
-
   Scenario: Historical risk aligns and sorts common dates with a cash assumption
     Given unsorted adjusted history and fifty percent household cash
     When hypothetical historical risk is computed

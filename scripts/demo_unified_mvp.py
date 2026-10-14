@@ -217,12 +217,12 @@ def run_demo(root):
             'security_id': security, 'relative_path': name,
             'sha256': sha, 'as_of': '2026-10-01', 'observed_at': '2026-10-01',
             'published_at': '2026-10-01', 'data_environment': 'SYNTHETIC'})
-    d.cli('data.nested_holdings', ['data', 'snapshot', '--file', d.file('holdings.json', {
+    d.cli('data.nested_holdings', ['data', 'snapshot', '--confirm', '--file', d.file('holdings.json', {
         'data_environment': 'SYNTHETIC', 'artifacts': artifacts})])
     universe = d.cli('portfolio.nested_exposure', ['portfolio', 'research-universe',
         '--as-of', AS_OF, '--top', '20', '--min-exposure', '0'])
     frozen = freeze_universe(universe, requested_top=20, as_of=AS_OF)
-    manifest = d.cli('data.freeze_universe', ['data', 'snapshot', '--file', d.file('universe.json', frozen)])
+    manifest = d.cli('data.freeze_universe', ['data', 'snapshot', '--confirm', '--file', d.file('universe.json', frozen)])
     research_plan = d.cli('research.plan', ['research', 'portfolio', 'plan',
         '--universe-manifest', manifest['manifest_id'], '--window-start', '2026-10-01', '--window-end', AS_OF])
     envelope = {'kind': 'NEWS', 'issuer_id': '0000123456', 'as_of': AS_OF,
@@ -233,7 +233,7 @@ def run_demo(root):
     history = [{'date': day, 'total_return_index': value}
                for day, value in zip(sessions, ['100', '105', '110'], strict=True)]
     sha = d.parquet('history.parquet', history)
-    history_manifest = d.cli('data.history', ['data', 'snapshot', '--file', d.file('history-manifest.json', {
+    history_manifest = d.cli('data.history', ['data', 'snapshot', '--confirm', '--file', d.file('history-manifest.json', {
         'data_environment': 'SYNTHETIC', 'artifacts': [{'id': 'fictional-history',
             'kind': 'DIVIDEND_ADJUSTED_PRICES', 'provider': 'FICTIONAL',
             'relative_path': 'history.parquet', 'sha256': sha, 'as_of': sessions[-1],
