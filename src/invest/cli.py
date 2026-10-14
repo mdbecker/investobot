@@ -342,18 +342,12 @@ def history(ticker: str, refresh: bool = False):
 
 
 @portfolio.command("exposure")
-def portfolio_exposure(refresh: bool = False, as_of: str = typer.Option(None)):
-    from invest.analytics import exposure
+def portfolio_exposure(as_of: str = typer.Option(None)):
+    from invest.portfolio_research_inputs import exposure_report
+    from invest.research_identity import read_ledger
     def result():
-        if as_of is not None:
-            from invest.portfolio_research_inputs import universe
-            from invest.research_identity import read_ledger
-
-            with read_ledger(database_path()) as selected:
-                return universe(selected, as_of=as_of)
-        selected_client = client()
-        with closing(selected_client.ledger.connection):
-            return exposure(selected_client.ledger.state(), selected_client, refresh)
+        with read_ledger(database_path()) as selected:
+            return exposure_report(selected, as_of=as_of)
     emit(result)
 
 
@@ -502,24 +496,19 @@ app.add_typer(plan, name="plan")
 app.add_typer(report, name="report")
 
 
-@plan.command("generate")
-def plan_generate(
-    target: str = typer.Option(...),
-    as_of: str = typer.Option(None),
-    prices: str = typer.Option(None),
-    name: str = typer.Option(None),
-    version: int = typer.Option(None),
-):
-    from invest.config import load_config
-    from invest.plans import generate, plan_summary
-
+@plan.command('preview')
+def plan_preview(file: str = typer.Option(...), target: str = typer.Option(...),
+                 as_of: str = typer.Option(...)):
+    from invest.planning import propose
+    from invest.research_identity import read_ledger
     def result():
-        selected = ledger()
-        with closing(selected.connection):
-            generated = generate(selected, client(), target, as_of=as_of,
-                prices=read_json(prices) if prices else None, name=name,
-                rates=load_config().get('tax'), version=version)
-            return {'plan': generated if generated['status'] == 'BLOCKED' else plan_summary(generated)}
+        payload = read_json(file)
+        policy = payload.get('policy')
+        if not isinstance(policy, dict) or policy.get('data_environment') != 'SYNTHETIC':
+            raise DomainError('Preview requires explicitly SYNTHETIC unapproved policy assumptions')
+        with read_ledger(database_path()) as selected:
+            return propose(selected, target, policy=policy, mode=payload.get('mode', 'contributions-only'),
+                           as_of=as_of, prices=payload.get('prices', {}))
     emit(result)
 
 
@@ -1081,7 +1070,7 @@ research.add_typer(portfolio_research, name='portfolio')
 
 
 @data.command('snapshot')
-def data_snapshot(file: str = typer.Option(...)):
+def data_snapshot(file: str = typer.Option(...), confirm: bool = False):
     from invest.analytics_store import snapshot
 
     def result():
@@ -1093,7 +1082,7 @@ def data_snapshot(file: str = typer.Option(...)):
                        'purpose': 'RESEARCH_UNIVERSE', 'metadata': {'universe': payload}}
         selected = ledger()
         with closing(selected.connection):
-            return snapshot(selected, payload, confirm=True)
+            return snapshot(selected, payload, confirm=confirm)
     emit(result)
 
 
@@ -1143,28 +1132,17 @@ def research_portfolio_report(plan: str = typer.Option(...)):
 def plan_propose(file: str = typer.Option(...), policy: str = typer.Option(...),
                  mode: str = typer.Option(...), as_of: str = typer.Option(...)):
     from invest.planning import propose
-    from invest.targets import save
     def result():
         payload = read_json(file)
+        target = payload.get('target_id')
+        if not isinstance(target, str) or not target:
+            raise DomainError('Proposal requires a previously saved target_id; embedded targets are rejected')
         selected = ledger()
         with closing(selected.connection):
-            target = payload.get('target_id') or payload.get('target')
-            if isinstance(target, dict):
-                identifier = target.get('id')
-                existing = {item['id'] for item in selected.rows('targets')}
-                target = save(selected, {'id': identifier if identifier in existing else None,
-                    'name': target.get('name') or target.get('id') or 'Reviewed proposal target',
-                    'target_allocations': target['weights'],
-                    'data_environment': payload.get('data_environment'),
-                    'planning_constraints': {'eligible_accounts': [payload['account_id']]}
-                    if payload.get('account_id') else {}})['id']
-            proposal = propose(selected, target, policy=policy, mode=mode,
-                               as_of=as_of, prices=payload.get('prices', {}))
-            proposal['proposed_actions'] = [
-                {key: action[key] for key in ('type', 'account_id', 'security', 'quantity', 'notional')}
-                for action in proposal['proposed_actions']]
-            return proposal
+            return propose(selected, target, policy=policy, mode=mode,
+                           as_of=as_of, prices=payload.get('prices', {}))
     emit(result)
+
 
 
 @tax.command('harvest-plan')
@@ -1230,7 +1208,7 @@ def _backtest_file(file, compare_runs=False):
         if payload.get('run_ids'):
             return compare(selected, payload['run_ids'])
         provenance = payload.get('history_provenance', {})
-        manifest = {'id': payload.get('manifest_ids', [None])[0],
+        manifest = {'id': next(iter(payload.get('manifest_ids', [])), None),
                     'data_environment': provenance.get('data_environment'),
                     'series': payload.get('history', {}),
                     'sessions': provenance.get('expected_sessions'),
@@ -1269,42 +1247,6 @@ def _backtest_file(file, compare_runs=False):
                 'candidates': [dict(value, candidate_id=candidate['id'])
                                for candidate, value in zip(candidates, runs)],
                 'assumptions': runs[0]['assumptions']}
-        if compare_runs:
-            from invest.config import load_config
-            from invest.planning import get_policy, propose
-            from invest.targets import save
-            policy_id = payload.get('policy_id') or load_config().get('planning', {}).get('policy_id')
-            result['transition_plans'] = []
-            if policy_id:
-                approved = get_policy(selected, policy_id)
-                state = selected.planning_state()
-                dated = [row['source_timestamp'][:10] for row in state['snapshots']
-                         if row.get('source_timestamp')]
-                transition_date = payload.get('as_of') or max(dated, default=None)
-                if transition_date is not None:
-                    prices = {}
-                    for position in state['positions']:
-                        if position.get('price') is None or position.get('source_timestamp') is None:
-                            continue
-                        source = next((row for row in state['snapshots']
-                                       if row['account']['id'] == position['account_id']), None)
-                        if source is None:
-                            continue
-                        prices[position['security_id']] = {
-                            'price': position['price'], 'as_of': position['source_timestamp'],
-                            'currency': next(row['currency'] for row in state['accounts']
-                                             if row['id'] == position['account_id']),
-                            'data_environment': source['data_environment'],
-                            'source': 'ACCEPTED_SQLITE_OBSERVATION:' + source['id'],
-                            'source_snapshot_id': source['id'], 'source_hash': source['source_hash']}
-                    for candidate in candidates:
-                        target = save(selected, {'name': candidate['id'],
-                            'data_environment': payload.get('data_environment'),
-                            'target_allocations': candidate['weights'],
-                            'planning_constraints': {'eligible_accounts': sorted(approved['permissions'])}})
-                        result['transition_plans'].append(propose(selected, target['id'],
-                            policy=policy_id, mode='rebalance', as_of=transition_date, prices=prices))
-            return result
         return result
 
 

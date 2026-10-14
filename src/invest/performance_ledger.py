@@ -131,9 +131,12 @@ def report(connection, *, from_date=None, to_date=None, as_of=None, account_id=N
     result = calculate(payload)
     if checkpoint_issues:
         result['issues'].extend(checkpoint_issues)
-        result['status'] = 'UNAVAILABLE'
         result['twr'].update(status='UNAVAILABLE', **{'return': None})
-        result['xirr'].update(status='UNAVAILABLE', annualized_return=None, **{'return': None})
         result['cagr'].update(status='UNAVAILABLE', annualized_return=None)
+        # Dated investor flows and complete endpoints independently support
+        # XIRR even when an intermediate intraday TWR boundary is ambiguous.
+        if any(issue['code'] != 'AMBIGUOUS_FLOW_BOUNDARY' for issue in checkpoint_issues):
+            result['xirr'].update(status='UNAVAILABLE', annualized_return=None, **{'return': None})
+        result['status'] = 'PARTIAL' if result['xirr']['status'] == 'AVAILABLE' else 'UNAVAILABLE'
     result['as_of'] = as_of or end
     return result

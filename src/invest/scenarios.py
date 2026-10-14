@@ -1,10 +1,9 @@
 """Hypothetical actions use copied household state and a read-only provider cache."""
 
 import copy
-from contextlib import nullcontext
 from decimal import Decimal
 
-from invest.analytics import exposure
+from invest.portfolio_research_inputs import exposure_report
 from invest.ledger import activity_change_inplace, household_currency, summarize
 from invest.models import DomainError, decimal
 from invest.tax import analyze
@@ -12,30 +11,11 @@ from invest.tax import analyze
 ZERO = Decimal("0")
 
 
-class ReadonlyCache:
-    def __init__(self, ledger):
-        self.ledger = ledger
-        self.connection = nullcontext()
-
-    def rows(self, table):
-        return self.ledger.rows(table)
-
-    def put(self, table, key, data):
-        pass
-
-
-def readonly_client(client):
-    cloned = copy.copy(client)
-    cloned.ledger = ReadonlyCache(client.ledger)
-    return cloned
-
-
 def simulate(state, client, actions, rates=None):
     household_currency(state)
     if not isinstance(actions, list) or not actions:
         raise DomainError("Supply a nonempty array of hypothetical actions")
     before_state, working = copy.deepcopy(state), copy.deepcopy(state)
-    client = readonly_client(client)
     planned = [dict(a, id=f"planned-{i}") for i, a in enumerate(actions) if a.get("type") == "BUY"]
     analyses, warnings = [], []
     for action in actions:
@@ -100,8 +80,8 @@ def simulate(state, client, actions, rates=None):
         position = next(p for p in working["positions"] if p["account_id"] == action["account_id"] and p["security_id"] == security["id"])
         position.update(price=str(action["price"]), market_value=str(decimal(position["quantity"]) * decimal(action["price"])), as_of=action["date"])
         working["activities"].append(dict(action, id=f"scenario-{len(working['activities'])}"))
-    before_exposure = exposure(before_state, client)
-    after_exposure = exposure(working, client)
+    before_exposure = exposure_report(client.ledger, state=before_state)
+    after_exposure = exposure_report(client.ledger, state=working)
     before_map = {r["identifier"]: r for r in before_exposure["exposures"]}
     after_map = {r["identifier"]: r for r in after_exposure["exposures"]}
     changes = []

@@ -72,3 +72,9 @@ blocks/requires review. Do not substitute another account's cash or a quote.
 Monthly investing is a user habit. Contributions-only never sells; rebalance has
 no calendar or minimum-drift gate. Saved approved policy and financial safeguards
 remain binding. No automatic individual bonds.
+
+Prefer one routine discretionary trading session per month and at most four rebalances per year.
+Use confirmed recent activity as context and prefer contributions-only with new cash.
+These are agent preferences: necessary proposals may use any valid date with an explicit
+explanation. No calendar prohibition, scheduler or automatic execution.
+Follow the authoritative operational walkthrough in [docs/workflows.md](../../docs/workflows.md).

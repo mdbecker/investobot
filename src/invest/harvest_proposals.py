@@ -9,7 +9,7 @@ from invest.financial_state import state_hash
 from invest.models import DomainError, decimal
 from invest.security_identity import resolve
 from invest.simulations import simulate
-from invest.tax import _term
+from invest.tax import estimate_sale
 from invest.tax_policy import _issue, _plain, annual_budget, harvest_plan
 
 
@@ -153,7 +153,7 @@ def conditional_harvest(state, policy, as_of):
     if any(row['code'] != 'HUMAN_WASH_SALE_REVIEW' and row['blocks_proposal'] for row in issues):
         result['status'] = 'BLOCKED' if any(row['blocks_calculation'] for row in issues) else 'REVIEW_REQUIRED'
         return result
-    actions, estimate = [], Decimal(0)
+    actions, estimate, estimates = [], Decimal(0), []
     with localcontext() as context:
         context.prec = max(100, len(str(state)) + len(str(policy)))
         for account_id, candidates in sorted(grouped.items()):
@@ -177,19 +177,16 @@ def conditional_harvest(state, policy, as_of):
                 issue('MINIMUM_NOTIONAL', 'Conditional trades fall below the approved minimum notional')
                 continue
             allocations = [{'lot_id': row['lot_id'], 'quantity': row['remaining_quantity']} for row in candidates]
-            remaining_fee = trade_fee
-            for index, candidate in enumerate(candidates):
-                lot = lots[candidate['lot_id']]
-                term = _term(lot['acquisition_date'], as_of)
-                rate = decimal(budget_policy['long_term_rate' if term == 'LONG_TERM' else 'short_term_rate'])
-                allocated_fee = remaining_fee if index == len(candidates) - 1 else trade_fee * decimal(candidate['remaining_quantity']) / quantity
-                remaining_fee -= allocated_fee
-                gain = decimal(candidate['remaining_quantity']) * sale_price - decimal(candidate['remaining_adjusted_basis']) - allocated_fee
-                estimate += gain * rate
+            sale = estimate_sale([(lots[candidate['lot_id']], candidate['remaining_quantity'])
+                                  for candidate in candidates], sale_price, as_of, trade_fee,
+                                 {'LONG_TERM': budget_policy['long_term_rate'],
+                                  'SHORT_TERM': budget_policy['short_term_rate']})
+            estimates.append(sale)
+            estimate += decimal(sale['estimated_tax_effect'])
             actions.extend([
                 dict(type='SELL', account_id=account_id, security=source_security, quantity=_plain(quantity),
                      price=_plain(sale_price), notional=_plain(notional), fee=_plain(trade_fee),
-                     date=as_of, lot_allocations=allocations, conditional=True),
+                     date=as_of, lot_allocations=allocations, sale_estimate=sale, conditional=True),
                 dict(type='BUY', account_id=account_id, security=replacement_security['id'],
                      quantity=_plain(buy_quantity), price=_plain(buy_price), notional=_plain(buy_quantity * buy_price),
                      fee=_plain(trade_fee), date=as_of, conditional=True)])
@@ -201,6 +198,11 @@ def conditional_harvest(state, policy, as_of):
             result['simulated_cash'] = {row['account_id']: _plain(decimal(row['amount']))
                                        for row in simulation['after']['cash_balances']}
             result.update(proposed_actions=actions, estimated_net_tax_effect=_plain(estimate))
+            result['tax_analysis'] = {key: _plain(sum((decimal(sale[key]) for sale in estimates), Decimal(0)))
+                                      for key in ('realized_gain_loss', 'short_term_gain_loss',
+                                                  'long_term_gain_loss', 'estimated_tax_effect',
+                                                  'positive_estimated_tax_cost')}
+            result['estimated_tax_budget_consumption'] = result['tax_analysis']['positive_estimated_tax_cost']
     result.update(status='REVIEW_REQUIRED', assumptions={
         'losses_replenish_allowance': False, 'signed_tax_effect_is_conditional': True,
         'wash_adjustments_applied': False}, sources=[policy['source'], replacement.get('source')])

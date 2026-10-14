@@ -1,20 +1,12 @@
-"""Compact immutable plan retrieval, summaries and scenario entry point."""
+"""Compact immutable plan retrieval and summaries."""
 
 
 from invest.financial_state import state_hash as state_hash
 from invest.models import DomainError, decimal
-from invest.scenarios import simulate as simulate
 
 
 def _number(value):
     return format(value.normalize(), 'f') if value else '0'
-
-
-def generate(ledger, client, target_id, as_of=None, prices=None, name=None, rates=None, version=None):
-    from invest.proposal_generation import generate as propose_scenario
-
-    return propose_scenario(ledger, client, target_id, as_of, prices, name, rates, version,
-                            simulator=simulate, fingerprint=state_hash)
 
 
 def persisted(ledger, plan_id):

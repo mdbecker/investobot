@@ -98,7 +98,7 @@ PURPOSES = {
     "target.activate": "Explicitly select one active target without placing trades.",
     "target.archive": "Archive a target while preserving historical plans.",
     "target.diff": "Compare accepted household allocation with target allocation.",
-    "plan.generate": "Persist an unapproved hypothetical scenario requiring policy review; block REAL inputs.",
+    "plan.preview": "Read-only synthetic exploration with unapproved policy assumptions and a saved target.",
     "plan.list": "List compact saved plan summaries with current review or stale status.",
     "plan.show": "Retrieve a complete saved plan; potentially large JSON. Prefer report.export for review.",
     "plan.compare": "Compare compact saved financial summaries and disclose incompatible assumptions.",
@@ -113,7 +113,7 @@ SCOPES = {
     'research.search': 'read',
     'research.index': 'derived_index',
     'backtest.run': 'hypothetical_backtests',
-    'backtest.compare': 'hypothetical_backtests_and_transition_plans',
+    'backtest.compare': 'hypothetical_backtests',
     'portfolio.research-universe': 'read',
     'data.snapshot': 'analytical_manifests',
     'data.list': 'read',
@@ -137,7 +137,7 @@ SCOPES = {
     "target.save": "targets",
     "target.activate": "targets",
     "target.archive": "targets",
-    "plan.generate": "plans",
+    "plan.preview": "read",
     "report.export": "requested_output_file",
     "security.register": "security_metadata",
     "security.classify": "security_metadata",
@@ -229,12 +229,12 @@ def _describe(name, command):
         'parameters': options,
         'json_input_schema': {'type': 'object', 'properties': {}, 'additionalProperties': False},
     }
-    if name in {"plan.generate", "plan.list", "plan.compare"}:
+    if name in {"plan.list", "plan.compare"}:
         from invest.plans import SUMMARY_FIELDS
 
         result["output_contract"] = dict(OUTPUT_CONTRACT, response_detail="compact_summary",
             summary_fields=list(SUMMARY_FIELDS), full_details_tool="plan.show",
-            response_key="plan" if name == "plan.generate" else "plans",
+            response_key="plans",
             unknown_financial_values=None,
             summary_metrics="Persisted tax and remaining drift; original generated_status; current status; first five saved warnings")
     elif name == "plan.show":

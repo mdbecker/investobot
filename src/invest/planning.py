@@ -12,6 +12,7 @@ from invest.models import DomainError, decimal
 from invest.plan_storage import save_plan
 from invest.plans import state_hash
 from invest.targets import allocation_diff, show
+from invest.tax import estimate_sale
 
 SUPPORTED = {'STOCK', 'ETF', 'MUTUAL_FUND'}
 
@@ -244,6 +245,7 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
         tax_budget = annual_budget(baseline, policy['annual_tax_budget'])
     headroom = decimal(tax_budget['remaining_allowance']) if tax_budget and tax_budget.get('remaining_allowance') is not None else None
     spent = Decimal(0)
+    sale_estimates = []
     minimum = decimal(policy.get('minimum_notional', '25'))
     floors = {account: decimal(value) for account, value in policy.get('cash_floors', {}).items()}
 
@@ -304,30 +306,32 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
                    for row in lots):
                 issue('UNVERIFIED_LOT_IDENTITY', 'Sale requires verified saleable lot identity', blocking=False)
                 return
-            selected, remaining, cost = [], quantity, Decimal(0)
+            selected, remaining = [], quantity
+            specific = []
             for lot in lots:
                 used_quantity = min(remaining, decimal(lot['remaining_quantity']))
                 if used_quantity <= 0:
                     continue
                 if taxable:
-                    basis = basis_per_share(lot) * used_quantity
                     if headroom is None or tax_budget['status'] == 'BLOCKED' or not lot.get('acquisition_date'):
                         issue('UNKNOWN_TAX_BUDGET', 'Taxable sale requires annual coverage and exact lots', blocking=False)
                         return
-                    acquired = date.fromisoformat(lot['acquisition_date'])
-                    try:
-                        anniversary = acquired.replace(year=acquired.year + 1)
-                    except ValueError:
-                        anniversary = acquired.replace(year=acquired.year + 1, day=28)
-                    long_term = day > anniversary
-                    rate = decimal(policy['annual_tax_budget']['long_term_rate' if long_term else 'short_term_rate'])
-                    cost += max(Decimal(0), used_quantity * price - basis) * rate
+                    specific.append((lot, used_quantity))
                 selected.append({'lot_id': lot['id'], 'quantity': _text(used_quantity)})
                 remaining -= used_quantity
+            estimate = estimate_sale(specific, price, as_of, fee, {
+                'SHORT_TERM': policy['annual_tax_budget']['short_term_rate'],
+                'LONG_TERM': policy['annual_tax_budget']['long_term_rate']}) if taxable else None
+            cost = decimal(estimate['positive_estimated_tax_cost']) if estimate else Decimal(0)
             if cost + spent > (headroom if headroom is not None else Decimal(0)):
                 issue('ANNUAL_TAX_BUDGET_EXCEEDED', 'Sale exceeds conservative annual positive tax allowance', blocking=False)
                 return
             spent += cost
+            if estimate:
+                sale_estimates.append(estimate)
+                action['sale_estimate'] = estimate
+                if any(decimal(row['gain_loss']) < 0 for row in estimate['selected_lots']):
+                    issue('HUMAN_WASH_SALE_REVIEW', 'Loss sales require household, spouse, IRA, DRIP and substantially-identical review', blocking=False)
             if consistent_lots:
                 action['lot_allocations'] = selected
         delta = quantity * price
@@ -382,12 +386,17 @@ def _propose(ledger, target_id, supplied, mode, as_of, prices, baseline):
             'proposed_actions': actions, 'issues': issues, 'simulation': simulation,
             'cash_after': {key: _text(value) for key, value in final_cash.items()},
             'tax_budget': tax_budget, 'estimated_tax_budget_consumption': _text(spent),
-            'tax_analysis': {'estimated_tax_effect': _text(spent)},
+            'tax_analysis': {key: _text(sum((decimal(estimate[key]) for estimate in sale_estimates), Decimal(0)))
+                             for key in ('realized_gain_loss', 'short_term_gain_loss',
+                                         'long_term_gain_loss', 'estimated_tax_effect',
+                                         'positive_estimated_tax_cost')},
             'assumptions': {'prices': prices, 'fee_per_trade': fee_assumption,
                             'policy_approval': 'SYNTHETIC_DOMAIN_PREVIEW' if preview else 'APPROVED'},
             'remaining_target_drift': proposed['allocations'], 'trade_count': len(actions),
             'turnover': _text(sum((decimal(action['quantity']) * decimal(action['price']) for action in actions), Decimal(0))),
             'warnings': [item['message'] for item in issues],
             'status': 'BLOCKED' if blocking else 'REVIEW_REQUIRED' if issues else 'READY_FOR_HUMAN_REVIEW'}
-    save_plan(ledger, plan)
+    plan['saved'] = not preview
+    if not preview:
+        save_plan(ledger, plan)
     return plan

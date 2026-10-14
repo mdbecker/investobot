@@ -75,3 +75,9 @@ future constituents, mixed currencies or unknown fees prevent comparison. Do not
 backfill history or manufacture a ranking. Financial, cash, lot and tax safeguards
 may block a transition while a valid hypothetical comparison remains available.
 Optional quarterly backtests do not impose a live trading schedule.
+
+Prefer one routine discretionary trading session per month and at most four rebalances per year.
+Use confirmed recent activity as context and prefer contributions-only with new cash.
+These are agent preferences: necessary proposals may use any valid date with an explicit
+explanation. No calendar prohibition, scheduler or automatic execution.
+Follow the authoritative operational walkthrough in [docs/workflows.md](../../docs/workflows.md).

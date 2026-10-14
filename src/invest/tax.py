@@ -196,6 +196,49 @@ def _rate(term, rates):
 
 
 @_exact_analysis
+def estimate_sale(selected, price, sale_date, fee='0', rates=None):
+    """Estimate ordered specific-lot quantities from remaining basis, without writes.
+
+    ``selected`` pairs an accepted lot with its proposed quantity. Rates map
+    SHORT_TERM/LONG_TERM to approved marginal fractions. Executed sale facts
+    remain immutable and never pass through this hypothetical calculation.
+    """
+    price, fee = decimal(price), decimal(fee)
+    quantity = sum((decimal(used) for _, used in selected), ZERO)
+    if quantity <= 0 or price < 0 or fee < 0 or fee > quantity * price:
+        raise DomainError('Sale quantity, price and fee are inconsistent', 3)
+    remaining_fee, rows = fee, []
+    st, lt, effect, positive = ZERO, ZERO, ZERO, ZERO
+    for index, (lot, used) in enumerate(selected):
+        used, remaining = decimal(used), decimal(lot['remaining_quantity'])
+        basis = _remaining_basis(lot)
+        acquired = _known_date(lot.get('acquisition_date'))
+        if used <= 0 or used > remaining or basis is None or acquired is None or acquired > _date(sale_date):
+            raise DomainError('Specific sale requires known remaining basis, quantities and dates', 3)
+        removed = basis if used == remaining else basis * used / remaining
+        allocated_fee = remaining_fee if index == len(selected) - 1 else fee * used / quantity
+        remaining_fee -= allocated_fee
+        proceeds = used * price - allocated_fee
+        gain, term = proceeds - removed, _term(acquired, sale_date)
+        rows.append({'id': lot['id'], 'acquisition_date': lot['acquisition_date'],
+                     'quantity': _number(used), 'basis': _number(removed),
+                     'proceeds': _number(proceeds), 'gross_proceeds': _number(used * price),
+                     'fee': _number(allocated_fee), 'gain_loss': _number(gain), 'term': term})
+        if term == 'SHORT_TERM':
+            st += gain
+        else:
+            lt += gain
+        if rates is not None:
+            rate = decimal(rates[term])
+            effect += gain * rate
+            positive += max(ZERO, gain) * rate
+    return {'selected_lots': rows, 'realized_gain_loss': _number(st + lt),
+            'short_term_gain_loss': _number(st), 'long_term_gain_loss': _number(lt),
+            'estimated_tax_effect': _number(effect) if rates is not None else None,
+            'positive_estimated_tax_cost': _number(positive) if rates is not None else None}
+
+
+@_exact_analysis
 def lots(state, as_of):
     as_of = _date(as_of)
     taxable = {a["id"] for a in state["accounts"] if a.get("tax_status") == "TAXABLE"}
@@ -493,51 +536,23 @@ def analyze(
                 l["id"],
             )
         )
-    remaining, st, lt, estimate, loss = quantity, ZERO, ZERO, ZERO, False
-    remaining_fee = fee
+    remaining, loss = quantity, False
+    selected = []
     excluded, retained = set(), {}
     for lot in available:
         if remaining <= 0:
             break
         used = min(remaining, decimal(lot["remaining_quantity"]))
-        allocated_fee = remaining_fee if used == remaining else fee * used / quantity
-        remaining_fee -= allocated_fee
-        remaining_quantity = decimal(lot["remaining_quantity"])
-        basis = (lot["_remaining_basis"] if used == remaining_quantity else
-                 lot["_remaining_basis"] * used / remaining_quantity)
-        proceeds = used * price - allocated_fee
-        gain = proceeds - basis
-        result["selected_lots"].append(
-            {
-                "id": lot["id"],
-                "acquisition_date": lot["acquisition_date"],
-                "quantity": _number(used),
-                "basis": _number(basis),
-                "proceeds": _number(proceeds),
-                "gross_proceeds": _number(used * price),
-                "fee": _number(allocated_fee),
-                "gain_loss": _number(gain),
-                "term": lot["_term"],
-            }
-        )
-        if lot["_term"] == "SHORT_TERM":
-            st += gain
-        else:
-            lt += gain
-        if configured:
-            estimate += gain * _rate(lot["_term"], configured)
-        loss |= gain < 0
+        selected.append((lot, used))
         if used == decimal(lot["remaining_quantity"]):
             excluded.add(lot["id"])
         else:
             retained[lot["id"]] = decimal(lot["remaining_quantity"]) - used
         remaining -= used
-    result.update(
-        realized_gain_loss=_number(st + lt),
-        short_term_gain_loss=_number(st),
-        long_term_gain_loss=_number(lt),
-        estimated_tax_effect=_number(estimate) if configured else None,
-    )
+    result.update(estimate_sale(selected, price, sale_date, fee,
+                  {term: _rate(term, configured) for term in ('SHORT_TERM', 'LONG_TERM')}
+                  if configured else None))
+    loss = any(decimal(row['gain_loss']) < 0 for row in result['selected_lots'])
     if not configured:
         result["warnings"].append("Tax rates absent; no dollar tax effect estimated")
     else:

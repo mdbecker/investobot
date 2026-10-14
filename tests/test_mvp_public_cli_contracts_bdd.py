@@ -73,7 +73,7 @@ def once(ctx):
     assert result.exit_code == 0
     selected = Ledger(ctx['path'])
     try:
-        assert len(selected.rows('data_snapshots')) == 1
+        assert len(json.loads(result.stdout)['snapshots']) == 1
     finally:
         selected.connection.close()
 

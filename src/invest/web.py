@@ -14,61 +14,17 @@ from invest.models import DomainError
 STATIC = Path(__file__).parent / "static"
 
 
-class PersistedHoldings:
-    """Supply stored observations to the shared exposure calculation without a provider."""
-
-    def __init__(self, ledger):
-        self.observations = ledger.rows('fund_holdings_cache')
-        self.environments = {row.get('data_environment') for row in ledger.rows('accounts')}
-
-    def holdings(self, ticker, refresh=False):
-        candidates = [row for row in self.observations if row.get('ticker') == ticker
-                      and row.get('data_environment') in {'REAL', 'SYNTHETIC'}
-                      and self.environments == {row.get('data_environment')}]
-        if not candidates:
-            raise DomainError('No compatible persisted constituent observation', 2)
-        observation = dict(max(candidates, key=lambda row: row.get('retrieved_at', '')))
-        warnings = list(observation.get('warnings', []))
-        issues = list(observation.get('issues', []))
-
-        def evidence_issue(code, message):
-            warnings.append(message)
-            issues.append(dict(code=code, message=message, blocks_calculation=False,
-                blocks_proposals=True, blocks_execution_review=True))
-
-        if not observation.get('source'):
-            evidence_issue('UNKNOWN_HOLDINGS_SOURCE', 'Stored constituent source is unknown; coverage requires review')
-        source_date = observation.get('data_as_of')
-        try:
-            age = (date.today() - date.fromisoformat(str(source_date)[:10])).days
-        except ValueError:
-            evidence_issue('UNKNOWN_SOURCE_DATE', 'Stored constituent source date is unknown; coverage requires review')
-        else:
-            if age < 0 or age > 120:
-                evidence_issue('FUTURE_SOURCE_DATE' if age < 0 else 'STALE_HOLDINGS',
-                    'Stored constituent source date is future or stale; coverage requires review')
-        observation['warnings'] = warnings
-        observation['issues'] = issues
-        return observation
-
-
 def overview(ledger):
     """Read accepted balances, coverage and targets using shared domain calculations."""
-    from invest import analytics, tax
+    from invest import tax
+    from invest.portfolio_research_inputs import exposure_report
     from invest.targets import list_targets
 
     targets = list_targets(ledger)["targets"]
     active = next((t for t in targets if t["status"] == "ACTIVE"), None)
     state = ledger.state()
     summary = ledger.summary()
-    if summary['total_value'] is None:
-        exposure = dict(status='UNAVAILABLE', currency=summary['currency'], total_value=None,
-            exposures=[], unknown_exposure_value=None, unknown_exposure_percentage=None,
-            by_sector={}, by_asset_type_known={}, provenance={}, fund_coverage={},
-            issues=summary['issues'], warnings=summary['warnings'] + [
-                'Exposure percentages require complete accepted valuation and cash coverage'])
-    else:
-        exposure = analytics.exposure(state, PersistedHoldings(ledger))
+    exposure = exposure_report(ledger, state=state)
     latest = {}
     for snapshot in state["snapshots"]:
         account_id = snapshot["account"]["id"]
