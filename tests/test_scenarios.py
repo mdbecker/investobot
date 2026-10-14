@@ -83,6 +83,8 @@ def setup(ctx, tax_status):
             "data_environment": "SYNTHETIC",
         }
     )
+    ctx['client'].holdings('AAA')
+    ctx['client'].holdings('BBB')
     ctx["before"] = ctx["ledger"].path.read_bytes()
 
 
@@ -133,7 +135,7 @@ def loss(ctx):
 @then("the Apple exposure decreases")
 def exposure_change(ctx):
     changes = ctx["result"]["exposure_changes"]
-    assert Decimal(next(c for c in changes if c["ticker"] == "AAPL")["change"]) == -150
+    assert sum(Decimal(c["change"]) for c in changes if c["ticker"] == "AAPL") == -150
 
 
 @then("the original ledger bytes remain unchanged")
