@@ -124,3 +124,21 @@ def test_saved_plan_workflow_fixture_prepares_real_immutable_plans(tmp_path):
         assert fixture.ledger.planning_state() == before
     finally:
         fixture.close()
+
+
+def test_fixed_evidence_ignores_only_empty_retired_and_new_source_metadata():
+    from benchmarks.operations import evidence
+
+    reference = {'snapshots': [{'account': {'id': 'fictional'}, 'source_hash': 'exact',
+        'positions_complete': True}], 'planning_constraints': {'eligible_accounts': ['fictional'],
+        'short_term_gain_budget': None, 'long_term_gain_budget': None}, 'amount': '100.01'}
+    candidate = deepcopy(reference)
+    candidate['snapshots'][0].update(issues=[], institution_status=None)
+    candidate['planning_constraints'].pop('short_term_gain_budget')
+    candidate['planning_constraints'].pop('long_term_gain_budget')
+    assert evidence(reference) == evidence(candidate)
+    candidate['amount'] = '100.02'
+    assert evidence(reference) != evidence(candidate)
+    candidate['amount'] = '100.01'
+    candidate['snapshots'][0]['issues'] = [{'code': 'PROVISIONAL_ADAPTER', 'blocks_proposals': True}]
+    assert evidence(reference) != evidence(candidate)
