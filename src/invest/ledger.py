@@ -204,11 +204,14 @@ class Ledger:
         account_id = snap["account"]["id"]
         issues = []
         for issue in snap['issues']:
-            if issue.get('blocks_calculation') or issue.get('blocks_acceptance') is True:
+            if issue.get('blocks_acceptance') is True or (
+                    'blocks_acceptance' not in issue and issue.get('blocks_calculation')):
                 issues.append(dict(issue, blocks_acceptance=True))
             elif (snap['positions_complete'] and issue.get('code') in {
                     'UNRESOLVED_SOURCE_ROW', 'AMBIGUOUS_SUMMARY_ROW', 'UNKNOWN_DATA_ENVIRONMENT'}):
                 issues.append(dict(issue, blocks_acceptance=True))
+            else:
+                issues.append(dict(issue, blocks_acceptance=issue.get('blocks_acceptance', False)))
         environment = snap['data_environment']
         if environment is None:
             issues.append(_issue('UNKNOWN_DATA_ENVIRONMENT',
@@ -247,8 +250,21 @@ class Ledger:
         existing_positions = self.rows('positions', account_id=account_id)
         securities = self.rows('securities')
         held = {p['security_id'] for p in existing_positions if p['account_id'] == account_id}
-        old = {p["security"]: p for p in existing_positions if p["account_id"] == account_id}
-        incoming = {p["security"]: p for p in snap["positions"]}
+        old = {p['security_id']: p for p in existing_positions}
+        incoming = {}
+        for position in snap['positions']:
+            try:
+                security, _ = self._snapshot_security(position, account_id,
+                    securities=securities, held=held)
+            except DomainError as error:
+                issues.append(_issue('SECURITY_IDENTITY_CONFLICT', str(error),
+                                     security=position['security']))
+                continue
+            identity = security['id'] if security else position['security']
+            if identity in incoming:
+                issues.append(_issue('SECURITY_IDENTITY_CONFLICT',
+                    'Multiple source positions resolve to one canonical security', security=identity))
+            incoming[identity] = position
         changes, observations = [], []
         for symbol in sorted(old.keys() | incoming.keys()):
             if symbol not in incoming:
@@ -258,6 +274,10 @@ class Ledger:
             elif symbol not in old:
                 changes.append({"kind": "new_position", "security": symbol, "status": "CHANGED_VALUE"})
             else:
+                if old[symbol]['security'] != incoming[symbol]['security']:
+                    changes.append(dict(kind='ticker', security_id=symbol,
+                        before=old[symbol]['security'], after=incoming[symbol]['security'],
+                        status='CHANGED_VALUE'))
                 for field in ("quantity", "price", "market_value", "cost_basis"):
                     before, after = old[symbol].get(field), incoming[symbol].get(field)
                     status = "UNKNOWN_VALUE" if after is None else (
@@ -330,7 +350,6 @@ class Ledger:
                     "canonical OTHER is preserved. Verify provenance, then use "
                     f"invest security classify {security['id']} --asset-type {position['asset_type']} "
                     '--source "VERIFIED_SOURCE" --confirm for an explicit audited correction')
-        known = {s["ticker"] for s in securities}
         events = [row for row in self.rows('activities') if row['account_id'] == account_id]
         if events:
             source = snap['source_timestamp']
@@ -390,7 +409,8 @@ class Ledger:
                     account_metadata_discrepancies=discrepancies,
                     source_date_status=source_status, latest_known_source_date=latest_known,
                     override_required=override_required,
-                    unidentified_securities=sorted(incoming.keys() - known),
+                    unidentified_securities=sorted(p['security'] for identity, p in incoming.items()
+                                                   if identity not in {s['id'] for s in securities}),
                     warnings=warnings + (["State differences do not establish transactions"] if changes else []))
 
     def apply(self, snapshot, allow_older=False, justification=None):
@@ -529,7 +549,9 @@ class Ledger:
                 override_justification=justification if allow_older else None,
                 override_kind=("UNKNOWN_SOURCE_DATE_OVERRIDE" if snap["source_timestamp"] is None
                     else "OLDER_SOURCE_OVERRIDE") if allow_older and reconciliation["override_required"] else None))
-        return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id, warnings=reconciliation["warnings"])
+        return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id,
+                    warnings=reconciliation["warnings"], issues=reconciliation['issues'],
+                    evidence_complete=not reconciliation['issues'])
 
     def summary(self):
         return summarize(self.state())

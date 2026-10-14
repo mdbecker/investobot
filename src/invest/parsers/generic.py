@@ -34,7 +34,8 @@ def displayed_precision(text):
 def issue(code, message, *ids, calculation=False):
     return {'code': code, 'severity': 'ERROR' if calculation else 'WARNING',
             'affected_ids': list(ids), 'blocks_calculation': calculation,
-            'blocks_proposal': True, 'blocks_execution_review': True, 'message': message}
+            'blocks_acceptance': calculation, 'blocks_proposals': True,
+            'blocks_execution_review': True, 'message': message}
 
 
 def add_exact(left, right):
