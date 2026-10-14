@@ -7,8 +7,8 @@
   "recipe_version": "mvp-representative-v2",
   "legacy_timings_are_gate": false,
   "approved_output_projection": {
-    "authorization": "docs/PRD-mvp-foundation-stabilization-2026-10-12.md package H",
-    "scope": "Remove only cadence={eligible:true} from contribution-first-hifo-1 plan output; reject any other calendar outcome. Keep every financial, policy, source and relationship field.",
+    "authorization": "Foundation PRD package H and docs/PRD-mvp-correctness-simplification-2026-10-13.md section 2",
+    "scope": "Remove only cadence={eligible:true} from contribution-first-hifo-1 plan output; reject any other calendar outcome. Keep every financial, policy, source and relationship field. Also compare only reviewed empty/new evidence metadata and zero sale fields as documented in docs/implementation/correctness-status.md; retain native results and reject unexpected uncertainty/nonzero estimates.",
     "application_reference_changed": false
   },
   "approval": {

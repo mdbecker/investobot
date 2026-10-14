@@ -102,3 +102,10 @@ Raw results belong in ignored `benchmark-results/`; CI artifacts expire after
 `local-data/performance-archive/2026-10-12` and Git history. Retain local archives
 90 days and open correctness evidence through resolution. The compact
 [handoff](implementation/wrap-up-status.md) records identities and final results.
+
+Correctness response additions use the bounded reviewed projection documented in
+[the current handoff](implementation/correctness-status.md#fixed-performance-evidence-projection).
+Native results remain retained; unexpected uncertainty, money or action changes
+cannot be projected. Reference and recipe pins, eight workloads, sample floor
+and slowdown threshold remain unchanged. Saved-plan fixture preparation now
+approves policy explicitly because synthetic preview never persists.

@@ -13,21 +13,26 @@ from invest.tax import estimate_sale
 from invest.tax_policy import _issue, _plain, annual_budget, harvest_plan
 
 
+def _latest_receipts(state):
+    """Preserve receipt order for tied import times, matching SQLite projection."""
+    latest = {}
+    for row in sorted(state['snapshots'], key=lambda row: row['imported_at']):
+        if row.get('status') != 'EVIDENCE_ONLY':
+            latest[row['account']['id']] = row
+    return latest
+
+
 def _planning_fingerprint(state):
     inputs = {table: [dict(row) for row in state[table]] for table in (
         'accounts', 'securities', 'positions', 'lots', 'cash_balances', 'activities')}
     for table, field in (('accounts', 'metadata_history'), ('securities', 'classification_history')):
         for row in inputs[table]:
             row.pop(field, None)
-    latest = {}
-    for row in sorted(state['snapshots'], key=lambda row: (row['imported_at'], row['id'])):
-        if row.get('status') != 'EVIDENCE_ONLY':
-            latest[row['account']['id']] = row
     fields = ('id', 'imported_at', 'source_timestamp', 'source_hash', 'positions_complete',
               'lots_complete', 'cash_known', 'data_environment', 'institution_status')
     inputs['snapshots'] = [dict({key: row.get(key) for key in fields},
                               issues=row.get('issues', []), account={'id': account})
-                          for account, row in latest.items()]
+                          for account, row in _latest_receipts(state).items()]
     return state_hash(inputs)
 
 
@@ -41,6 +46,9 @@ def conditional_harvest(state, policy, as_of):
         proposed_actions=[], simulated_cash={}, estimated_net_tax_effect=None,
         wash_sale_certified=False, mode='CONDITIONAL_HARVEST')
     issues = result['issues']
+    for account, receipt in _latest_receipts(state).items():
+        issues.extend(dict(source_issue, account_id=account)
+                      for source_issue in receipt.get('issues', []))
 
     def issue(code, message, *, calculation=True):
         issues.append(_issue(code, message, calculation=calculation))
@@ -151,8 +159,10 @@ def conditional_harvest(state, policy, as_of):
                 issue('MIXED_DATA_ENVIRONMENT', 'Lot provenance differs from the approved policy')
     # Legal review remains mandatory, but otherwise complete evidence can support
     # explicitly conditional arithmetic. Known household conflicts suppress actions.
-    if any(row['code'] != 'HUMAN_WASH_SALE_REVIEW' and row['blocks_proposal'] for row in issues):
-        result['status'] = 'BLOCKED' if any(row['blocks_calculation'] for row in issues) else 'REVIEW_REQUIRED'
+    if any(row['code'] != 'HUMAN_WASH_SALE_REVIEW' and
+           (row.get('blocks_proposal', False) or row.get('blocks_proposals', False)
+            or row.get('blocks_calculation', False)) for row in issues):
+        result['status'] = 'BLOCKED' if any(row.get('blocks_calculation', False) for row in issues) else 'REVIEW_REQUIRED'
         return result
     actions, estimate, estimates = [], Decimal(0), []
     with localcontext() as context:

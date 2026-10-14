@@ -110,7 +110,8 @@ def measure(revision, *, batches=None):
                             if not proofs or not all(proof['passed'] for proof in proofs.values()):
                                 raise ValueError(f'Native oracle failed: {workflow["id"]}: {proofs}')
                             results.append(result)
-                        observed = digest(results)
+                        from benchmarks.correctness_projection import project
+                        observed = digest(project(results))
                         if output_hash is not None and observed != output_hash:
                             raise ValueError('Repeated workflow output differs')
                         output_hash = observed

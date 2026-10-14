@@ -8,7 +8,6 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from invest.financial_state import state_hash
 from invest.ledger import Ledger
 from invest.models import SecurityInput, Snapshot, TargetInput
 from invest.planning import propose, save_policy
@@ -43,7 +42,8 @@ class FinancialFixture:
             destination.execute('PRAGMA journal_mode=DELETE')
         finally:
             destination.close()
-        self.input_state_hash = state_hash(self.ledger.planning_state())
+        from benchmarks.operations import evidence
+        self.input_state_hash = digest(evidence(self.ledger.planning_state()))
 
     def reset(self):
         self.ledger.connection.rollback()

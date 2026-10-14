@@ -35,7 +35,8 @@ def evidence(value):
         if isinstance(item, str) and re.fullmatch(r'[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}', item):
             return identities.setdefault(item, f'generated-identity-{len(identities)}')
         return item
-    return walk(value)
+    from benchmarks.correctness_projection import project
+    return walk(project(value))
 
 
 @dataclass

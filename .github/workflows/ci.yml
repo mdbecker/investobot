@@ -22,10 +22,10 @@ jobs:
       - name: Build Python 3.12 runtime with locked dependencies
         run: docker build --tag investobot-ci .
       - name: Verify external host-agent configuration stays outside the image
-        run: docker run --rm --network none investobot-ci sh -c 'test ! -e /app/.agents && test ! -e /app/.claude'
+        run: docker run --rm --network none -e UV_OFFLINE=1 investobot-ci sh -c 'test ! -e /app/.agents && test ! -e /app/.claude'
       - name: Verify locked environment without network access
-        run: docker run --rm --network none investobot-ci uv sync --locked
+        run: docker run --rm --network none -e UV_OFFLINE=1 investobot-ci uv sync --locked
       - name: Run offline behavior and regression tests
-        run: docker run --rm --network none investobot-ci uv run --locked pytest
+        run: docker run --rm --network none -e UV_OFFLINE=1 investobot-ci uv run --locked pytest
       - name: Check explicit project lint configuration
-        run: docker run --rm --network none investobot-ci uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz
+        run: docker run --rm --network none -e UV_OFFLINE=1 investobot-ci uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz

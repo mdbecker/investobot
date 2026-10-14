@@ -30,7 +30,9 @@
 - All execution, dependency resolution, tests and lint run in Docker; install
   nothing on the host. Host shell/Git and file editing are allowed. Copy `uv.lock`
   before locked sync; dependencies live at `/opt/venv`, never beneath project bind.
-  Use offline disposable containers without private ledgers; Ruff always receives
+  Complete file-edit tool calls before Docker bind-mount verification; host file
+  propagation can lag within a combined editing/testing call.
+  Use UV_OFFLINE=1 for locked offline resolution and disposable containers without private ledgers; Ruff always receives
   `--config pyproject.toml`. Local results are not remote CI evidence.
 - Review intent → architecture → implementation → polish. Investigate bloat,
   redundant/dead interfaces, leaky boundaries, duplication and coupling without

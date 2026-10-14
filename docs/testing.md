@@ -29,9 +29,9 @@ explicitly distinct from exact-commit or remote CI evidence. See
 
 ```sh
 docker build -t investobot-test .
-docker run --rm --network none investobot-test uv run --locked pytest -q
-docker run --rm --network none investobot-test uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz
-docker run --rm --network none investobot-test uv run --locked python scripts/demo_unified_mvp.py
+docker run --rm --network none -e UV_OFFLINE=1 investobot-test uv run --locked pytest -q
+docker run --rm --network none -e UV_OFFLINE=1 investobot-test uv run --locked ruff check --config pyproject.toml src tests benchmarks scripts fuzz
+docker run --rm --network none -e UV_OFFLINE=1 investobot-test uv run --locked python scripts/demo_unified_mvp.py
 ```
 
 Never bind the operator's `local-data/state` for acceptance. Host bridge/Compose

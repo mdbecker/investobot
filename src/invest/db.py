@@ -320,7 +320,8 @@ def rows(connection, table, key=None, *, account_id=None):
     if table in PAYLOAD_TABLES:
         return [json.loads(row[0]) for row in connection.execute(
             f'SELECT payload_json FROM {physical} ORDER BY ' +
-            ('version_id' if table == 'target_versions' else 'id'))]
+            ('version_id' if table == 'target_versions' else
+             'imported_at,rowid' if table == 'snapshots' else 'id'))]
     fields = FIELDS[table]
     keys = list(fields)
     result = []
