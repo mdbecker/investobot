@@ -179,3 +179,17 @@ def no_transition(ctx):
     assert 'transition_plans' not in output
     assert output['candidates'][0]['id']
     assert state(ctx) == ctx['before']
+
+
+@given('an absent selected ledger and a fictional dataset manifest')
+def absent_manifest(ctx):
+    ctx['manifest'] = ctx['tmp'] / 'manifest.json'
+    ctx['manifest'].write_text(json.dumps({'id': 'fictional-data',
+        'data_environment': 'SYNTHETIC', 'artifacts': []}))
+
+
+@then('it validates without creating the selected ledger')
+def absent_preview(ctx):
+    assert ctx['result'].exit_code == 0, ctx['result'].output
+    assert json.loads(ctx['result'].stdout)['committed'] is False
+    assert not ctx['path'].exists()

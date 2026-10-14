@@ -29,3 +29,8 @@ Feature: Explicit public workflows
     Given a fictional accepted household and dataset manifest
     When historical candidates are compared with a configured approved policy
     Then immutable runs are identified but targets and transition plans are not created
+
+  Scenario: Dataset preview leaves an absent selected ledger absent
+    Given an absent selected ledger and a fictional dataset manifest
+    When the manifest is submitted without confirmation
+    Then it validates without creating the selected ledger
