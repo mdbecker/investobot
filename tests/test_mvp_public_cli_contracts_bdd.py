@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 from pytest_bdd import given, scenarios, then, when
+from test_mvp_research_workflows_bdd import accepted_household
 from typer.testing import CliRunner
 
 from invest.cli import app
 from invest.ledger import Ledger
 from invest.planning import save_policy
-from test_mvp_research_workflows_bdd import accepted_household
 
 scenarios('features/mvp/public_cli_contracts.feature')
 
@@ -193,3 +193,20 @@ def absent_preview(ctx):
     assert ctx['result'].exit_code == 0, ctx['result'].output
     assert json.loads(ctx['result'].stdout)['committed'] is False
     assert not ctx['path'].exists()
+
+
+@when('public financial contracts are discovered')
+def financial_contracts(ctx):
+    ctx['exposure_contract'] = invoke(ctx, ['tools', 'describe', 'portfolio.exposure'])
+    ctx['target_contract'] = invoke(ctx, ['tools', 'describe', 'target.save'])
+
+
+@then('exposure is read only and target schema has no separate gain budgets')
+def one_policy(ctx):
+    assert ctx['exposure_contract'].exit_code == ctx['target_contract'].exit_code == 0
+    exposure = json.loads(ctx['exposure_contract'].stdout)
+    assert exposure['mutates_persistent_state'] is False
+    schema = json.loads(ctx['target_contract'].stdout)['json_input_schema']
+    properties = schema['$defs']['PlanningConstraints']['properties']
+    assert 'short_term_gain_budget' not in properties
+    assert 'long_term_gain_budget' not in properties

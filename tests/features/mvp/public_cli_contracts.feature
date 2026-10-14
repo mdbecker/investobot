@@ -34,3 +34,8 @@ Feature: Explicit public workflows
     Given an absent selected ledger and a fictional dataset manifest
     When the manifest is submitted without confirmation
     Then it validates without creating the selected ledger
+
+  Scenario: Discovery exposes one financial policy path
+    Given a fictional accepted household and dataset manifest
+    When public financial contracts are discovered
+    Then exposure is read only and target schema has no separate gain budgets
