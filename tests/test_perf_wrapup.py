@@ -142,3 +142,15 @@ def test_fixed_evidence_ignores_only_empty_retired_and_new_source_metadata():
     candidate['amount'] = '100.01'
     candidate['snapshots'][0]['issues'] = [{'code': 'PROVISIONAL_ADAPTER', 'blocks_proposals': True}]
     assert evidence(reference) != evidence(candidate)
+
+
+def test_receipt_display_order_does_not_hide_source_facts():
+    from benchmarks.operations import evidence
+
+    receipts = [{'id': name, 'account': {'id': 'fictional'}, 'source_hash': name,
+        'source_timestamp': day, 'positions_complete': True, 'cash': cash}
+        for name, day, cash in [('early', '2026-10-08', '100'), ('later', '2026-10-09', '150')]]
+    assert evidence({'snapshots': receipts}) == evidence({'snapshots': list(reversed(receipts))})
+    changed = deepcopy(receipts)
+    changed[1]['cash'] = '151'
+    assert evidence({'snapshots': receipts}) != evidence({'snapshots': changed})
