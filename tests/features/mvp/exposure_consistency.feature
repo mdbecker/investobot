@@ -22,3 +22,17 @@ Feature: One source-aware recursive household exposure
     Given synthetic household exposure evidence for "research selection"
     When the verified issuer research universe is selected
     Then verified company selection preserves observed unresolved amounts
+
+  Scenario Outline: Partial source evidence cannot become verified household coverage
+    Given synthetic household exposure evidence for "<case>"
+    When household exposure is calculated without changing its evidence
+    Then source uncertainty is preserved for "<case>"
+
+    Examples:
+      | case                      |
+      | missing cash              |
+      | accepted parser issue     |
+      | source diagnostic         |
+      | provisional issuer        |
+      | conflicting issuer        |
+      | later observed evidence   |

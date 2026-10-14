@@ -30,7 +30,8 @@ def evidence(context, case):
                              'issuer_id': 'CIK:0000123456',
                              'issuer_identity_evidence': 'Reviewed fictional issuer'}],
              'positions': [{'account_id': 'ira', 'security_id': 'fund-a',
-                            'market_value': '1000'}], 'cash_balances': []}
+                            'market_value': '1000'}],
+             'cash_balances': [{'account_id': 'ira', 'amount': '0'}]}
     observed = {'identifier': 'source-only-001', 'ticker': 'SAME',
                 'name': 'Fictional observed company', 'asset_type': 'STOCK', 'weight': '0.6'}
     observations = {'fund-a': observation([observed])}
@@ -66,6 +67,29 @@ def evidence(context, case):
         observations['fund-b'] = observation([{'security_id': 'verified', 'weight': '1'}])
     elif case == 'research selection':
         observations['fund-a']['holdings'].append({'security_id': 'verified', 'weight': '0.4'})
+    elif case in {'missing cash', 'accepted parser issue', 'source diagnostic',
+                  'provisional issuer', 'conflicting issuer', 'later observed evidence'}:
+        observations['fund-a']['holdings'] = [{'security_id': 'verified', 'weight': '1'}]
+        if case == 'missing cash':
+            state['cash_balances'] = []
+        elif case == 'accepted parser issue':
+            state['snapshots'] = [{'account': {'id': 'ira'}, 'positions_complete': True,
+                'cash_known': True, 'issues': [{'code': 'PROVISIONAL_ADAPTER',
+                    'message': 'Fictional adapter awaits reviewed originals',
+                    'blocks_acceptance': False, 'blocks_calculation': False,
+                    'blocks_proposals': True, 'blocks_execution_review': True}]}]
+        elif case == 'source diagnostic':
+            observations['fund-a']['issues'] = [{'code': 'SOURCE_PERMISSION_UNKNOWN',
+                'message': 'Original-source reuse has not been reviewed', 'severity': 'WARNING',
+                'blocks_acceptance': False, 'blocks_calculation': False,
+                'blocks_proposals': True, 'blocks_execution_review': True}]
+        elif case == 'provisional issuer':
+            observations['fund-a']['provisional'] = True
+        elif case == 'conflicting issuer':
+            observations['fund-a']['holdings'][0].update(issuer_id='different-issuer',
+                                                        issuer_verified=True)
+        else:
+            observations['fund-a']['observed_at'] = '2026-10-11'
     context.update(state=state, observations=observations, case=case)
     context['before'] = copy.deepcopy((state, observations))
 
@@ -90,13 +114,13 @@ def coverage(context, case):
         assert result['unresolved_identity_value'] == '600'
         assert result['exposures'][0]['contributions'][0]['path'][1]['security_id'] == 'fund-a'
     elif case == 'verified nested issuer':
-        assert len(result['exposures']) == 1
+        assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 1
         assert result['exposures'][0]['total_value'] == '1000'
         assert result['exposures'][0]['issuer_id'] == 'CIK:0000123456'
         assert len(result['exposures'][0]['contributions']) == 2
         assert result['complete'] is True
     elif case == 'equal source tickers':
-        assert len(result['exposures']) == 2
+        assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 2
         assert all(row['issuer_id'] is None for row in result['exposures'])
         assert result['unresolved_identity_value'] == '2000'
         assert result['unknown_exposure_value'] == '0'
@@ -108,14 +132,19 @@ def coverage(context, case):
     elif case == 'exact residues':
         assert result['exposures'][0]['total_value'] == '333.333333333333333333333333333'
         assert result['unknown_exposure_value'] == '666.666666666666666666666666667'
+    elif case == 'stale holdings':
+        assert 'STALE_HOLDINGS' in codes
+        assert result['exposures'][0]['total_value'] == '1000'
+        assert result['stale_exposure_value'] == '1000'
+        assert result['unknown_exposure_value'] == '0'
     else:
         expected = {'stale holdings': 'STALE_HOLDINGS', 'later publication': 'FUTURE_PUBLICATION',
                     'absent holdings': 'UNKNOWN_HOLDINGS', 'invalid weights': 'INVALID_HOLDINGS_WEIGHTS',
                     'cycle': 'FUND_CYCLE', 'depth limit': 'MAX_LOOKTHROUGH_DEPTH'}[case]
         assert expected in codes
         assert result['unknown_exposure_value'] == '1000'
-        assert result['exposures'] == []
-    assert result['numeric_complete'] is (case in {'verified nested issuer', 'equal source tickers'})
+        assert all(row['total_value'] == '0' for row in result['exposures'])
+    assert result['numeric_complete'] is (case in {'verified nested issuer', 'equal source tickers', 'stale holdings'})
     assert result['evidence_complete'] is (case == 'verified nested issuer')
 
 
@@ -134,3 +163,32 @@ def selected(context):
     assert result['unknown_exposure_value'] == '0'
     assert result['filtered_exposure_value'] == '0'
     assert (context['state'], context['observations']) == context['before']
+
+
+@then(parsers.parse('source uncertainty is preserved for "{case}"'))
+def uncertainty(context, case):
+    result = context['result']
+    assert (context['state'], context['observations']) == context['before']
+    codes = {row['code'] for row in result['issues']}
+    if case == 'missing cash':
+        assert 'UNKNOWN_CASH_COVERAGE' in codes
+        assert result['total_value'] is None
+        assert result['known_value_subtotal'] == '1000'
+        assert all(row['percentage'] is None for row in result['exposures'])
+    elif case == 'accepted parser issue':
+        assert 'PROVISIONAL_ADAPTER' in codes
+    elif case == 'source diagnostic':
+        issue = next(row for row in result['issues'] if row['code'] == 'SOURCE_PERMISSION_UNKNOWN')
+        assert issue['message'] == 'Original-source reuse has not been reviewed'
+        assert issue['severity'] == 'WARNING'
+        assert issue['blocks_acceptance'] is False
+    elif case == 'provisional issuer':
+        assert all(row['issuer_id'] is None for row in result['exposures'])
+        assert result['unresolved_identity_value'] == '1000'
+    elif case == 'conflicting issuer':
+        assert 'ISSUER_IDENTITY_CONFLICT' in codes
+        assert all(row['issuer_id'] != 'different-issuer' for row in result['exposures'])
+    else:
+        assert 'FUTURE_OBSERVATION' in codes
+        assert result['unknown_exposure_value'] == '1000'
+    assert result['evidence_complete'] is False
