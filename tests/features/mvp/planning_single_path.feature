@@ -59,3 +59,10 @@ Feature: One policy governed planner
     And the sourced price is 100 plus a residue at decimal place 150
     When a contribution is proposed using a saved approved policy
     Then the one share purchase preserves the exact remaining cash residue
+
+  Scenario: Conditional harvest honors the newest tied source receipt
+    Given a complete taxable portfolio with two verified loss lots and a reviewed replacement
+    And a later accepted source receipt has the same import time and blocks trade proposals
+    When approved harvest and rebalance estimate the same loss sale
+    Then harvest retains the source blocker and proposes no trades
+    And harvest pins the same latest receipt fingerprint as the ledger

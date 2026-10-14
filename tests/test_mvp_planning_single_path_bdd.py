@@ -336,3 +336,43 @@ def precise_cash(planning_context):
     assert action['price'] == planning_context['prices'][planning_context['sid']]['price']
     assert Fraction(result['cash_after']['account']) == Fraction(95) - Fraction(1, 10**150)
     unchanged(planning_context)
+
+
+@given('a later accepted source receipt has the same import time and blocks trade proposals')
+def tied_harvest_source(planning_context):
+    ctx = planning_context
+    latest_id = ctx['ledger'].planning_state()['snapshots'][0]['id']
+    snapshot = copy.deepcopy(next(row for row in ctx['ledger'].state()['snapshots']
+                                  if row['id'] == latest_id))
+    ctx['tied_import_time'] = snapshot['imported_at']
+    for field in ('id', 'fingerprint', 'override_justification', 'override_kind'):
+        snapshot.pop(field, None)
+    snapshot['source_hash'] = 'fictional-tied-harvest-source'
+    snapshot['issues'] = [{'code': 'PROVISIONAL_ADAPTER', 'message': 'Review original source',
+                           'blocks_acceptance': False, 'blocks_calculation': False,
+                           'blocks_proposals': True, 'blocks_execution_review': True}]
+    ctx['newest_receipt'] = ctx['ledger'].apply(snapshot)['snapshot_id']
+    ctx['before'] = copy.deepcopy(ctx['ledger'].state())
+
+
+@then('harvest retains the source blocker and proposes no trades')
+def harvest_source_blocked(planning_context):
+    result = planning_context['harvest']
+    assert result['proposed_actions'] == []
+    issue = next(issue for issue in result['issues'] if issue['code'] == 'PROVISIONAL_ADAPTER')
+    assert issue['blocks_calculation'] is False
+    assert issue['blocks_proposals'] is True
+    assert issue['blocks_execution_review'] is True
+    unchanged(planning_context)
+
+
+@then('harvest pins the same latest receipt fingerprint as the ledger')
+def harvest_receipt_pin(planning_context):
+    from invest.financial_state import state_hash
+
+    ctx = planning_context
+    projected = ctx['ledger'].planning_state()
+    receipt, = projected['snapshots']
+    assert receipt['id'] == ctx['newest_receipt']
+    assert receipt['imported_at'] == ctx['tied_import_time']
+    assert ctx['harvest']['source_state_hash'] == state_hash(projected)
