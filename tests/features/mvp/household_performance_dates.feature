@@ -17,6 +17,7 @@ Feature: Defensible household performance calendar dates
     Given household observations with <evidence> around an external deposit
     When actual household performance is requested twice
     Then TWR is unavailable with <issue>
+    And complete endpoints and dated cash flows still support money weighted return
     And reporting preserves every accepted fact
     Examples:
       | evidence             | issue                           |

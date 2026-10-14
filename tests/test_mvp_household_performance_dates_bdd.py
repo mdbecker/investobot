@@ -1,6 +1,7 @@
 """Public actual-performance acceptance; synthetic expectations use exact arithmetic."""
 
 import json
+import math
 from decimal import Decimal
 
 import pytest
@@ -154,3 +155,13 @@ def blocked(household, code):
 @then('reporting preserves every accepted fact')
 def preserved(household):
     assert household['ledger'].state() == household['before']
+
+
+@then('complete endpoints and dated cash flows still support money weighted return')
+def money_weighted(household):
+    result = household['result']
+    assert result['xirr']['status'] == 'AVAILABLE'
+    # Independent positive quadratic root: 3000*q**2 + 100*q - 3410 = 0.
+    daily_growth = (-100 + math.sqrt(100**2 + 4 * 3000 * 3410)) / 6000
+    expected = math.expm1(math.log(daily_growth) * 365.25)
+    assert result['xirr']['annualized_return'] == pytest.approx(expected, rel=1e-8)
