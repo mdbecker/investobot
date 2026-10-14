@@ -109,3 +109,18 @@ def test_retired_calendar_output_projection_preserves_every_financial_and_policy
     native['cadence']['eligible'] = False
     with pytest.raises(ValueError, match='calendar'):
         foundation_projection(native)
+
+
+def test_saved_plan_workflow_fixture_prepares_real_immutable_plans(tmp_path):
+    from benchmarks.financial_fixtures import build, seed_plans
+    from invest.plans import list_plans
+
+    fixture = build(tmp_path, runner.manifest()['profiles']['test'])
+    try:
+        before = fixture.ledger.planning_state()
+        identifiers = seed_plans(fixture, 2)
+        listed = list_plans(fixture.ledger)['plans']
+        assert {row['id'] for row in listed} == set(identifiers)
+        assert fixture.ledger.planning_state() == before
+    finally:
+        fixture.close()
