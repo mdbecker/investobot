@@ -11,7 +11,7 @@ from pathlib import Path
 from invest.financial_state import state_hash
 from invest.ledger import Ledger
 from invest.models import SecurityInput, Snapshot, TargetInput
-from invest.planning import propose
+from invest.planning import propose, save_policy
 
 DATE = '2026-10-10'
 SOURCE_DATE = '2026-10-09'
@@ -26,7 +26,7 @@ class FinancialFixture:
     ledger: Ledger
     snapshots: list
     target_id: str
-    policy: dict
+    policy: str
     prices: dict
     accounts: list
     securities: list
@@ -137,9 +137,11 @@ def build(root, dimensions, *, concentrated_target=False, reuse=False):
                   ('id','name','description','status','version','created_at','updated_at')}
         ledger.put('targets',target['id'],dict(metadata,current_version_id=target['version_id']))
     policy = dict(version='fictional-performance-v1', data_environment='SYNTHETIC', fee_per_trade='0',
+        source='Explicit fictional reviewed performance-fixture policy',
         permissions={account:{sid:dict(can_buy=True,can_sell=False,can_hold=True,share_increment='1')
                               for sid in securities} for account in accounts})
-    fixture = FinancialFixture(ledger, snapshots, target['id'], policy,
+    policy_id = save_policy(ledger, policy, confirm=True)['id']
+    fixture = FinancialFixture(ledger, snapshots, target['id'], policy_id,
         {sid:dict(price='100',as_of=DATE,currency='USD',data_environment='SYNTHETIC',
                   source='Reviewed fictional source quote') for sid in securities}, accounts, securities,
         {key:dimensions[key] for key in ('accounts','positions','lots','accepted_snapshots')},

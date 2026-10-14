@@ -141,11 +141,14 @@ def _exposure(ledger, dimensions, operation, counts, *, stage=None):
         state = ledger.planning_state()
         state['accounts'] = [row for row in state['accounts'] if row['id'] == 'fund-slice']
         state['positions'] = [row for row in state['positions'] if row['account_id'] == 'fund-slice']
-        state['cash_balances'] = []  # Explicit zero confirmed cash adds no exposure path.
+        state['cash_balances'] = [row for row in state['cash_balances']
+                                  if row['account_id'] == 'fund-slice']
+        state['snapshots'] = [row for row in state['snapshots']
+                             if row['account']['id'] == 'fund-slice']
         sources = {}
         for index, wrapper in enumerate(wrappers):
             weight = (Decimal(1) / size).quantize(Decimal('0.000000000001'))
-            holdings = [{'security_id': company['id'], 'issuer_id': company['cik'],
+            holdings = [{'security_id': company['id'], 'issuer_id': company['issuer_id'],
                 'issuer_verified': True, 'weight': str(weight if row < size - 1 else 1 - weight * (size - 1))}
                 for row, company in enumerate(companies)]
             if index < 2:
@@ -185,6 +188,8 @@ def _exposure(ledger, dimensions, operation, counts, *, stage=None):
 
     def observed(output):
         rows = output.get('companies', output.get('exposures', []))
+        rows = [row for row in rows if not (
+            row.get('asset_type') == 'CASH' and Decimal(row['total_value']) == 0)]
         # Paths through the replaced first company reach it via terminal wrappers.
         return {'all-paths-and-vintages-accounted': [str(size), str(len(rows))],
             'duplicate-issuer-consolidation': [str(size), str(len({row['issuer_id'] for row in rows}))],
