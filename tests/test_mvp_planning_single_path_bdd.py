@@ -192,7 +192,9 @@ def unchanged(planning_context):
 
 def invoke(ctx, tmp_path, monkeypatch, command, payload, options):
     import json
+
     from typer.testing import CliRunner
+
     from invest.cli import app
 
     monkeypatch.setenv('INVEST_DB', str(ctx['ledger'].path))
@@ -292,3 +294,45 @@ def matching_loss(planning_context):
     assert 'HUMAN_WASH_SALE_REVIEW' in {issue['code'] for issue in harvest_result['issues']}
     assert harvest_result['legal_wash_sale_safe'] is None
     assert ctx['ledger'].state() == ctx['before']
+
+
+@given('the accepted source permits storage but blocks trade proposals')
+def source_gate(planning_context):
+    ctx = planning_context
+    snapshot = copy.deepcopy(ctx['ledger'].state()['snapshots'][0])
+    for field in ('id', 'fingerprint', 'override_justification', 'override_kind'):
+        snapshot.pop(field, None)
+    snapshot['source_hash'] = 'fictional-provisional-source'
+    snapshot['issues'] = [{'code': 'PROVISIONAL_ADAPTER', 'message': 'Review original source',
+                           'blocks_acceptance': False, 'blocks_calculation': False,
+                           'blocks_proposals': True, 'blocks_execution_review': True}]
+    ctx['ledger'].apply(snapshot)
+    ctx['before'] = copy.deepcopy(ctx['ledger'].state())
+
+
+@then('the typed source issue survives and no trade is proposed')
+def source_blocked(planning_context):
+    result = planning_context['results'][0]
+    assert result['proposed_actions'] == []
+    issue = next(issue for issue in result['issues'] if issue['code'] == 'PROVISIONAL_ADAPTER')
+    assert issue['blocks_calculation'] is False
+    assert issue['blocks_proposals'] is True
+    assert issue['blocks_execution_review'] is True
+    unchanged(planning_context)
+
+
+@given('the sourced price is 100 plus a residue at decimal place 150')
+def precise_price(planning_context):
+    planning_context['prices'][planning_context['sid']]['price'] = '100.' + '0' * 149 + '1'
+
+
+@then('the one share purchase preserves the exact remaining cash residue')
+def precise_cash(planning_context):
+    from fractions import Fraction
+
+    result = planning_context['results'][0]
+    action, = result['proposed_actions']
+    assert action['quantity'] == '1'
+    assert action['price'] == planning_context['prices'][planning_context['sid']]['price']
+    assert Fraction(result['cash_after']['account']) == Fraction(95) - Fraction(1, 10**150)
+    unchanged(planning_context)

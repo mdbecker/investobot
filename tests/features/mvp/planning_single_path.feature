@@ -47,3 +47,15 @@ Feature: One policy governed planner
     Given a complete taxable portfolio with two verified loss lots and a reviewed replacement
     When approved harvest and rebalance estimate the same loss sale
     Then both estimate a 35 loss and zero positive tax consumption while retaining wash review
+
+  Scenario: Accepted partial source evidence cannot become an actionable plan
+    Given a complete synthetic account with 200 cash and an approved target
+    And the accepted source permits storage but blocks trade proposals
+    When a contribution is proposed using a saved approved policy
+    Then the typed source issue survives and no trade is proposed
+
+  Scenario: Very precise sourced prices preserve exact cash residues
+    Given a complete synthetic account with 200 cash and an approved target
+    And the sourced price is 100 plus a residue at decimal place 150
+    When a contribution is proposed using a saved approved policy
+    Then the one share purchase preserves the exact remaining cash residue
