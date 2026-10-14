@@ -104,6 +104,8 @@ def prepare(case_id, root, dimensions, *, reuse=False):
         return _json(run())
 
     def verify(result):
+        from benchmarks.operations import retain_native
+        retain_native(case_id, result)
         facts = observations(result)
         values = {}
         for name in required:

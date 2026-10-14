@@ -182,6 +182,8 @@ def prepare(case_id, root, dimensions, *, reuse=False):
     def verify(projected):
         """Check exact fixture facts independently of the implementation's success label."""
         result=raw_result
+        from benchmarks.operations import retain_native
+        retain_native(case_id, result)
         if immutable_performance:
             guard()
         state=immutable_state if immutable_performance else ledger.planning_state()

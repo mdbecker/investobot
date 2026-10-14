@@ -1,5 +1,7 @@
 """Shared, dependency-free boundary for isolated real workload observations."""
 
+import json
+import os
 import re
 import sqlite3
 from dataclasses import dataclass, field
@@ -9,6 +11,15 @@ from typing import Any, Callable
 
 def noop() -> None:
     pass
+
+
+def retain_native(case_id, value):
+    """Retain synthetic native results outside timing, including failed oracles."""
+    destination = os.environ.get('INVEST_PERF_NATIVE_OUTPUT')
+    if destination:
+        root = Path(destination)
+        root.mkdir(parents=True, exist_ok=True)
+        (root / (case_id + '.json')).write_text(json.dumps(value, sort_keys=True, default=str))
 
 
 def evidence(value):
