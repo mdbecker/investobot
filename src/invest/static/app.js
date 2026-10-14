@@ -66,14 +66,18 @@ async function refreshOverview() {
   }
   table($('freshness'), ['Account', 'Source date', 'Import date', 'Positions complete', 'Lots complete', 'Cash known'],
     result.data_freshness.map(row => [row.account_id, row.source_timestamp, row.imported_at, row.positions_complete, row.lots_complete, row.cash_known]));
-  table($('exposure'), ['Exposure', 'Accepted value', 'Portfolio %'], result.exposure.exposures.map(row => [row.ticker || row.identifier, row.total_value, row.percentage]));
+  table($('exposure'), ['Exposure', 'Known value', 'Portfolio %'], result.exposure.exposures.map(row =>
+    [row.ticker || row.name || row.observed_identifier || (row.asset_type === 'CASH' ? 'Cash' : 'Unknown security'), row.total_value, row.percentage]));
+  $('exposure').append(el('p', `Known subtotal: ${text(result.exposure.known_value_subtotal)} · Unresolved identity: ${text(result.exposure.unresolved_identity_value)} · Stale evidence: ${text(result.exposure.stale_exposure_value)}`, 'muted'));
   $('exposure').append(el('p', result.exposure.unknown_exposure_percentage === null
     ? 'Exposure percentages unavailable: accepted valuation or cash coverage is incomplete.'
     : `Unknown exposure: ${text(result.exposure.unknown_exposure_percentage)}%`, 'muted'));
   table($('exposure'), ['Fund', 'Numeric holdings coverage', 'Numeric complete', 'Verified evidence complete'],
     Object.entries(result.exposure.fund_coverage || {}).map(([fund, coverage]) =>
-      [fund, coverage.represented_weight, coverage.numeric_complete, coverage.evidence_complete]));
-  warnings($('exposure'), result.exposure.warnings); details($('exposure'), 'Stored source evidence', result.exposure.provenance);
+      [securityLabel(fund), coverage.represented_weight, coverage.numeric_complete, coverage.evidence_complete]));
+  warnings($('exposure'), result.exposure.warnings);
+  details($('exposure'), 'Stored source evidence', result.exposure.exposures.map(row =>
+    ({exposure: row.ticker || row.name || row.observed_identifier || row.asset_type, contributions: row.contributions})));
   if (result.exposure.issues?.length) details($('exposure'), 'Exposure coverage issues', result.exposure.issues);
   warnings($('tax-lots'), result.tax_lots.warnings); details($('tax-lots'), 'Accepted tax-lot facts', result.tax_lots);
   $('active-target').append(el('p', result.active_target?.name || 'No active target.', 'muted'));
