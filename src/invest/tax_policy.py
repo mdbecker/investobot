@@ -214,23 +214,13 @@ def trade_annual_budget(state, policy, trade_date):
     cutoff = approved.as_of.date() if approved.as_of else None
     if cutoff and cutoff > planned:
         issues.append(_issue('FUTURE_TAX_HISTORY_ATTESTATION', 'Tax history attestation follows the planned trade date'))
-    accounts = {row['id']: row for row in state.get('accounts', [])}
+    if cutoff and cutoff < planned:
+        issues.append(_issue('STALE_TAX_HISTORY_ATTESTATION',
+            'Approve complete household tax history covering the planned trade date'))
     environments = {row.get('data_environment') for row in state.get('accounts', [])
                     + state.get('snapshots', []) if row.get('data_environment')}
     if environments - {approved.data_environment}:
         issues.append(_issue('MIXED_DATA_ENVIRONMENT', 'Tax policy and accepted portfolio environments differ'))
-    for activity in state.get('activities', []):
-        if (activity.get('type') != 'SELL'
-                or accounts.get(activity.get('account_id'), {}).get('tax_status') != 'TAXABLE'):
-            continue
-        try:
-            executed = _day(activity['date'])
-        except (KeyError, TypeError, ValueError):
-            continue  # annual_budget retains the typed unknown-date issue.
-        if cutoff and executed.year == planned.year and cutoff < executed <= planned:
-            issues.append(_issue('STALE_TAX_HISTORY_ATTESTATION',
-                'Approve updated household history covering confirmed sales before the planned trade',
-                activity.get('activity_id')))
     if any(issue['blocks_calculation'] for issue in issues):
         result.update(status='BLOCKED', remaining_allowance=None, gain_realizing_sale_allowed=False)
     return result

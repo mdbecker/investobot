@@ -24,6 +24,15 @@ def project(value):
                 if value[key] is not None:
                     raise ValueError('Nonempty retired gain budget cannot be projected')
                 result.pop(key)
+    if 'target_allocations' in value and isinstance(value.get('planning_constraints'), dict):
+        constraints = result['planning_constraints']
+        for key, default in (('permitted_securities', {}), ('cash_minimums', {}),
+                             ('trade_increments', {}), ('price_max_age_days', 1)):
+            if key in constraints:
+                observed = constraints[key]
+                if type(observed) is not type(default) or observed != default:
+                    raise ValueError('Unexpected retired target constraint cannot be projected')
+                constraints.pop(key)
     if value.get('algorithm_version') == 'contribution-first-hifo-1':
         if 'saved' in value:
             if value['saved'] is not True:
