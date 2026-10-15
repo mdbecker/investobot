@@ -22,13 +22,13 @@ CLI sequences; real external-agent behavior remains a human smoke test.
 Preferred final verification uses an image built from the exact committed Git
 tree, locked offline full tests and lint, installed-wheel CLI/skill checks,
 recovery and the synthetic demonstration. The
-[completion addendum](PRD-mvp-completion-scope-addendum-2026-10-14.md) permits final
+[current contract](contract.md) permits final
 mounted-source verification with a previously checked locked image when packaging
 inputs have not changed; reuse unaffected packaging checks and label the tested
 source and image separately. This does not certify the final source as baked into
 that image. Mounted-source results and local measurements are
 explicitly distinct from exact-commit or remote CI evidence. See
-[status](implementation/correctness-status.md) and [benchmarks](benchmarks-unified-mvp.md).
+[readiness](readiness.md) and [performance](performance.md).
 
 ## Current offline commands
 
@@ -48,8 +48,7 @@ eight paired representative workflows and its confirmed >25% guard, as described
 in [performance](performance.md). Retain raw local evidence outside Git for 90
 days and unresolved failures through resolution. No remote CI result is implied.
 
-The current correctness PRD requires the complete A-F BDD set before production
-edits. Red and green checkpoints are local conventional commits on main. Real
+Write the complete changed behavioral scenario set before production edits. Red
+and green checkpoints are local conventional commits on main. Real
 adapters/providers remain human gates; synthetic tests cannot certify them.
-Retired engine-specific tests and the older broad storage benchmark are removed;
-fixed eight-workflow performance and meaningful storage/recovery coverage remain.
+Fixed eight-workflow performance and meaningful storage/recovery coverage remain.

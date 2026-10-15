@@ -71,4 +71,4 @@ real-world source accuracy. The separate human gate requires a public subject,
 two real competitors, verification of at least two overlaps and two findings,
 several original reported metrics, and a deliberately incompatible pair. Local
 Docker evidence is separate from GitHub Actions; no push means remote acceptance
-remains unverified. The complete requirements are preserved in [PRD-v2.8.md](PRD-v2.8.md).
+remains unverified. The current requirements are in [current contract](contract.md).

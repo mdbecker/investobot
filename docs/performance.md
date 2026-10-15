@@ -42,10 +42,9 @@ checkpoints, cash flows and explicit coverage. Ledger extraction and CLI routing
 supply these facts; the function neither discovers completeness nor changes the
 ledger, valuations, caches or saved plans.
 
-## Eight-workflow acceptance
+## Fixed comparison contract
 
-The [wrap-up addendum](PRD-mvp-wrap-up-2026-10-12.md) replaces the old 114-case
-certification. `benchmarks/cases.json` defines exactly eight synthetic workflows:
+`benchmarks/cases.json` defines exactly eight synthetic workflows:
 actual TWR/XIRR; lots/annual tax budget; contribution proposal/saved plans;
 household TLH; recursive exposure/top issuers; ten-year backtest; SQLite/DuckDB
 historical join; text/vector corpus retrieval. Each operation checks independent
@@ -73,13 +72,13 @@ measurement is INVALID. Compare normalized medians; a >25% increase requests
 one complete repeat pair before FAIL. Changed recipes, outputs, counts or runner
 identity fail comparability. No absolute latency, scaling or import stress gate.
 
-Foundation stabilization intentionally removes live calendar metadata. The paired
+Live contribution planning has no calendar gate. The paired
 financial harness projects only `cadence={eligible:true}` out of native
 `contribution-first-hifo-1` plan outputs, including saved-plan reads, after retaining
 the raw result for independent oracle checks. Any other reference calendar outcome
 fails; all actions, financial values, source/policy evidence and relationships stay
-in the fingerprint. This narrow semantic delta is authorized by foundation package
-H in `benchmarks/reference.json`; the reference SHA and fixture recipe stay pinned.
+in the fingerprint. This narrow semantic delta is recorded in
+`benchmarks/reference.json`; the reference SHA and fixture recipe stay pinned.
 
 Example invocations **inside** the offline Docker images, with the current
 checkout mounted at `/harness` and ignored outputs at `/results`:
@@ -100,12 +99,35 @@ for this personal repository and is not a foundation release gate. No push occur
 Raw results belong in ignored `benchmark-results/`; CI artifacts expire after
 30 days. The prior generated evidence is archived in ignored
 `local-data/performance-archive/2026-10-12` and Git history. Retain local archives
-90 days and open correctness evidence through resolution. The compact
-[handoff](implementation/wrap-up-status.md) records identities and final results.
+90 days and open correctness evidence through resolution. The [readiness record](readiness.md) records results and limits.
 
-Correctness response additions use the bounded reviewed projection documented in
-[the current handoff](implementation/correctness-status.md#fixed-performance-evidence-projection).
+## Approved output projections
+
+Correctness response additions use only the reviewed projection below.
 Native results remain retained; unexpected uncertainty, money or action changes
 cannot be projected. Reference and recipe pins, eight workloads, sample floor
 and slowdown threshold remain unchanged. Saved-plan fixture preparation now
 approves policy explicitly because synthetic preview never persists.
+
+Native outputs, initial unprojected warm-up identities and failed evidence remain
+retained outside Git. Native independent oracles run before projection, outside
+timed operations. Only empty accepted source issues/null institution status,
+retired null gain-budget placeholders, `saved=true`, new zero sale/term metrics,
+complete exposure flags/subtotals, reviewed supplemental identity labels,
+complete fund coverage and false stale/provisional path labels are additional
+permitted shape deltas. Recompute normalized source-state hashes from the same
+projected facts, retaining original hashes. Never hide nonempty issues, nonzero
+sale metrics, partial/uncertain exposure or nonempty retired budgets. Money,
+actions, quantities, lot allocations, source/policy evidence and contribution
+paths stay compared. Tests retain changed cents and typed source blockers.
+
+The October 15 evidence correction additionally projects only target-local
+`planning_constraints` values `permitted_securities:{}`, `cash_minimums:{}`,
+`trade_increments:{}` and integer `price_max_age_days:1`. Reject other values;
+preserve supported target fields, approved policies and financial facts. Untimed
+P07 monthly proposal and P08 list/show match the pinned reference with the required
+20-plan inventory and native oracles. An earlier two-plan diagnostic failed the
+same 20-plan oracle on both revisions and remains retained. No oracle, recipe,
+reference, threshold or timing architecture changed. No new timed campaign or
+rebaseline is authorized. See [readiness](readiness.md) for the NOT PASSED
+look-through exception and separate INVALID remote run.

@@ -1,7 +1,7 @@
 # Company news, catalysts and thesis changes
 
-The [V2.7 continuity addendum](PRD-v2.7-Addendum-Research-Continuity.md) preserves
-SQLite schema 1 and JSON input 1.0. When a disputed claim is relabeled VERIFIED without
+News uses SQLite schema 1 and JSON input 1.0. When a disputed claim is relabeled
+VERIFIED without
 a changed public URL, fact locator or publication date, the delta records the
 label change with `UNCHANGED_CITATION_REVIEW_REQUIRED` and a supporting-evidence
 warning; it is excluded from newly verified fact updates. Source-ID relabeling
@@ -52,9 +52,8 @@ Then validate and preview; obtain explicit human approval before confirmation.
 ./scripts/invest research news compare RUN_OLD RUN_NEW
 ```
 
-Use the generated `NewsResearchInput` schema for exact fields and enums. The fully
-fictional payload in [PRD V2.7](PRD-v2.7.md#51-example-payload-entirely-fictional)
-illustrates the structure; it asserts no real issuer or event. Synthetic test
+Use the generated `NewsResearchInput` schema for exact fields and enums. Fictional
+fixtures under `tests/fixtures/` illustrate the structure. Synthetic test
 results establish deterministic behavior, not real-news accuracy or legal rights.
 
 ## Evidence and identities

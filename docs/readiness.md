@@ -28,4 +28,41 @@ around previews, reports, backtests and dashboard GETs. Record each result as
 VERIFIED, BLOCKED with actual issue codes, or NOT TESTED; never infer missing flows.
 
 See [Docker/host setup](../README.md), [FMP account and secret setup](data-sources.md),
-[private storage and recovery](operations.md), and [local evidence](implementation/correctness-status.md).
+[private storage and recovery](operations.md), and [current contract](contract.md).
+
+## Current local verification
+
+Runtime/test commit `ddb7ba0` passed **1,435 tests in 46.30 seconds**, exit 0,
+and Ruff passed, exit 0. Verification used native ARM64
+`investobot-correctness-final`, current source bound at `/app`, `UV_OFFLINE=1`,
+network disabled, dependencies in `/opt/venv` and no private ledger. This checks
+bound source, not a newly baked exact-source image, and is local evidence rather
+than remote CI certification. The suite includes the synthetic CLI demonstration,
+host bridge/skills, recovery and GET-only viewer behavior.
+
+README JSON was also extracted and exercised through actual CLI discovery,
+reconciliation, absent-ledger preview, explicit confirmation, summary and portfolio coverage
+check in disposable offline Docker. Preview left the ledger absent. Existing
+package configuration/privacy and host Compose persistence checks are reused;
+no newly baked wheel is claimed.
+No host installation, remote operation, live provider call or push occurred.
+
+## Performance and limits
+
+**PERFORMANCE EXCEPTION — NOT PASSED; not remeasured.** The confirmed recursive
+look-through result is reference **4.404951 ms**, candidate **6.268134 ms**,
+**+42.30%** on the fixed representative workflow. Candidate reporting additionally
+includes provenance/coverage. The approved exception preserves that failed result;
+no speedup or broad performance certification is claimed.
+
+[CI run 38681163065](https://github.com/mdbecker/investobot/actions/runs/38681163065)
+at `5c12c4a` remains INVALID, exit 3, before measurement because warm-up native
+workflow evidence differed. The narrowly corrected target-default projection
+passed untimed native comparisons/oracles; it does not establish a future remote
+result. See [performance rules](performance.md).
+
+The deterministic greedy planner may leave drift and is not globally optimal;
+the large CLI remains a maintenance limitation. Further refactoring and real-source
+validation require separately scoped work. Historical review guides
+`code_review(8).md` and `code_smell_review(9).md` were unavailable; no review against
+them is claimed. Stop after the finite cleanup checks; do not launch new campaigns.

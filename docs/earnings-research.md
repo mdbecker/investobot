@@ -4,7 +4,7 @@ Use the `investobot-earnings` agent skill to research company filings and issuer
 disclosures externally. Investobot validates structured evidence, retains exact
 Decimal observations and calculates conservative comparisons. No SEC client,
 scraper, embedded AI, market observation replacement or portfolio mutation is
-introduced. See [skill installation](research-skills.md) and [PRD-v2.6.md](PRD-v2.6.md).
+introduced. See [skill installation](research-skills.md) and the [current contract](contract.md).
 
 ## Source and measurement review
 

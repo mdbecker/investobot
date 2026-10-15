@@ -353,3 +353,19 @@ fact, not the remaining portfolio's valuation mark. Cross-account/security
 transfers require classification/review and remain unsupported for recording.
 Reconcile a later broker snapshot to confirm post-trade holdings without inventing
 additional activities from its differences.
+
+## Discover commands and review saved alternatives
+
+Use `./scripts/invest tools list`, `tools describe COMMAND` and `schema` before
+constructing inputs. Success is JSON on stdout; errors are JSON on stderr with
+codes 1 input, 2 external data, 3 blocked/inconsistent state and 4 internal.
+Discovery identifies each command's mutation scope. Exact financial decimals are
+strings; import time never establishes source freshness.
+
+Plan list/compare return compact saved identity/version/date, status, trade count,
+turnover, tax/drift metrics and up to five warnings. Unknown metrics remain null.
+Comparison flags incompatible source, price, tax and date assumptions without
+ranking alternatives. Request `plan show PLAN_ID` for full details or export a
+Markdown report for review. Saved plans use immutable content-addressed financial
+baselines: relevant accepted facts/provenance changes make them stale, while
+unrelated older audit history does not. Reports retain saved facts and prices.

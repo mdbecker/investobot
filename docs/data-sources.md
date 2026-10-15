@@ -84,7 +84,7 @@ separate keys. Oldest constituent update bounds holdings as-of metadata;
 historical as-of uses the latest observation. Retrieval freshness does not imply
 the underlying fund disclosures are recent. No background refresh occurs.
 
-OpenFIGI, Treasury and FRED are permitted future narrow sources in the PRD but
+OpenFIGI, Treasury and FRED are potential future narrow sources but
 are not required or called by this initial structured-data implementation.
 
 ## Docker configuration and optional tax rates

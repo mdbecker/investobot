@@ -2,9 +2,7 @@
 
 Follow [testing](testing.md) for locked offline Docker commands and
 [workflows](workflows.md) for the authoritative operational walkthrough.
-The [correctness PRD](PRD-mvp-correctness-simplification-2026-10-13.md) controls
-explicit newer decisions. Earlier PRDs and verification reports are historical
-evidence; their retired commands, prompt settings and setup examples are superseded.
+The [current contract](contract.md) defines product and financial invariants.
 
 Keep main; commit observed red tests before new behavior and green checkpoints
 once verified. No fetch, remote operation or push. Use separate module ownership

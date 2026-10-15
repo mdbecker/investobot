@@ -24,6 +24,5 @@ Vanguard, Fidelity NetBenefits and PNC ingestion remains PROVISIONAL pending
 reviewed anonymized original HTML. FMP remains UNVERIFIED pending human live
 entitlement validation. Named-contribution rights, source truth and actual agent
 compliance require independent human review. Synthetic acceptance establishes
-development behavior only. Phase 2 real-page/live-provider review follows Phase 1
-foundation acceptance. See [current status](implementation/foundation-stabilization-status.md)
-for outstanding delivery work and [workflows](workflows.md) for supported intents.
+development behavior only. See [readiness](readiness.md)
+for local evidence and required human review and [workflows](workflows.md) for supported intents.

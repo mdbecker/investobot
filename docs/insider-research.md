@@ -190,5 +190,4 @@ Fresh checksum-identified SQLite schema 1 initializes through existing applicati
 behavior. Use disposable synthetic ledgers for evaluation; see
 [operations](operations.md).
 
-Historical requirements remain in [PRD-v2.9.md](PRD-v2.9.md) and
-its [corrections addendum](PRD-v2.9-Addendum-Amendment-Corrections.md).
+See the [current contract](contract.md).

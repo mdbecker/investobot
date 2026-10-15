@@ -43,4 +43,4 @@ One Decimal sale estimator allocates fees/remaining basis and reports positive t
 cost. Confirmed executions retain recorded allocations. Household performance
 combines compatible calendar-date valuations; ambiguous flow boundaries remain
 typed, while independently supported XIRR may remain available.
-See [current PRD](PRD-mvp-correctness-simplification-2026-10-13.md).
+See [current contract](contract.md).

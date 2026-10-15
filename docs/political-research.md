@@ -4,7 +4,7 @@ Investobot stores reviewed company research separately from household financial
 state. External agents research public executive roles and permitted evidence;
 Investobot validates the resulting JSON and calculates descriptive USD totals.
 Research never changes holdings, classifications, targets or saved plans. The
-requirements are preserved in [PRD-v2.5.md](PRD-v2.5.md).
+requirements are in [current contract](contract.md).
 
 ## Setup and workflow
 
@@ -51,7 +51,7 @@ codes 1/2/3/4.
 
 Named contributor disclosure data is not automatically reusable merely because
 it is public. Before researching person-attributed transactions, a human must
-review the intended use and applicable source restrictions. The attached PRD
+review the intended use and applicable source restrictions. The current contract
 identifies the FEC's [sale/use guidance](https://www.fec.gov/updates/sale-or-use-contributor-information/)
 and [contributor-information guidance](https://www.fec.gov/updates/use-of-contributor-information/)
 as references for that review.

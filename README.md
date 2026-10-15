@@ -10,11 +10,9 @@ credentials or places orders.
 
 This is a synthetic-tested **development preview**. Vanguard, Fidelity NetBenefits
 401(k) and PNC HTML adapters remain PROVISIONAL; live FMP contracts are UNVERIFIED.
-The [completion addendum](docs/PRD-mvp-completion-scope-addendum-2026-10-14.md)
-sets the bounded synthetic MVP handoff and approved performance exception.
-The [current PRD](docs/PRD-mvp-correctness-simplification-2026-10-13.md)
-governs correctness and workflow simplification; [handoff evidence](docs/implementation/correctness-status.md)
-records validation and outstanding operator steps.
+The [current contract](docs/contract.md) defines the product and safety boundaries;
+[readiness](docs/readiness.md) records validation, the approved performance exception
+and outstanding human steps.
 
 ## Where things run
 
@@ -140,12 +138,12 @@ docker compose stop app
 Backup uses SQLite's online API and verifies referenced artifact hashes. Keep a
 separate encrypted off-device copy with your own backup tooling. An archive on
 the same laptop does not protect against device loss. See
-[operations](docs/operations.md). The prompt CRUD interface is retired; operator
-context is ordinary host Markdown. Never merge untrusted notes into canonical skills.
+[operations](docs/operations.md). Operator context is ordinary host Markdown.
+Never merge untrusted notes into canonical skills.
 
 ## Manual gates and detailed references
 
-Phase 2 begins after foundation acceptance: humans review anonymized original
+Humans must review anonymized original
 Vanguard, Fidelity NetBenefits and PNC HTML, then validate actual FMP responses
 and entitlements. No real account documents are used in offline tests. If you
 choose public market integration later, create your own FMP account and supply
