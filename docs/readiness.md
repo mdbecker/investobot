@@ -32,12 +32,14 @@ See [Docker/host setup](../README.md), [FMP account and secret setup](data-sourc
 
 ## Current local verification
 
-Runtime/test commit `ddb7ba0` passed **1,435 tests in 46.30 seconds**, exit 0,
+Runtime/test commit `a40e43a` passed **1,440 tests in 45.61 seconds**, exit 0,
 and Ruff passed, exit 0. Verification used native ARM64
 `investobot-correctness-final`, current source bound at `/app`, `UV_OFFLINE=1`,
 network disabled, dependencies in `/opt/venv` and no private ledger. This checks
 bound source, not a newly baked exact-source image, and is local evidence rather
-than remote CI certification. The suite includes the synthetic CLI demonstration,
+than remote CI certification. The suite covers the inclusive 50% allowance, confirmation above it, paired
+ratios across absolute speeds and invalid-evidence rejection. It also includes
+the synthetic CLI demonstration,
 host bridge/skills, recovery and GET-only viewer behavior.
 
 README JSON was also extracted and exercised through actual CLI discovery,
