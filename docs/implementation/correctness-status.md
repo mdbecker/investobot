@@ -141,6 +141,10 @@ Residual maintenance limits: the existing CLI remains large, and the determinist
 greedy planner can leave drift when full sales exceed the approved tax allowance;
 it is not a global optimizer. Further audit/refactoring is deferred.
 
+The owner's later October 14 contract review is implemented in the
+[bounded corrective handoff](code-review-2026-10-14-status.md), with the new full
+Docker result and affected contract changes. Earlier evidence below is retained.
+
 ## PERFORMANCE EXCEPTION — NOT PASSED
 
 The addendum explicitly accepts the confirmed exposure regression for this

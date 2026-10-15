@@ -6,7 +6,8 @@
   authorizes one bounded corrective pass for explicit cash, target/policy authority,
   hold eligibility and dated annual tax evidence. It does not reopen benchmarks,
   fuzz campaigns or broad refactoring. The review's source claims remain historical
-  evidence; record new local Docker results separately.
+  evidence; new local Docker results and stopping conditions are in the
+  [contract review handoff](docs/implementation/code-review-2026-10-14-status.md).
 
 - [Completion addendum](docs/PRD-mvp-completion-scope-addendum-2026-10-14.md)
   controls this MVP handoff: reuse valid checks, stop after finite acceptance,
