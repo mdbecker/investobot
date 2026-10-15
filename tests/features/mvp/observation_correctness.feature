@@ -1,4 +1,12 @@
 Feature: Canonical observation and valuation safety
+  Scenario: Printed precision does not supply an absent observed price
+    Given accepted fictional holdings and cash
+    And a sourced position has known quantity and market value but no observed price
+    And its printed precision metadata is present
+    When the incomplete valuation snapshot is reconciled
+    Then missing price is a typed source issue and other review observations remain visible
+    And reconciliation leaves accepted state unchanged
+
   Scenario: An execution price does not invent a valuation mark
     Given accepted fictional holdings and cash
     When a purchase of two unmarked shares is confirmed

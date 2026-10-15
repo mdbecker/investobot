@@ -1,4 +1,24 @@
 Feature: One source-aware recursive household exposure
+  Scenario: A sixty percent disclosure preserves the undisclosed remainder
+    Given synthetic household exposure evidence for "observed partial"
+    When household exposure is calculated without changing its evidence
+    Then 600 dollars is attributed to the observed company and 400 dollars remains unknown
+
+  Scenario: Verified issuer identity combines direct and nested fund paths
+    Given synthetic household exposure evidence for "verified nested issuer"
+    When household exposure is calculated without changing its evidence
+    Then one verified issuer has 1000 dollars across two contribution paths
+
+  Scenario: Identical unverified tickers do not establish issuer equivalence
+    Given synthetic household exposure evidence for "equal source tickers"
+    When household exposure is calculated without changing its evidence
+    Then two separate observations retain 2000 dollars of unresolved issuer identity
+
+  Scenario: Missing cash prevents a household denominator
+    Given synthetic household exposure evidence for "missing cash"
+    When household exposure is calculated without changing its evidence
+    Then the known 1000 dollar subtotal has no household total or percentages
+
   Scenario Outline: Numeric amounts and source identity remain independent
     Given synthetic household exposure evidence for "<case>"
     When household exposure is calculated without changing its evidence
@@ -6,9 +26,6 @@ Feature: One source-aware recursive household exposure
 
     Examples:
       | case                   |
-      | observed partial       |
-      | verified nested issuer |
-      | equal source tickers   |
       | stale holdings         |
       | later publication      |
       | absent holdings        |
@@ -30,7 +47,6 @@ Feature: One source-aware recursive household exposure
 
     Examples:
       | case                      |
-      | missing cash              |
       | accepted parser issue     |
       | source diagnostic         |
       | provisional issuer        |

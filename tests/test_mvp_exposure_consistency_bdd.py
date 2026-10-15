@@ -100,31 +100,65 @@ def calculate(context):
                                  max_depth=1 if context['case'] == 'depth limit' else 8)
 
 
+@then('600 dollars is attributed to the observed company and 400 dollars remains unknown')
+def partial_disclosure(context):
+    result = context['result']
+    assert (context['state'], context['observations']) == context['before']
+    assert result['known_value_subtotal'] == '1000'
+    assert result['exposures'][0]['total_value'] == '600'
+    assert result['exposures'][0]['ticker'] == 'SAME'
+    assert result['unknown_exposure_value'] == '400'
+    assert result['unresolved_identity_value'] == '600'
+    assert result['exposures'][0]['contributions'][0]['path'][1]['security_id'] == 'fund-a'
+    assert result['numeric_complete'] is False
+    assert result['evidence_complete'] is False
+
+
+@then('one verified issuer has 1000 dollars across two contribution paths')
+def combined_issuer(context):
+    result = context['result']
+    assert (context['state'], context['observations']) == context['before']
+    assert result['known_value_subtotal'] == '1000'
+    assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 1
+    assert result['exposures'][0]['total_value'] == '1000'
+    assert result['exposures'][0]['issuer_id'] == 'CIK:0000123456'
+    assert len(result['exposures'][0]['contributions']) == 2
+    assert result['complete'] is True
+    assert result['numeric_complete'] is True
+    assert result['evidence_complete'] is True
+
+
+@then('two separate observations retain 2000 dollars of unresolved issuer identity')
+def separate_tickers(context):
+    result = context['result']
+    assert (context['state'], context['observations']) == context['before']
+    assert result['known_value_subtotal'] == '2000'
+    assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 2
+    assert all(row['issuer_id'] is None for row in result['exposures'])
+    assert result['unresolved_identity_value'] == '2000'
+    assert result['unknown_exposure_value'] == '0'
+    assert result['numeric_complete'] is True
+    assert result['evidence_complete'] is False
+
+
+@then('the known 1000 dollar subtotal has no household total or percentages')
+def incomplete_cash(context):
+    result = context['result']
+    assert (context['state'], context['observations']) == context['before']
+    assert 'UNKNOWN_CASH_COVERAGE' in {row['code'] for row in result['issues']}
+    assert result['total_value'] is None
+    assert result['known_value_subtotal'] == '1000'
+    assert all(row['percentage'] is None for row in result['exposures'])
+    assert result['evidence_complete'] is False
+
+
 @then(parsers.parse('exposure satisfies "{case}" coverage and identity rules'))
 def coverage(context, case):
     result = context['result']
     assert (context['state'], context['observations']) == context['before']
-    assert result['known_value_subtotal'] == ('100' if case == 'missing mark' else
-                                            '2000' if case == 'equal source tickers' else '1000')
+    assert result['known_value_subtotal'] == ('100' if case == 'missing mark' else '1000')
     codes = {issue['code'] for issue in result['issues']}
-    if case == 'observed partial':
-        assert result['exposures'][0]['total_value'] == '600'
-        assert result['exposures'][0]['ticker'] == 'SAME'
-        assert result['unknown_exposure_value'] == '400'
-        assert result['unresolved_identity_value'] == '600'
-        assert result['exposures'][0]['contributions'][0]['path'][1]['security_id'] == 'fund-a'
-    elif case == 'verified nested issuer':
-        assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 1
-        assert result['exposures'][0]['total_value'] == '1000'
-        assert result['exposures'][0]['issuer_id'] == 'CIK:0000123456'
-        assert len(result['exposures'][0]['contributions']) == 2
-        assert result['complete'] is True
-    elif case == 'equal source tickers':
-        assert len([row for row in result['exposures'] if row['asset_type'] != 'CASH']) == 2
-        assert all(row['issuer_id'] is None for row in result['exposures'])
-        assert result['unresolved_identity_value'] == '2000'
-        assert result['unknown_exposure_value'] == '0'
-    elif case == 'missing mark':
+    if case == 'missing mark':
         assert result['total_value'] is None
         assert result['unknown_exposure_percentage'] is None
         assert all(row['percentage'] is None for row in result['exposures'])
@@ -144,8 +178,8 @@ def coverage(context, case):
         assert expected in codes
         assert result['unknown_exposure_value'] == '1000'
         assert all(row['total_value'] == '0' for row in result['exposures'])
-    assert result['numeric_complete'] is (case in {'verified nested issuer', 'equal source tickers', 'stale holdings'})
-    assert result['evidence_complete'] is (case == 'verified nested issuer')
+    assert result['numeric_complete'] is (case == 'stale holdings')
+    assert result['evidence_complete'] is False
 
 
 @when('the verified issuer research universe is selected')
@@ -170,12 +204,7 @@ def uncertainty(context, case):
     result = context['result']
     assert (context['state'], context['observations']) == context['before']
     codes = {row['code'] for row in result['issues']}
-    if case == 'missing cash':
-        assert 'UNKNOWN_CASH_COVERAGE' in codes
-        assert result['total_value'] is None
-        assert result['known_value_subtotal'] == '1000'
-        assert all(row['percentage'] is None for row in result['exposures'])
-    elif case == 'accepted parser issue':
+    if case == 'accepted parser issue':
         assert 'PROVISIONAL_ADAPTER' in codes
     elif case == 'source diagnostic':
         issue = next(row for row in result['issues'] if row['code'] == 'SOURCE_PERMISSION_UNKNOWN')

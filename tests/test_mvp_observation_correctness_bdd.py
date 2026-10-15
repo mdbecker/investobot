@@ -44,6 +44,43 @@ def buy(ctx):
         'date': '2026-10-09'}, yes=True)
 
 
+@given('a sourced position has known quantity and market value but no observed price')
+def absent_observed_price(ctx):
+    ctx['snapshot']['positions'][0].update(price=None, quantity='11', market_value='1100')
+    ctx['snapshot']['issues'] = [{'code': 'PROVISIONAL_ADAPTER',
+        'message': 'Fictional source awaits original review', 'blocks_acceptance': False,
+        'blocks_calculation': False, 'blocks_proposals': True, 'blocks_execution_review': True}]
+
+
+@given('its printed precision metadata is present')
+def printed_precision(ctx):
+    ctx['snapshot']['positions'][0].update(displayed_price_precision=2,
+                                          displayed_market_value_precision=2)
+
+
+@when('the incomplete valuation snapshot is reconciled')
+def reconcile_incomplete_valuation(ctx):
+    ctx['preview'] = ctx['ledger'].reconcile(ctx['snapshot'])
+
+
+@then('missing price is a typed source issue and other review observations remain visible')
+def missing_price_issue(ctx):
+    result = ctx['preview']
+    issue = next(issue for issue in result['issues'] if issue['code'] == 'INCOMPLETE_POSITION_VALUATION')
+    assert issue['security'] == 'OLD'
+    assert issue['blocks_acceptance'] is True
+    assert result['status'] == 'REVIEW_REQUIRED'
+    assert ctx['snapshot']['issues'][0] in result['issues']
+    assert result['value_checks'] == []
+    assert any(change['kind'] == 'quantity' for change in result['changes'])
+    assert ctx['snapshot']['positions'][0]['price'] is None
+
+
+@then('reconciliation leaves accepted state unchanged')
+def reconciliation_unchanged(ctx):
+    assert ctx['ledger'].state() == ctx['before']
+
+
 @then('summary reports partial valuation with the known subtotal')
 def partial_summary(ctx):
     before = ctx['ledger'].state()
