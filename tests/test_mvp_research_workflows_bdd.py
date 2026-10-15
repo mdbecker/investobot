@@ -697,31 +697,6 @@ def lexical_fallback(research_ctx):
     assert_financial_unchanged(research_ctx)
 
 
-@when('an unapproved embedding operation names an adapter')
-def unauthorized_embedding(research_ctx):
-    module = search_module(research_ctx)
-    embedding = required_module('invest.embedding')
-    research_ctx['original'] = canonical_corpus(research_ctx)
-    calls = []
-
-    def external_adapter(texts):
-        calls.append(texts)
-        return [[1.0, 0.0] for _ in texts]
-
-    research_ctx['calls'] = calls
-    with pytest.raises(DomainError):
-        embedding.generate(module, research_ctx['path'], ['permitted'],
-                           model_id='synthetic-model-a', adapter=external_adapter,
-                           user_authorized=False)
-
-
-@then('adapter is never invoked and no vectors or financial facts change')
-def no_adapter(research_ctx):
-    assert research_ctx['calls'] == []
-    assert canonical_corpus(research_ctx) == research_ctx['original']
-    assert_financial_unchanged(research_ctx)
-
-
 @when('private broker and named contributor documents are submitted without indexing rights')
 def sensitive_corpus(research_ctx):
     module = search_module(research_ctx)

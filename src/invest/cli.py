@@ -1045,12 +1045,6 @@ def database_restore(file: str, dry_run: bool = False, confirm: bool = False):
     emit(lambda: restore(file, database_path(), dry_run=dry_run, confirm=confirm))
 
 
-@database.command('migrate')
-def database_migrate():
-    from invest.migrations import migrate
-    emit(lambda: migrate(database_path()))
-
-
 @database.command('cleanup-artifacts')
 def database_cleanup_artifacts(artifact_root: str = typer.Option(...), confirm: bool = False):
     """Preview or explicitly remove abandoned managed artifact staging files."""

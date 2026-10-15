@@ -33,8 +33,3 @@ Feature: Verified local ledger recovery
     Given an empty new-design ledger path
     When new-design database status is requested
     Then schema one has relational balances and durable writer settings
-
-  Scenario: Missing verified backup blocks destructive future migration
-    Given an empty new-design ledger path
-    When a destructive future migration is requested without a verified backup
-    Then migration is blocked without changing the accepted database

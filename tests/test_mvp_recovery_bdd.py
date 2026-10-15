@@ -227,24 +227,3 @@ def durable(recovery):
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
     finally:
         connection.close()
-
-
-@when("a destructive future migration is requested without a verified backup")
-def destructive(recovery):
-    successful(invoke(recovery, "db", "status"))
-    recovery["before"] = recovery["path"].read_bytes()
-    try:
-        from invest.migrations import migrate
-    except ModuleNotFoundError:
-        pytest.fail("Future migration runner with verified-backup guard is required")
-    recovery["result_domain"] = migrate(recovery["path"], [{"id": "002", "destructive": True,
-        "sql": "DROP TABLE position_balances", "checksum": hashlib.sha256(
-            b"DROP TABLE position_balances").hexdigest()}])
-
-
-@then("migration is blocked without changing the accepted database")
-def migration_guard(recovery):
-    result = recovery["result_domain"]
-    assert result["status"] == "BLOCKED"
-    assert any(issue["code"] == "VERIFIED_BACKUP_REQUIRED" for issue in result["issues"])
-    assert recovery["path"].read_bytes() == recovery["before"]

@@ -106,11 +106,6 @@ Feature: Honest research coverage and portable agent workflows
     When the real derived vector index is removed without rebuilding
     Then semantic availability is explicit and keyword retrieval remains cited
 
-  Scenario: S05 Embedding generation requires explicit user authorization
-    Given a synthetic SQLite corpus with permitted and forbidden passages
-    When an unapproved embedding operation names an adapter
-    Then adapter is never invoked and no vectors or financial facts change
-
   Scenario: S06 Personal contribution and brokerage documents are not implicitly indexed
     Given a synthetic SQLite corpus with permitted and forbidden passages
     When private broker and named contributor documents are submitted without indexing rights

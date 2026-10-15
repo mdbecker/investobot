@@ -35,8 +35,8 @@ an embedding or calls a provider. Hybrid results include only chunks embedded
 with that exact model, dimension and current content hash. Use keyword search
 separately when passages without compatible embeddings are needed.
 
-Embedding generation requires explicit user authorization before invoking an
-adapter. Reviewed adapter output can be stored through `store_embeddings` after
-permission/model/dimension checks. No provider is contacted automatically and no
-broker or personal document is automatically embedded. The Docker extension is
-loaded from the hash-verified native binary baked into Docker; there are no runtime downloads.
+Supply reviewed vectors explicitly through `store_embeddings`, with explicit user
+authorization and permission/model/dimension checks. Investobot does not generate
+embeddings or invoke provider adapters. No broker or personal document is
+automatically embedded. The Docker extension is loaded from the hash-verified
+native binary baked into Docker; there are no runtime downloads.
