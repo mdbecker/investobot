@@ -19,9 +19,14 @@ prices, cash and verified lot identities. Tests cover both successful workflows
 and missing-data/privacy/atomicity gates. Scripted skill drivers exercise actual
 CLI sequences; real external-agent behavior remains a human smoke test.
 
-Final verification uses an image built from the exact committed Git tree, locked
-offline full tests and lint, installed-wheel CLI/skill checks, recovery and the
-synthetic demonstration. Mounted-source results and local measurements are
+Preferred final verification uses an image built from the exact committed Git
+tree, locked offline full tests and lint, installed-wheel CLI/skill checks,
+recovery and the synthetic demonstration. The
+[completion addendum](PRD-mvp-completion-scope-addendum-2026-10-14.md) permits final
+mounted-source verification with a previously checked locked image when packaging
+inputs have not changed; reuse unaffected packaging checks and label the tested
+source and image separately. This does not certify the final source as baked into
+that image. Mounted-source results and local measurements are
 explicitly distinct from exact-commit or remote CI evidence. See
 [status](implementation/correctness-status.md) and [benchmarks](benchmarks-unified-mvp.md).
 

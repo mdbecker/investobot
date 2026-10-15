@@ -91,6 +91,8 @@
   Read-only summaries need the same magnitude-aware arithmetic as proposals.
   Import evidence completeness requires explicit position, lot and cash coverage;
   an unchanged import must retain its typed source diagnostics.
+  Printed precision cannot supply a missing observed price: reconciliation must
+  report typed incomplete valuation and retain other review evidence.
   Never invent identity, lots, basis, prices, classifications or cash coverage.
 - Explicit REAL/SYNTHETIC provenance reaches parser and accepted facts. Mixed inputs
   cannot yield actionable proposals; blocking parser evidence cannot become clean

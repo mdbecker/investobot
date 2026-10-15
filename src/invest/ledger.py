@@ -237,8 +237,13 @@ class Ledger:
                 issues.append(_issue('UNKNOWN_PRICE_PRECISION',
                     'Verify original displayed price and value precision', security=position['security']))
                 continue
-            quantity, price, value = [decimal(position[name]) for name in
-                                      ('quantity', 'price', 'market_value')]
+            terms = ('quantity', 'price', 'market_value')
+            if any(position.get(name) is None for name in terms):
+                issues.append(_issue('INCOMPLETE_POSITION_VALUATION',
+                    'Verify observed quantity, price and market value before comparison',
+                    security=position['security'], blocks_acceptance=True))
+                continue
+            quantity, price, value = [decimal(position[name]) for name in terms]
             with localcontext() as context:
                 context.prec = max(100, sum(len(number.as_tuple().digits) + abs(number.as_tuple().exponent)
                                            for number in (quantity, price, value)) + 110)
