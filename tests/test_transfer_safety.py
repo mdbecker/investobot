@@ -18,7 +18,7 @@ def ctx(tmp_path):
 def accounts(ctx):
     for name, status in [('taxable', 'TAXABLE'), ('roth', 'TAX_FREE')]:
         ctx['ledger'].apply({'data_environment': 'SYNTHETIC', 'account': {'id': name, 'name': name, 'tax_status': status},
-                             'positions': [], 'cash': '100', 'source_hash': name})
+                             'positions': [], 'cash_known': True, 'cash': '100', 'source_hash': name})
     ctx['before'] = ctx['ledger'].state()
 
 

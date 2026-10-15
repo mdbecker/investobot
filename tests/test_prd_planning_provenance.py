@@ -43,8 +43,7 @@ def target(ctx, *, environment='REAL', sid=None):
     return save(ctx['ledger'], {
         'name': 'Fictional provenance target', 'data_environment': environment,
         'target_allocations': {identity: '1'},
-        'planning_constraints': {'eligible_accounts': ['fictional'],
-                                'permitted_securities': {'fictional': [identity]}},
+        'planning_constraints': {'eligible_accounts': ['fictional']},
     })['id']
 
 

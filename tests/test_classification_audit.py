@@ -31,7 +31,7 @@ def snapshot(account='a', asset='OTHER', quantity='10', basis='800', date='2026-
         'lots': [{'id': account + '-lot', 'security': 'VTI', 'quantity': quantity,
                   'remaining_quantity': quantity, 'cost_basis': basis,
                   'acquisition_date': '2024-01-01'}],
-        'cash': '100', 'source_hash': f'{account}-{date}-{asset}-{quantity}',
+        'cash_known': True, 'cash': '100', 'source_hash': f'{account}-{date}-{asset}-{quantity}',
         'source_timestamp': date, 'positions_complete': True, 'lots_complete': True}
 
 
@@ -167,8 +167,7 @@ def initial(ctx):
 def planned(ctx):
     ledger = ctx['ledger']
     target = save(ledger, {'name': 'Synthetic', 'target_allocations': {ctx['sid']: '1'},
-        'planning_constraints': {'eligible_accounts': ['a', 'b'],
-                                'permitted_securities': {'a': [ctx['sid']], 'b': [ctx['sid']]}}})
+        'planning_constraints': {'eligible_accounts': ['a', 'b']}})
     client = MarketClient(ledger, fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
     ctx['plan'] = saved_proposal(ledger, client, target['id'], as_of='2026-10-08')
     ctx['before'] = copy.deepcopy(ledger.state())

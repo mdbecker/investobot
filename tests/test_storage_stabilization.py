@@ -31,7 +31,7 @@ def snapshot(quantity, source_hash, source_date):
         "lots": [{"id": "synthetic-lot", "security": "SYN", "quantity": str(quantity),
                   "remaining_quantity": str(quantity), "cost_basis": str(quantity * 50),
                   "acquisition_date": "2024-01-01"}],
-        "cash": "100", "source_hash": source_hash, "source_timestamp": source_date,
+        'cash_known': True, "cash": "100", "source_hash": source_hash, "source_timestamp": source_date,
         "positions_complete": True, "lots_complete": True,
     }
 
@@ -43,8 +43,7 @@ def saved(ctx):
     identity = ledger.resolve("SYN")["id"]
     target = save(ledger, {
         "name": "Synthetic allocation", "target_allocations": {identity: ".5", "CASH": ".5"},
-        "planning_constraints": {"eligible_accounts": ["ira"],
-                                 "permitted_securities": {"ira": [identity]}},
+        "planning_constraints": {"eligible_accounts": ["ira"]},
     })
     ctx.update(identity=identity, target=target,
                client=MarketClient(ledger, fixture_path=Path("tests/fixtures/fmp-synthetic.json")))

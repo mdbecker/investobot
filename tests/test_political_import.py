@@ -160,8 +160,7 @@ def test_research_preserves_saved_plan_and_cli_readonly_checks(tmp_path, monkeyp
         identity = db.resolve('SYN')['id']
         target = save(db, {'name': 'Synthetic allocation',
                           'target_allocations': {identity: '.5', 'CASH': '.5'},
-                          'planning_constraints': {'eligible_accounts': ['ira'],
-                                                   'permitted_securities': {'ira': [identity]}}})
+                          'planning_constraints': {'eligible_accounts': ['ira']}})
         client = MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json')
         plan = saved_proposal(db, client, target['id'], as_of='2026-10-08')
         before = show(db, plan['id'])

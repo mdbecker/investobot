@@ -41,13 +41,12 @@ def taxable(ctx):
                        'market_value': '0', 'as_of': '2026-10-08', 'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
         'lots': [{'id': 'known-lot', 'security': 'AAA', 'quantity': '10', 'remaining_quantity': '10',
                   'cost_basis': '800', 'acquisition_date': '2024-01-01'}],
-        'cash': '500', 'source_hash': 'synthetic-final', 'source_timestamp': '2026-10-08',
+        'cash_known': True, 'cash': '500', 'source_hash': 'synthetic-final', 'source_timestamp': '2026-10-08',
         'positions_complete': True, 'lots_complete': True}
     ctx['ledger'].apply(ctx['snap'])
     ctx['aaa'], ctx['bbb'] = [ctx['ledger'].resolve(s)['id'] for s in ['AAA', 'BBB']]
     ctx['payload'] = {'name': 'Full replacement', 'target_allocations': {ctx['bbb']: '1'},
-        'planning_constraints': {'eligible_accounts': ['tax'],
-                                'permitted_securities': {'tax': [ctx['aaa'], ctx['bbb']]}}}
+        'planning_constraints': {'eligible_accounts': ['tax']}}
     ctx['before'] = ctx['ledger'].state()
 
 

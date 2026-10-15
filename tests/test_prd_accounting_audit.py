@@ -38,7 +38,7 @@ def accept(ledger, account='ira', *, quantity='10', cash='0', date='2026-03-01',
     return ledger.apply({'account': {'id': account, 'name': account, 'currency': currency,
                         'tax_status': 'TAXABLE' if account.startswith('a-tax') else 'TAX_FREE',
                         'history_complete': True},
-                        'positions': positions, 'lots': inventory, 'cash': cash,
+                        'positions': positions, 'lots': inventory, 'cash_known': True, 'cash': cash,
                         'source_timestamp': date, 'positions_complete': complete,
                         'lots_complete': complete, 'data_environment': 'SYNTHETIC',
                         'source_hash': f'{account}:{date}:{quantity}:{cash}:{complete}:{original}'})
@@ -53,8 +53,7 @@ def register(ledger, ticker):
 def proposal(ledger, weights, accounts, *, mode='contributions-only', day='2026-03-10'):
     securities = {row['id'] for row in ledger.rows('securities')}
     target = save(ledger, {'name': 'Fictional audited target', 'target_allocations': weights,
-                          'planning_constraints': {'eligible_accounts': accounts,
-                           'permitted_securities': {account: sorted(securities) for account in accounts}}})
+                          'planning_constraints': {'eligible_accounts': accounts}})
     policy = {'version': 'fictional-audit', 'data_environment': 'SYNTHETIC',
               'source': 'Reviewed fictional policy approval', 'fee_per_trade': '0',
               'max_position_age_days': 30, 'cash_floors': {account: '0' for account in accounts},

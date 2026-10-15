@@ -35,7 +35,7 @@ def snapshot(account='a', source='2026-10-08'):
             'lots': [{'id': f'{account}-lot', 'security': 'VTI', 'quantity': '10',
                       'remaining_quantity': '10', 'cost_basis': '800',
                       'acquisition_date': '2024-01-01'}],
-            'cash': '100', 'source_hash': f'{account}-{source}', 'source_timestamp': source,
+            'cash_known': True, 'cash': '100', 'source_hash': f'{account}-{source}', 'source_timestamp': source,
             'data_environment': 'SYNTHETIC',
             'positions_complete': True, 'lots_complete': True}
 
@@ -48,8 +48,7 @@ def populated(ctx):
     ledger.apply(snapshot('b'))
     ctx['sid'] = ledger.resolve('VTI')['id']
     target = save(ledger, {'name': 'Synthetic', 'target_allocations': {ctx['sid']: '1'},
-                          'planning_constraints': {'eligible_accounts': ['a', 'b'],
-                          'permitted_securities': {'a': [ctx['sid']], 'b': [ctx['sid']]}}})
+                          'planning_constraints': {'eligible_accounts': ['a', 'b']}})
     client = MarketClient(ledger, fixture_path=Path('tests/fixtures/fmp-synthetic.json'))
     ctx['plan'] = saved_proposal(ledger, client, target['id'], as_of='2026-10-08')
     ctx['before'] = ledger.state()

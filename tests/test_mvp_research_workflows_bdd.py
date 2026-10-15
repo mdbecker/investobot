@@ -289,8 +289,7 @@ def scripted(research_ctx):
         target_input = write_input(research_ctx, 'explicit-target.json', {
             'name': 'Fictional explicit monthly target', 'data_environment': 'SYNTHETIC',
             'target_allocations': request.pop('target')['weights'],
-            'planning_constraints': {'eligible_accounts': ['synthetic'],
-                'permitted_securities': {'synthetic': [research_ctx['security']]}}})
+            'planning_constraints': {'eligible_accounts': ['synthetic']}})
         request['target_id'] = invoke(research_ctx, ['target', 'save', target_input])['id']
         research_ctx['file'].write_text(json.dumps(request))
         args = [*args, '--file', str(research_ctx['file'])]
@@ -798,8 +797,7 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
     research_ctx['target_file'] = write_input(research_ctx, 'target.json', {
         'name': 'Synthetic allocation', 'data_environment': 'SYNTHETIC',
         'target_allocations': {research_ctx['security']: '1', 'CASH': '0'},
-        'planning_constraints': {'eligible_accounts': ['synthetic'],
-                                 'permitted_securities': {'synthetic': [research_ctx['security']]}}})
+        'planning_constraints': {'eligible_accounts': ['synthetic']}})
     payload = json.loads(research_ctx['file'].read_text())
     if workflow == 'monthly' and mode == 'blocked':
         research_ctx['policy']['permissions']['synthetic'].pop(research_ctx['security'])

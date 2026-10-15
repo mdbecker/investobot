@@ -196,8 +196,7 @@ def run_demo(root):
     d.cli('tax.budget', ['tax', 'budget', '--year', '2026', '--as-of', AS_OF, '--policy', policy['id']])
     target = d.cli('target.save', ['target', 'save', d.file('target.json', {
         'name': 'Fictional contribution target', 'data_environment': 'SYNTHETIC',
-        'target_allocations': {fund: '1'}, 'planning_constraints': {'eligible_accounts': ['taxable'],
-            'permitted_securities': {'taxable': [fund]}}})])
+        'target_allocations': {fund: '1'}, 'planning_constraints': {'eligible_accounts': ['taxable']}})])
     proposal = d.cli('plan.october_contribution', ['plan', 'propose', '--file', d.file('proposal.json', {
         'target_id': target['id'], 'prices': {fund: {'price': '90', 'as_of': AS_OF,
             'currency': 'USD', 'source': 'Reviewed fictional current quote',

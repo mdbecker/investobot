@@ -27,7 +27,7 @@ def accepted(ctx):
             'displayed_market_value_precision': 2}],
         'lots': [{'id': 'fictional-lot', 'security': 'OLD', 'quantity': '10',
             'remaining_quantity': '10', 'cost_basis': '800', 'acquisition_date': '2024-01-01'}],
-        'cash': '500', 'source_hash': 'fictional-original', 'source_timestamp': '2026-10-08',
+        'cash_known': True, 'cash': '500', 'source_hash': 'fictional-original', 'source_timestamp': '2026-10-08',
         'positions_complete': True, 'lots_complete': True, 'data_environment': 'SYNTHETIC'}
     ctx['ledger'].apply(snapshot)
     ctx['before'] = copy.deepcopy(ctx['ledger'].state())

@@ -22,7 +22,7 @@ def snapshot():
         'lots': [{'id': 'sync-lot', 'security': 'AAA', 'quantity': '10',
                   'remaining_quantity': '10', 'cost_basis': '800',
                   'acquisition_date': '2024-01-01'}],
-        'cash': '500', 'source_hash': 'synthetic-sync',
+        'cash_known': True, 'cash': '500', 'source_hash': 'synthetic-sync',
         'source_timestamp': '2026-10-08', 'positions_complete': True, 'lots_complete': True,
     }
 

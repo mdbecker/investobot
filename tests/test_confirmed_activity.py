@@ -25,7 +25,7 @@ def accepted(ctx):
                   'cost_basis': basis, 'acquisition_date': acquired}
                  for name, basis, acquired in [('old', '300', '2024-01-01'),
                                                ('new', '500', '2026-09-01')]],
-        'cash': '1000', 'source_hash': 'activity-fixture', 'source_timestamp': '2026-10-08',
+        'cash_known': True, 'cash': '1000', 'source_hash': 'activity-fixture', 'source_timestamp': '2026-10-08',
         'positions_complete': True, 'lots_complete': True})
     ctx['activity'] = {'activity_id': 'executed-1', 'account_id': 'a', 'security': 'AAA',
                        'type': 'BUY', 'quantity': '2', 'price': '120', 'fee': '1',

@@ -592,8 +592,7 @@ def test_corrected_research_preserves_saved_plan_holdings_and_lots(ctx):
     security = db.resolve('SYN')['id']
     target = save(db, {'name': 'Fictional allocation',
         'target_allocations': {security: '.5', 'CASH': '.5'},
-        'planning_constraints': {'eligible_accounts': ['ira'],
-                                 'permitted_securities': {'ira': [security]}}})
+        'planning_constraints': {'eligible_accounts': ['ira']}})
     plan = saved_proposal(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
                     target['id'], as_of='2026-10-08')
     before, planning_before = copy.deepcopy(db.state()), copy.deepcopy(db.planning_state())

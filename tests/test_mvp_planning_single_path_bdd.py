@@ -31,8 +31,7 @@ def setup(ctx, environment):
     ctx['sid'] = sid
     ctx['target'] = save(ledger, {'name': 'Fictional monthly target', 'data_environment': environment,
                                 'target_allocations': {sid: '1'},
-                                'planning_constraints': {'eligible_accounts': ['account'],
-                                    'permitted_securities': {'account': [sid]}}})['id']
+                                'planning_constraints': {'eligible_accounts': ['account']}})['id']
     ctx['policy'] = {'version': 'fictional-v1', 'data_environment': environment,
                      'source': 'Reviewed fictional assumptions', 'fee_per_trade': '5',
                      'cash_floors': {'account': '50'}, 'minimum_notional': '25',

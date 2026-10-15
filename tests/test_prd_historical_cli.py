@@ -20,7 +20,7 @@ def test_historical_exposure_does_not_fetch_current_holdings(tmp_path, monkeypat
         'positions': [{'security': 'FUND', 'asset_type': 'ETF', 'quantity': '1',
                        'price': '100', 'market_value': '100',
                        'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
-        'cash': '0', 'positions_complete': True, 'source_timestamp': '2026-09-30',
+        'cash_known': True, 'cash': '0', 'positions_complete': True, 'source_timestamp': '2026-09-30',
         'source_hash': 'fictional-source', 'data_environment': 'SYNTHETIC'})
     selected.connection.close()
     result = CliRunner().invoke(app, ['portfolio', 'exposure', '--as-of', '2026-10-01'])

@@ -15,6 +15,9 @@ The JSON requires `version`, `source`, `data_environment` and `permissions`.
 Each canonical account/security permission requires independent JSON booleans
 `can_buy`, `can_sell`, `can_hold` and an exact positive string `share_increment`.
 Financial amounts use decimal strings, never floating-point JSON numbers.
+All three booleans are required. `can_buy:true` with `can_hold:false` is rejected.
+Existing restricted holdings remain visible with `RESTRICTED_HOLDING` for human
+review; the planner never increases them or forces liquidation.
 Unknown accounts/securities are rejected; approval cannot create identities.
 
 Direct dictionary policies are supported only for synthetic domain previews and
@@ -42,6 +45,12 @@ lot-ID ties. Positive estimated term-specific tax cost consumes remaining annual
 USD allowance derived from confirmed sales. Losses do not replenish that allowance;
 saved proposals do not consume it. Unknown coverage blocks taxable sales while safe
 cash-only proposals can remain available for human review.
+The nested annual policy must explicitly match the planned trade year and the
+portfolio environment. Its sourced `as_of` attestation must not follow the trade
+date or omit confirmed taxable sales before that date. A stale cutoff, wrong year,
+unknown coverage or environment mismatch blocks taxable sales with typed issues;
+approve a new immutable policy with updated evidence rather than changing dates
+silently. Safe cash-funded purchases are evaluated independently.
 
 Tax-free/deferred sales consume reconciled verified lots by canonical lot ID.
 Missing basis or acquisition dates do not prevent share accounting; unknown basis

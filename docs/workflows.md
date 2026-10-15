@@ -193,17 +193,16 @@ must not become unrestricted trading. A complete target file has this shape:
   },
   "planning_constraints": {
     "eligible_accounts": ["taxable", "ira"],
-    "permitted_securities": {
-      "taxable": ["VERIFIED_EQUITY_SECURITY_ID", "VERIFIED_BOND_FUND_SECURITY_ID"],
-      "ira": ["VERIFIED_EQUITY_SECURITY_ID", "VERIFIED_BOND_FUND_SECURITY_ID"]
-    },
-    "cash_minimums": {"taxable": "500", "ira": "0"},
+    "excluded_positions": [],
     "target_tolerance": "0.01"
   }
 }
 ```
 
 Replace every placeholder with actual canonical IDs and loaded account aliases.
+Set security permissions, cash floors, increments and freshness in the separately
+approved [trading policy](trading-policy.md). Targets cannot carry these execution
+fields; their tolerance affects displayed deviations only.
 The allocation is an illustrative template, not an investment recommendation.
 Weights total one within `0.000001`; financial amounts and weights are Decimal
 strings. Save three separately researched candidates, for example conservative,

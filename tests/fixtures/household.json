@@ -72,6 +72,7 @@
       }
     ],
     "cash": "1000",
+    "cash_known": true,
     "source_hash": "SYNTHETIC-TAXABLE",
     "source_timestamp": "2026-10-08",
     "positions_complete": true,
@@ -119,6 +120,7 @@
       }
     ],
     "cash": "500",
+    "cash_known": true,
     "source_hash": "SYNTHETIC-TRADITIONAL",
     "source_timestamp": "2026-10-08",
     "positions_complete": true,
@@ -147,6 +149,7 @@
       }
     ],
     "cash": "100",
+    "cash_known": true,
     "source_hash": "SYNTHETIC-ROTH",
     "source_timestamp": "2026-10-08",
     "positions_complete": true,
@@ -163,6 +166,7 @@
     },
     "positions": [],
     "cash": "2000",
+    "cash_known": true,
     "source_hash": "SYNTHETIC-BANK",
     "source_timestamp": "2026-10-08",
     "positions_complete": true,

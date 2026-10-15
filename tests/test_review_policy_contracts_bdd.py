@@ -4,12 +4,14 @@ import copy
 
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
+from test_prd_harvest_proposals import household as reviewed_household
 
 from invest.models import DomainError
 from invest.planning import get_policy, propose, save_policy
 from invest.targets import save
 from invest.tax import harvest_plan
-from test_prd_harvest_proposals import household  # noqa: F401
+
+household = reviewed_household
 
 scenarios('features/mvp/review_policy_contracts.feature')
 
@@ -22,6 +24,8 @@ def review(household):
 @when(parsers.parse('the {path} proposal uses {evidence} tax evidence'))
 def evaluate(review, path, evidence):
     policy = review['policy']
+    if path == 'rebalance':
+        policy['cash_floors']['tax'] = '100'
     budget = policy['annual_tax_budget']
     if evidence == 'wrong-year':
         budget['year'] = 2027
@@ -55,6 +59,8 @@ def blocked(review, code):
     assert code in {issue['code'] for issue in budget['issues']}
     assert budget['remaining_allowance'] is None
     assert not any(action['type'] == 'SELL' for action in result['proposed_actions'])
+    if result.get('mode') == 'rebalance':
+        assert any(action['type'] == 'BUY' for action in result['proposed_actions'])
     assert review['ledger'].state() == review['before']
     assert any(row['activity_id'] == 'fictional-prior-gain' for row in review['before']['activities'])
 

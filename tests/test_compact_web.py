@@ -18,11 +18,10 @@ def test_saved_plan_gets_preserve_compact_summary_and_full_report(tmp_path):
             'tax_status': 'TAX_FREE'}, 'positions': [{'security': 'AAA', 'asset_type': 'STOCK',
             'quantity': '10', 'price': '100', 'market_value': '1000', 'as_of': '2026-10-08',
             'displayed_price_precision': 0, 'displayed_market_value_precision': 0}],
-            'cash': '0', 'source_timestamp': '2026-10-08', 'source_hash': 'compact-web'})
+            'cash_known': True, 'cash': '0', 'source_timestamp': '2026-10-08', 'source_hash': 'compact-web'})
         sid = ledger.resolve('AAA')['id']
         target = targets.save(ledger, {'name': 'Hold shares', 'target_allocations': {sid: '1'},
-            'planning_constraints': {'eligible_accounts': ['ira'],
-                                    'permitted_securities': {'ira': [sid]}}})
+            'planning_constraints': {'eligible_accounts': ['ira']}})
         saved = saved_proposal(ledger, MarketClient(ledger, fixture_path=Path(
             'tests/fixtures/fmp-synthetic.json')), target['id'], as_of='2026-10-08')
         before = list(ledger.connection.iterdump())

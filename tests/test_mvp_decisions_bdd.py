@@ -38,7 +38,7 @@ def household(decision, case):
                   'acquisition_date': '2024-01-01', 'source_lot_id': 'fictional-wrap-lot',
                   'identity_status': 'VERIFIED',
                   'identity_source': 'Fictional reviewed immutable broker lot reference'}],
-        'cash': cash, 'source_hash': 'fictional-decisions',
+        'cash_known': True, 'cash': cash, 'source_hash': 'fictional-decisions',
         'source_timestamp': observed,
         'data_environment': 'REAL' if case == 'B17' else 'SYNTHETIC',
         'positions_complete': True,
@@ -54,8 +54,7 @@ def household(decision, case):
     target = save(ledger, {
         'name': 'Fictional allocation',
         'target_allocations': {decision['wrap']: '0.5', decision['child']: '0.5'},
-        'planning_constraints': {'eligible_accounts': ['ira'],
-                                'permitted_securities': {'ira': [decision['child']]}}})
+        'planning_constraints': {'eligible_accounts': ['ira']}})
     decision['target'] = target['id']
     decision['policy'] = {
         'version': 'fictional-1', 'max_position_age_days': 120,
@@ -288,7 +287,7 @@ def extended_evaluate(decision):
                           'identity_source': 'Reviewed fictional original broker lot reference',
                           'remaining_quantity': '2', 'cost_basis': '100',
                           'acquisition_date': '2024-01-01'}],
-                'cash': '0', 'source_hash': 'fictional-tax-budget',
+                'cash_known': True, 'cash': '0', 'source_hash': 'fictional-tax-budget',
                 'source_timestamp': '2026-10-01', 'positions_complete': True,
                 'lots_complete': True, 'data_environment': 'SYNTHETIC'})
             for identifier, price, day in [('gain', '200', '2026-10-02'),

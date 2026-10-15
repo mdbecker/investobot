@@ -25,7 +25,7 @@ def small_saved(ctx):
                                  'price': '100', 'market_value': '100',
                                  'displayed_price_precision': 0,
                                  'displayed_market_value_precision': 0}],
-                  'cash': '100', 'source_timestamp': '2026-10-08', 'source_hash': 'synthetic'})
+                  'cash_known': True, 'cash': '100', 'source_timestamp': '2026-10-08', 'source_hash': 'synthetic'})
     state = ledger.planning_state()
     ctx['fingerprint'] = state_hash(state)
     save_plan(ledger, {'id': 'synthetic-plan', 'source_state': state,

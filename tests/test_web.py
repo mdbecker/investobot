@@ -110,8 +110,7 @@ def test_accepted_balances_and_existing_saved_plan_are_viewable(dashboard):
     try:
         sid = ledger.resolve('AAA')['id']
         target = targets.save(ledger, {'name': 'Hold shares', 'target_allocations': {sid: '1'},
-            'planning_constraints': {'eligible_accounts': ['ira'],
-                                    'permitted_securities': {'ira': [sid]}}})
+            'planning_constraints': {'eligible_accounts': ['ira']}})
         plan = saved_proposal(ledger, MarketClient(ledger, fixture_path=Path(
             'tests/fixtures/fmp-synthetic.json')), target['id'], as_of='2026-10-08')
         before = list(ledger.connection.iterdump())
@@ -202,7 +201,7 @@ def test_mixed_currency_summary_returns_typed_error(dashboard):
     try:
         for account, currency in [('dollars', 'USD'), ('euros', 'EUR')]:
             ledger.apply({'account': {'id': account, 'name': account, 'currency': currency},
-                          'positions': [], 'cash': '100', 'source_hash': account,
+                          'positions': [], 'cash_known': True, 'cash': '100', 'source_hash': account,
                           'data_environment': 'SYNTHETIC'})
     finally:
         ledger.connection.close()
@@ -221,7 +220,7 @@ def test_unmarked_accepted_holding_preserves_viewable_facts_and_typed_exposure_g
         sid = ledger.resolve('AAA')['id']
         target = targets.save(ledger, {'name': 'Accepted active target',
             'target_allocations': {sid: '1'}, 'planning_constraints': {
-                'eligible_accounts': ['ira'], 'permitted_securities': {'ira': [sid]}}})
+                'eligible_accounts': ['ira']}})
         targets.activate(ledger, target['id'])
         ledger.record_activity({'activity_id': 'synthetic-unmarked-purchase', 'account_id': 'ira',
                                 'type': 'BUY', 'security': 'UNMARKED', 'quantity': '1',

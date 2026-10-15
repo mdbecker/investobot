@@ -115,7 +115,7 @@ def test_research_preserves_real_saved_plan(ctx):
     security = db.resolve('SYN')['id']
     target = save(db, {'name': 'Synthetic allocation',
         'target_allocations': {security: '.5', 'CASH': '.5'},
-        'planning_constraints': {'eligible_accounts': ['ira'], 'permitted_securities': {'ira': [security]}}})
+        'planning_constraints': {'eligible_accounts': ['ira']}})
     plan = saved_proposal(db, MarketClient(db, fixture_path='tests/fixtures/fmp-synthetic.json'),
                     target['id'], as_of='2026-10-08')
     state = copy.deepcopy(db.planning_state())

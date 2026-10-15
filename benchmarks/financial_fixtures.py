@@ -127,8 +127,7 @@ def build(root, dimensions, *, concentrated_target=False, reuse=False):
     if concentrated_target:
         weights={sid:'1' if index==0 else '0' for index,sid in enumerate(securities)}
     target = TargetInput.model_validate(dict(name='Fictional fixed target', target_allocations=weights,
-        planning_constraints=dict(eligible_accounts=accounts,
-            permitted_securities={account:securities for account in accounts}))).model_dump(mode='json')
+        planning_constraints=dict(eligible_accounts=accounts))).model_dump(mode='json')
     target.update(id='fictional-target',version=1,version_id='fictional-target-version-1',
                   created_at=DATE+'T12:00:00Z',updated_at=DATE+'T12:00:00Z')
     with ledger.connection:

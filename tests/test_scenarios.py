@@ -52,7 +52,7 @@ def setup(ctx, tax_status):
                 "cost_basis": "1200",
             }
         ],
-        "cash": "500",
+        'cash_known': True, "cash": "500",
         "source_hash": "synthetic",
         "data_environment": "SYNTHETIC",
         "source_timestamp": "2026-10-08",
@@ -78,7 +78,7 @@ def setup(ctx, tax_status):
                     'displayed_market_value_precision': 0,
                 }
             ],
-            "cash": "0",
+            'cash_known': True, "cash": "0",
             "source_hash": "synthetic2",
             "data_environment": "SYNTHETIC",
         }

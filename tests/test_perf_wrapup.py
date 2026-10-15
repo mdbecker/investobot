@@ -148,7 +148,7 @@ def test_receipt_display_order_does_not_hide_source_facts():
     from benchmarks.operations import evidence
 
     receipts = [{'id': name, 'account': {'id': 'fictional'}, 'source_hash': name,
-        'source_timestamp': day, 'positions_complete': True, 'cash': cash}
+        'source_timestamp': day, 'positions_complete': True, 'cash_known': True, 'cash': cash}
         for name, day, cash in [('early', '2026-10-08', '100'), ('later', '2026-10-09', '150')]]
     assert evidence({'snapshots': receipts}) == evidence({'snapshots': list(reversed(receipts))})
     changed = deepcopy(receipts)

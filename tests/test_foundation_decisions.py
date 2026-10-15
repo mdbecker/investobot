@@ -28,7 +28,7 @@ def household(tmp_path):
             'remaining_quantity': '10', 'cost_basis': '500', 'acquisition_date': '2024-01-01',
             'identity_status': 'VERIFIED', 'source_lot_id': 'fictional-old',
             'identity_source': 'Reviewed fictional statement', 'saleable': True}],
-        'cash': '0', 'positions_complete': True, 'lots_complete': True,
+        'cash_known': True, 'cash': '0', 'positions_complete': True, 'lots_complete': True,
         'source_timestamp': '2026-02-01', 'source_hash': 'fictional-opening'})
     old = ledger.resolve('OLD')['id']
     new = ledger.register_security({'ticker': 'NEW', 'name': 'Fictional replacement',

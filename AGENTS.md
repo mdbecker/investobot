@@ -2,6 +2,12 @@
 
 ## Current scope and workflow
 
+- The owner-requested [October 14 code review](docs/investobot-code-review-2026-10-14.md)
+  authorizes one bounded corrective pass for explicit cash, target/policy authority,
+  hold eligibility and dated annual tax evidence. It does not reopen benchmarks,
+  fuzz campaigns or broad refactoring. The review's source claims remain historical
+  evidence; record new local Docker results separately.
+
 - [Completion addendum](docs/PRD-mvp-completion-scope-addendum-2026-10-14.md)
   controls this MVP handoff: reuse valid checks, stop after finite acceptance,
   record the approved look-through performance exception as NOT PASSED, and keep
@@ -128,10 +134,18 @@
 - Targets are immutable fractions totaling 1 ±0.000001. Separate approved immutable
   policies have independent strict buy/sell/hold booleans and exact increments,
   floors/minimum notionals/freshness. Unknown permissions/fees remain review gates.
+  Targets contain weights, eligible accounts and excluded positions; tolerance is
+  presentation-only. Reject retired target execution fields. All three permission
+  booleans are mandatory; buying requires holding permission. Restricted existing
+  inventory gets human review, never automatic liquidation. Cash amounts alone
+  never attest coverage: require explicit `cash_known:true`, including zero.
   Contributions-only never sells; rebalance uses cash first on any valid date without
   calendar/month/drift gates. Quarterly strategy is explicitly historical only.
 - Annual USD positive tax-cost allowance uses confirmed taxable sales and explicit
   ST/LT rates/coverage. Losses do not replenish it; saved plans do not spend it.
+  Rebalance and harvest share planned-date validation: match year/environment,
+  reject future attestations and cutoffs omitting confirmed pre-trade taxable sales.
+  Preserve independently safe cash-funded suggestions when tax evidence blocks sales.
   Mandatory household/IRA/spouse/DRIP/substantially-identical wash review remains;
   never certify legality or guaranteed savings. Harvest uses approved policy identity,
   verified loss lots, sourced replacement prices and both exact cash legs/fee residue.
@@ -140,6 +154,10 @@
   projections; full detail stays explicit. No historical recalculation with fresh prices.
 
 ## Viewer, research and acceptance
+
+- Installed skills resolve repository documentation from the checkout working
+  directory. Use repository-root paths as text for docs outside a skill bundle;
+  relative Markdown links are reserved for resources copied within the bundle.
 
 - Dashboard is GET-only, query-only, persisted/provider-free. Every POST returns 405
   before body/application-data access; no commands/jobs/agent launch. Close DB handles
