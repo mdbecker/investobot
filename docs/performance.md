@@ -68,8 +68,12 @@ The approved reference is `d0940a12c44831095492efcd7091fb7b937ad6b3`.
 All runner execution is inside Docker. Each revision gets one warm-up; `batches`
 chooses a common count from the fastest warm-up targeting 600 ms. `run` takes
 five samples with no second warm-up. Every raw sample must reach 200 ms or the
-measurement is INVALID. Compare normalized medians; a >25% increase requests
-one complete repeat pair before FAIL. Changed recipes, outputs, counts or runner
+measurement is INVALID. Compare normalized medians; a >50% increase requests
+one complete repeat pair before FAIL. The inclusive 50% allowance was approved
+on October 15 to cover the recorded 42.30% look-through slowdown with 7.70
+percentage points of headroom. It replaces the earlier 25% acceptance threshold;
+it is a policy allowance, not evidence that hardware caused that slowdown.
+Changed recipes, outputs, counts or runner
 identity fail comparability. No absolute latency, scaling or import stress gate.
 
 Live contribution planning has no calendar gate. The paired
@@ -106,7 +110,7 @@ Raw results belong in ignored `benchmark-results/`; CI artifacts expire after
 Correctness response additions use only the reviewed projection below.
 Native results remain retained; unexpected uncertainty, money or action changes
 cannot be projected. Reference and recipe pins, eight workloads, sample floor
-and slowdown threshold remain unchanged. Saved-plan fixture preparation now
+and evidence validation remain unchanged. Saved-plan fixture preparation now
 approves policy explicitly because synthetic preview never persists.
 
 Native outputs, initial unprojected warm-up identities and failed evidence remain
@@ -128,6 +132,6 @@ preserve supported target fields, approved policies and financial facts. Untimed
 P07 monthly proposal and P08 list/show match the pinned reference with the required
 20-plan inventory and native oracles. An earlier two-plan diagnostic failed the
 same 20-plan oracle on both revisions and remains retained. No oracle, recipe,
-reference, threshold or timing architecture changed. No new timed campaign or
+reference or timing architecture changed. No new timed campaign or
 rebaseline is authorized. See [readiness](readiness.md) for the NOT PASSED
 look-through exception and separate INVALID remote run.

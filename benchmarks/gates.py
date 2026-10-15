@@ -3,6 +3,7 @@ from fractions import Fraction
 from statistics import median
 
 FLOOR_NS = 200_000_000
+MAX_SLOWDOWN_RATIO = Fraction(3, 2)
 
 
 def _validate(reference, candidate):
@@ -31,12 +32,12 @@ def _validate(reference, candidate):
         medians[name] = {'reference_median_ns': float(values[0]),
                          'candidate_median_ns': float(values[1]),
                          'ratio': float(values[1] / values[0]),
-                         'slow': values[1] > values[0] * Fraction(5, 4)}
+                         'slow': values[1] > values[0] * MAX_SLOWDOWN_RATIO}
     return medians
 
 
 def compare_pair(reference, candidate, *, confirmation=None):
-    """One complete confirmation is required before rejecting a >25% slowdown."""
+    """One complete confirmation is required before rejecting a >50% slowdown."""
     try:
         measurements = _validate(reference, candidate)
         slow = {name for name, row in measurements.items() if row['slow']}

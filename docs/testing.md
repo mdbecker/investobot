@@ -44,7 +44,7 @@ lifecycle validation uses a disposable checkout and synthetic data; financial
 pytest fixtures use temporary real SQLite. The shell forwarding test substitutes
 only the external Docker executable boundary, and is complemented by real
 Compose discovery/stdin/install/persistence checks. Performance retains exactly
-eight paired representative workflows and its confirmed >25% guard, as described
+eight paired representative workflows and its confirmed >50% guard, as described
 in [performance](performance.md). Retain raw local evidence outside Git for 90
 days and unresolved failures through resolution. No remote CI result is implied.
 

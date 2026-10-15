@@ -167,7 +167,7 @@ not claim a newly baked image or wheel.
 
 Keep `main` and conventional local commits; no remotes/fetch/push. Freeze parallel
 writes before final verification. Stop after finite acceptance. Benchmark rules
-and the approved NOT PASSED exception are in [performance](performance.md).
+and the historical NOT PASSED exception under the former 25% gate are in [performance](performance.md).
 No new benchmarking, profiling, optimization, broad audit or fuzz campaign is
 authorized by cleanup. Fuzzing requires explicit human invocation and
 [fuzz/SKILL.md](../fuzz/SKILL.md); CI runs fixed regressions only. Never execute

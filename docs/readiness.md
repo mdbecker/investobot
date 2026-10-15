@@ -49,11 +49,15 @@ No host installation, remote operation, live provider call or push occurred.
 
 ## Performance and limits
 
-**PERFORMANCE EXCEPTION — NOT PASSED; not remeasured.** The confirmed recursive
+**Historical PERFORMANCE EXCEPTION — NOT PASSED under the former 25% gate;
+not remeasured.** The confirmed recursive
 look-through result is reference **4.404951 ms**, candidate **6.268134 ms**,
 **+42.30%** on the fixed representative workflow. Candidate reporting additionally
 includes provenance/coverage. The approved exception preserves that failed result;
-no speedup or broad performance certification is claimed.
+no speedup or broad performance certification is claimed. The owner subsequently
+authorized a 50% timing allowance with headroom above that recorded result.
+The new gate has not been exercised by a new timed pair or remote CI run;
+changing its threshold does not rewrite the historical failure or invalid run.
 
 [CI run 38681163065](https://github.com/mdbecker/investobot/actions/runs/38681163065)
 at `5c12c4a` remains INVALID, exit 3, before measurement because warm-up native

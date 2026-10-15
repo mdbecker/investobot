@@ -113,7 +113,9 @@ and reviews; do not restore them as active instructions.
 Synthetic tests establish development behavior only. Vanguard, Fidelity NetBenefits
 and PNC remain PROVISIONAL; live FMP remains UNVERIFIED pending permission-cleared
 real evidence and entitlements. Keep setup/human steps in [data sources](docs/data-sources.md).
-No real documents or secrets are needed offline. Preserve the approved look-through
-**PERFORMANCE EXCEPTION — NOT PASSED**, invalid CI evidence and fixed eight-workflow
-reference/projection rules in [performance](docs/performance.md). No rebaseline or
+No real documents or secrets are needed offline. Use the owner-approved inclusive
+50% paired timing allowance; retain confirmation
+above it and strict evidence validation. Preserve the historical look-through
+**PERFORMANCE EXCEPTION — NOT PASSED** under the former 25% gate, invalid CI
+evidence and fixed eight-workflow reference/projection rules in [performance](docs/performance.md). No rebaseline or
 new timing campaign is authorized by cleanup. Report local results as local evidence.
