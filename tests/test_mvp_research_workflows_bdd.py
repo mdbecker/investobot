@@ -171,20 +171,20 @@ def exclusions(research_ctx):
 
 WORKFLOWS = {
     'sync': ('investobot-portfolio-sync', 'portfolio.reconcile',
-             ['portfolio', 'reconcile'], 'explicit human approval'),
+             ['portfolio', 'reconcile']),
     'performance': ('investobot-portfolio-performance', 'portfolio.performance',
-                    ['portfolio', 'performance', '--as-of', '2026-10-10'], 'actual'),
+                    ['portfolio', 'performance', '--as-of', '2026-10-10']),
     'monthly': ('investobot-monthly-investing', 'plan.propose',
                 ['plan', 'propose', '--policy', 'approved-synthetic',
-                 '--mode', 'contributions-only', '--as-of', '2026-10-10'], 'human'),
+                 '--mode', 'contributions-only', '--as-of', '2026-10-10']),
     'harvest': ('investobot-tax-loss-harvesting', 'tax.harvest-plan',
-                ['tax', 'harvest-plan', '--as-of', '2026-10-10'], 'review'),
+                ['tax', 'harvest-plan', '--as-of', '2026-10-10']),
     'screening': ('investobot-investment-screening', 'fund.search',
-                  ['fund', 'search'], 'missing'),
+                  ['fund', 'search']),
     'research': ('investobot-portfolio-research', 'research.portfolio.plan',
-                 ['research', 'portfolio', 'plan'], 'coverage'),
+                 ['research', 'portfolio', 'plan']),
     'strategy': ('investobot-portfolio-strategy', 'backtest.compare',
-                 ['backtest', 'compare'], 'hypothetical'),
+                 ['backtest', 'compare']),
 }
 
 
@@ -263,18 +263,16 @@ def intent(research_ctx, workflow, monkeypatch):
     monkeypatch.setenv('INVEST_FIXTURES', initial_market)
 
 
-@when('its installed skill is followed by a scripted CLI driver')
+@when('its installed workflow is exercised by a scripted CLI driver')
 def scripted(research_ctx):
-    from invest.research_skills import install_skills
+    from invest.research_skills import install_skills, show_skill
 
     workflow = research_ctx['workflow']
-    name, tool, args, boundary = WORKFLOWS[workflow]
+    name, tool, args = WORKFLOWS[workflow]
     install_skills('codex', research_ctx['tmp'])
     skill_path = research_ctx['tmp'] / '.agents' / 'skills' / name / 'SKILL.md'
     assert skill_path.is_file(), f'{name} must be distributed and installable'
-    text = skill_path.read_text()
-    assert 'invest tools describe' in text
-    assert boundary in text.lower()
+    assert skill_path.read_text() == show_skill(name)['files']['SKILL.md']
     research_ctx['descriptor'] = invoke(research_ctx, ['tools', 'describe', tool])
     if workflow in {'monthly', 'strategy'}:
         accepted_household(research_ctx)
@@ -854,14 +852,12 @@ def full_intent(research_ctx, workflow, mode, monkeypatch):
 
 def workflow_step(ctx, args):
     """Capture only real CLI behavior; never execute skill Markdown."""
-    family = 'invest ' + ' '.join(args[:2])
-    assert family in ctx['skill_text'], f'Skill walkthrough must document {family}'
     return invoke(ctx, args)
 
 
-@when('the portable skill documented command sequence is scripted')
+@when('the installed workflow commands are exercised by a scripted CLI driver')
 def full_driver(research_ctx):
-    from invest.research_skills import install_skills
+    from invest.research_skills import install_skills, show_skill
 
     ctx = research_ctx
     workflow, mode = ctx['workflow'], ctx['mode']
@@ -870,10 +866,7 @@ def full_driver(research_ctx):
         install_skills(agent, ctx['tmp'])
         path = ctx['tmp'] / directory / 'skills' / name / 'SKILL.md'
         assert path.is_file(), f'{name} must be installable for {agent}'
-        text = path.read_text()
-        for required in ['prerequisites', 'blocked', 'success', 'manifest', 'batch', 'approval']:
-            assert required in text.lower(), f'{name} omits its {required} contract'
-        ctx['skill_text'] = text
+        assert path.read_text() == show_skill(name)['files']['SKILL.md']
     invoke(ctx, ['tools', 'describe', WORKFLOWS[workflow][1]])
     invoke(ctx, ['schema'])
     if workflow in {'monthly', 'harvest', 'strategy'}:

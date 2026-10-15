@@ -23,9 +23,9 @@ def test_dataset_commands_publish_authoritative_manifest_schema(command):
     model = ManifestInput.model_validate(payload)
     assert model.data_environment == 'SYNTHETIC'
     schema = tools_describe(command)['json_input_schema']
+    # Exact agreement prevents a second hand-maintained public schema from drifting.
     assert schema == ManifestInput.model_json_schema()
     assert schema['additionalProperties'] is False
-    assert 'ArtifactInput' in schema['$defs']
 
 
 def test_harvest_command_publishes_typed_review_policy_schema():

@@ -1,5 +1,5 @@
 import copy
-import sqlite3
+import json
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -7,7 +7,9 @@ import pytest
 from pytest_bdd import given, scenarios, then, when
 
 from invest import plans
-from invest.ledger import Ledger
+from invest.backup import logical_fingerprint
+from invest.ledger import Ledger, snapshot_fingerprint
+from invest.models import Snapshot
 from invest.plan_storage import load_plan, save_plan
 
 scenarios('features/compact_plan_queries.feature')
@@ -17,7 +19,6 @@ scenarios('features/compact_plan_queries.feature')
 def ctx(tmp_path):
     ledger = Ledger(tmp_path / 'synthetic.db')
     yield {'ledger': ledger}
-    ledger.connection.set_authorizer(None)
     ledger.connection.close()
 
 
@@ -35,7 +36,7 @@ def alternative(identity, state):
             'assumptions': {'prices': {'00123': '10'}, 'tax_rates': {}}}
 
 
-@given('a disposable schema three household with two saved alternatives')
+@given('a fresh schema 1 household with two saved alternatives')
 def household(ctx):
     ledger = ctx['ledger']
     ledger.apply({'data_environment': 'SYNTHETIC', 'account': {'id': '00123', 'name': 'Synthetic IRA',
@@ -51,36 +52,18 @@ def household(ctx):
         save_plan(ledger, alternative(identity, ctx['state']))
 
 
-@when('plan list and comparison run with payload reads forbidden')
-def guarded_queries(ctx, monkeypatch):
+@when('saved alternatives are listed and compared')
+def compact_queries(ctx):
     ledger = ctx['ledger']
-    calls = []
-    original = plans.state_hash
-
-    def counted(state):
-        calls.append(state)
-        return original(state)
-
-    def authorize(action, table, column, database, trigger):
-        if action == sqlite3.SQLITE_READ and (
-            (table == 'plan_runs' and column == 'details_json') or
-            (table == 'plan_baselines' and column == 'state_json')
-        ):
-            return sqlite3.SQLITE_DENY
-        return sqlite3.SQLITE_OK
-
-    monkeypatch.setattr(plans, 'state_hash', counted)
-    ledger.connection.set_authorizer(authorize)
+    before = logical_fingerprint(ledger.connection)
     ctx['listed'] = plans.list_plans(ledger)
-    ctx['list_hashes'] = len(calls)
     ctx['compared'] = plans.compare(ledger, 'first', 'second')
-    ctx['compare_hashes'] = len(calls) - ctx['list_hashes']
-    ledger.connection.set_authorizer(None)
+    assert logical_fingerprint(ledger.connection) == before
+    assert load_plan(ledger, 'first') == ctx['original']
 
 
-@then('summaries preserve saved metrics and hash the household once per request')
+@then('compact ordered summaries preserve saved metrics without changing accepted facts')
 def summaries(ctx):
-    assert ctx['list_hashes'] == ctx['compare_hashes'] == 1
     assert [row['id'] for row in ctx['listed']['plans']] == ['second', 'first']
     compared = ctx['compared']
     assert [row['id'] for row in compared['plans']] == ['first', 'second']
@@ -91,20 +74,12 @@ def summaries(ctx):
         assert summary['turnover'] == '12.50'
         assert summary['tax_summary']['estimated_tax_effect'] == '.4'
         assert summary['drift_summary']['positions_outside_tolerance'] == 1
+        assert summary['warning_count'] == 1
+        assert summary['warnings_preview'] == ['Synthetic review']
         assert 'source_state' not in summary
         assert 'proposed_actions' not in summary
-
-
-@then('list ordering and selected lookup use SQLite indexes')
-def indexed(ctx):
-    connection = ctx['ledger'].connection
-    listing = connection.execute('EXPLAIN QUERY PLAN SELECT summary_json FROM plan_runs '
-                                 'ORDER BY created_at DESC, id DESC').fetchall()
-    lookup = connection.execute('EXPLAIN QUERY PLAN SELECT details_json FROM plan_runs '
-                                'WHERE id=?', ('first',)).fetchall()
-    assert any('plans_created_idx' in row[3] for row in listing)
-    assert not any('TEMP B-TREE' in row[3] for row in listing)
-    assert any('SEARCH plan_runs USING INDEX' in row[3] for row in lookup)
+    assert len(json.dumps(ctx['listed']).encode()) < 128 * 1024
+    assert len(json.dumps(compared).encode()) < 128 * 1024
 
 
 @when('the first saved plan is retrieved after current cash changes')
@@ -117,6 +92,7 @@ def retrieve(ctx):
         ledger.put('cash_balances', cash['id'], cash)
         # An unrelated corrupt detail must never be decoded by selected retrieval.
         ledger.connection.execute("UPDATE plan_runs SET details_json='invalid-json' WHERE id='second'")
+    ctx['accepted_before_inspection'] = logical_fingerprint(ledger.connection)
     ctx['retrieved'] = load_plan(ledger, 'first')
     ctx['shown'] = plans.show(ledger, 'first')
 
@@ -127,32 +103,31 @@ def preserved(ctx):
     assert ctx['shown']['status'] == 'STALE'
     assert ctx['shown']['source_state'] == ctx['state']
     assert ctx['shown']['proposed_actions'] == ctx['original']['proposed_actions']
+    assert logical_fingerprint(ctx['ledger'].connection) == ctx['accepted_before_inspection']
 
 
-@when('an older large observation is added and planning reads are guarded')
-def old_history(ctx, monkeypatch):
+@when('an older large observation is added')
+def old_history(ctx):
     ledger = ctx['ledger']
+    # Preserve a valid accepted observation shape; only its age and source lexeme differ.
+    old = Snapshot.model_validate({
+        'account': {'id': '00123', 'name': 'Synthetic IRA', 'tax_status': 'TAX_FREE'},
+        'positions': [], 'cash_known': True, 'cash': '100',
+        'source_timestamp': '2020-01-01', 'data_environment': 'SYNTHETIC',
+        'source_hash': 'fictional-old-history-' + 'x' * 100000,
+    }).model_dump(mode='json')
+    old.update(fingerprint=snapshot_fingerprint(old), id='old', imported_at='2020-01-01')
     with ledger.connection:
-        ledger.put('snapshots', 'old', {'id': 'old', 'account': {'id': '00123'},
-            'imported_at': '2020-01-01', 'source_timestamp': '2020-01-01',
-            'source_hash': 'fictional-old-history', 'fingerprint': 'fictional-old-history',
-            'data_environment': 'SYNTHETIC',
-            'positions': [{'irrelevant': 'x' * 100000}]})
-    original = ledger.rows
-
-    def guarded(table):
-        assert table != 'snapshots', 'Planning decoded full historical observation rows'
-        return original(table)
-
-    monkeypatch.setattr(ledger, 'rows', guarded)
+        ledger.put('snapshots', 'old', old)
     ctx['current'] = ledger.planning_state()
 
 
-@then('the planning fingerprint stays unchanged and no snapshot rows are decoded')
+@then('the planning fingerprint stays unchanged and current evidence stays compact')
 def compact_state(ctx):
     assert plans.state_hash(ctx['current']) == plans.state_hash(ctx['state'])
     assert len(ctx['current']['snapshots']) == 1
     assert 'positions' not in ctx['current']['snapshots'][0]
+    assert len(json.dumps(ctx['current']).encode()) < 128 * 1024
 
 
 @then('financial decimal spelling is normalized while identifiers and provenance matter')

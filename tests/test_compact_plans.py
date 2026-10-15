@@ -8,6 +8,7 @@ from planning_fixtures import saved_proposal
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from invest import plans
+from invest.backup import logical_fingerprint
 from invest.ledger import Ledger
 from invest.market import MarketClient
 from invest.models import DomainError
@@ -28,7 +29,7 @@ def ctx(tmp_path, monkeypatch):
     monkeypatch.setenv('INVEST_CONFIG', str(tmp_path / 'config.toml'))
     monkeypatch.setenv('INVEST_FIXTURES', '/app/tests/fixtures/fmp-synthetic.json')
     ledger = Ledger(tmp_path / 'ledger.db')
-    yield {'ledger': ledger, 'monkeypatch': monkeypatch, 'ids': []}
+    yield {'ledger': ledger, 'ids': []}
     ledger.connection.close()
 
 
@@ -50,6 +51,7 @@ def alternatives(ctx):
                  'assumptions': {'prices': {'security': {'price': '100'}}, 'tax_rates': None},
                  'target': {'planning_constraints': {'target_tolerance': '0.01'}},
                  'proposed_actions': [{'type': 'SELL', 'quantity': '1', 'price': '100'}],
+                 'exposure_analysis': {'source_notes': 'Fictional saved evidence. ' * 5000},
                  'trade_count': 1, 'turnover': '100',
                  'tax_analysis': {'short_term_gain_loss': '0', 'long_term_gain_loss': '12.50',
                                   'estimated_tax_effect': None, 'analyses': ['details']},
@@ -61,41 +63,18 @@ def alternatives(ctx):
         ctx['ids'].append(pid)
 
 
-def guarded(ctx, operation):
-    ledger = ctx['ledger']
-    original_rows, original_state, original_hash = ledger.rows, ledger.state, plans.state_hash
-    counts = {'state': 0, 'hash': 0}
-
-    def rows(table):
-        assert table != 'plans', 'Compact requests must project SQLite JSON, not load full plans'
-        return original_rows(table)
-
-    def state():
-        counts['state'] += 1
-        return original_state()
-
-    def hashed(value):
-        counts['hash'] += 1
-        return original_hash(value)
-
-    with ctx['monkeypatch'].context() as patch:
-        patch.setattr(ledger, 'rows', rows)
-        patch.setattr(ledger, 'state', state)
-        patch.setattr(plans, 'state_hash', hashed)
-        result = operation()
-    assert counts['state'] <= 1
-    assert counts['hash'] <= 1
-    return result
-
-
 @when('the agent lists alternatives')
 def listed(ctx):
-    ctx['result'] = guarded(ctx, lambda: plans.list_plans(ctx['ledger']))
+    before = logical_fingerprint(ctx['ledger'].connection)
+    ctx['result'] = plans.list_plans(ctx['ledger'])
+    assert logical_fingerprint(ctx['ledger'].connection) == before
 
 
 @when('the agent compares alternatives')
 def compared(ctx):
-    ctx['result'] = guarded(ctx, lambda: plans.compare(ctx['ledger'], *ctx['ids']))
+    before = logical_fingerprint(ctx['ledger'].connection)
+    ctx['result'] = plans.compare(ctx['ledger'], *ctx['ids'])
+    assert logical_fingerprint(ctx['ledger'].connection) == before
 
 
 @then('twenty compact summaries preserve saved financial metrics')

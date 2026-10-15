@@ -6,7 +6,7 @@ Feature: Compact plan results for coding agents
     And the response is smaller than 128 KiB without detailed financial state
     And alternatives are ordered by newest creation time and stable ID
 
-  Scenario: Comparing alternatives avoids loading saved histories
+  Scenario: Comparing alternatives returns bounded saved summaries
     Given twenty saved alternatives with large synthetic histories
     When the agent compares alternatives
     Then twenty compact summaries preserve saved financial metrics

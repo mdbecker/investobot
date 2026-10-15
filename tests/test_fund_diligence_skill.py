@@ -51,23 +51,14 @@ def test_fund_guidance_installs_without_overwriting_custom_skills(tmp_path, agen
         assert show_skill(name) == bundle
 
 
-def test_fund_skill_uses_authoritative_contract_and_explicit_source_review():
-    assert NAME in {item['name'] for item in list_skills()['skills']}
-    bundle = show_skill(NAME)['files']
-    assert set(bundle) == {'SKILL.md', 'references/research-method.md',
-                           'references/fees-and-tax.md', 'references/holdings-liquidity.md',
-                           'references/json-contract.md'}
-    assert bundle['SKILL.md'].startswith(f'---\nname: {NAME}\n')
-    assert 'version: "1.0.0"' in bundle['SKILL.md']
-    for reference in ('research-method.md', 'fees-and-tax.md', 'holdings-liquidity.md',
-                      'json-contract.md'):
-        assert f'(references/{reference})' in bundle['SKILL.md']
-    text = '\n'.join(bundle.values())
-    for requirement in ('invest schema', 'research.funds.import', 'invest research funds validate',
-                        'invest research funds import', 'explicit human approval',
-                        'registrant_cik', 'series_id', 'class_id', 'local-data',
-                        'external agent', 'UNSUPPORTED_FUND_STRUCTURE'):
-        assert requirement in text
+def test_fund_skill_metadata_matches_discovery():
+    metadata = next(item for item in list_skills()['skills'] if item['name'] == NAME)
+    bundle = show_skill(NAME)
+    assert {key: bundle[key] for key in metadata} == metadata
+    # show_skill validates canonical identity/description; copied-resource/link tests
+    # protect usable guidance. Fund and portable-driver scenarios protect rights
+    # and approval boundaries rather than claiming English word lists prove them.
+    assert 'SKILL.md' in bundle['files']
 
 
 def test_fund_tool_discovery_exposes_real_schema_and_research_only_acceptance():

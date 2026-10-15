@@ -1,6 +1,8 @@
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from tomllib import loads
 
+from bs4 import BeautifulSoup
 from platformdirs import user_config_path, user_data_path
 from pytest_bdd import given, scenarios, then, when
 
@@ -16,9 +18,10 @@ def inspect_page():
 
 @then("its title and brand name are Investobot")
 def page_brand(page):
-    assert "<title>Investobot · Local portfolio</title>" in page
-    assert "<span>Investobot</span>" in page
-    assert "Invest Copilot" not in page
+    parsed = BeautifulSoup(page, 'html.parser')
+    assert parsed.title.get_text(strip=True) == 'Investobot · Local portfolio'
+    assert 'Investobot' in list(parsed.body.stripped_strings)
+    assert 'Invest Copilot' not in parsed.get_text()
 
 
 @given("no explicit path overrides")
@@ -59,4 +62,6 @@ def distribution():
 
 @then("the Investobot distribution is installed")
 def installed(distribution_version):
-    assert distribution_version == "0.1.0"
+    project = loads((Path(__file__).resolve().parents[1] / 'pyproject.toml').read_text())['project']
+    assert project['name'] == 'investobot'
+    assert distribution_version == project['version']

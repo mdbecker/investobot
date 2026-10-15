@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from pytest_bdd import given, scenarios, then, when
 from test_news_queries import ledger as ledger
@@ -154,15 +156,17 @@ def test_context_recovers_questions_independently_and_is_readonly(ledger):
     save(ledger, 'B', '2026-10-02')
     ledger.connection.execute("UPDATE research_news_events SET follow_up_questions_json='[]',event_date=NULL WHERE run_id='B'")
     ledger.connection.commit()
-    trace = []
-    ledger.connection.set_trace_callback(trace.append)
-    before = ledger.connection.total_changes
+    before = tuple(ledger.connection.iterdump())
+    ledger.connection.execute('PRAGMA query_only=ON')
     result = queries.context(ledger, 'FAKE')
     assert result['events'][0]['event_date'] is None
     assert result['open_follow_up_questions'][0]['last_observed_run_id'] == 'A'
-    assert ledger.connection.total_changes == before
-    sql = ' '.join(trace).lower()
-    assert 'package_json' not in sql and 'research_news_facts' not in sql and 'implications_json' not in sql
+    question = result['open_follow_up_questions'][0]
+    assert question['last_observed_as_of'] == '2026-10-01'
+    assert question['sources'][0]['url'] == 'https://example.invalid/s1'
+    assert 'verified_facts' not in result['events'][0]
+    assert len(json.dumps(result).encode()) < 128 * 1024
+    assert tuple(ledger.connection.iterdump()) == before
 
 
 def test_context_preserves_ticker_changes_but_rejects_conflicting_entities(ledger):

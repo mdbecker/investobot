@@ -22,7 +22,7 @@ Feature: Honest research coverage and portable agent workflows
 
   Scenario Outline: <id> Installed workflow drives discoverable real commands
     Given the synthetic <workflow> workflow intent
-    When its installed skill is followed by a scripted CLI driver
+    When its installed workflow is exercised by a scripted CLI driver
     Then the <workflow> workflow obeys its boundary and reports its outcome
     Examples:
       | id  | workflow    |
@@ -113,7 +113,7 @@ Feature: Honest research coverage and portable agent workflows
 
   Scenario Outline: W01 Full portable <workflow> walkthrough in <mode> state
     Given the complete synthetic <workflow> walkthrough with <mode> inputs
-    When the portable skill documented command sequence is scripted
+    When the installed workflow commands are exercised by a scripted CLI driver
     Then the complete <workflow> sequence preserves its <mode> authorization boundary
     Examples:
       | workflow    | mode    |

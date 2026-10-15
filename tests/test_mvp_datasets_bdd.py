@@ -123,6 +123,8 @@ def external(dataset):
 @then("the bind is refused and Compose publishes only loopback")
 def loopback(dataset):
     assert dataset["error"] is not None
+    # Native refusal is exercised above; retain the Docker publication safety rule
+    # because the offline app image has no resolved Compose configuration surface.
     assert '127.0.0.1:8765:8765' in Path("compose.yaml").read_text()
 
 
@@ -145,7 +147,11 @@ def workflows(dataset):
                  "tax-loss-harvesting", "investment-screening", "portfolio-research",
                  "portfolio-strategy"):
         assert f"investobot-{name}" in output
-    assert "db backup" in Path("README.md").read_text()
+    backup = CliRunner().invoke(app, ['tools', 'describe', 'db.backup'])
+    assert backup.exit_code == 0, backup.output
+    descriptor = json.loads(backup.stdout)
+    assert descriptor['name'] == 'db.backup'
+    assert any('--output' in option['flags'] for option in descriptor['options'])
 
 
 @when("analytical runtime capabilities are requested")

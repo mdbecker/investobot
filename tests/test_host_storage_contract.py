@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_given_compose_when_started_then_authoritative_data_is_host_bound():
+    # Keep these narrow config checks: the offline app image has no Compose resolver.
+    # They protect host persistence/loopback rather than an incidental prose example.
     compose = (ROOT / 'compose.yaml').read_text()
     assert '- ./local-data/state:/data' in compose
     assert '- .:/app' in compose
@@ -26,6 +28,8 @@ def test_given_compose_when_started_then_authoritative_data_is_host_bound():
 
 @pytest.mark.parametrize('agent', ['.agents', '.claude'])
 def test_given_generated_skill_copies_then_only_investobot_bundles_are_ignored(agent):
+    # No Git ignore resolver ships in the app image; these exclusions protect privacy
+    # while allowing unrelated operator skills. Do not replace them with file existence.
     rules = (ROOT / '.gitignore').read_text().splitlines()
     assert f'{agent}/skills/investobot-*/' in rules
     assert f'{agent}/' not in rules
@@ -33,6 +37,8 @@ def test_given_generated_skill_copies_then_only_investobot_bundles_are_ignored(a
 
 
 def test_given_private_files_then_build_and_git_exclude_private_storage():
+    # Explicit privacy patterns remain strict until an equally strong build-context
+    # check can run within the existing offline test environment.
     git = (ROOT / '.gitignore').read_text().splitlines()
     docker = (ROOT / '.dockerignore').read_text().splitlines()
     assert 'local-data/' in git

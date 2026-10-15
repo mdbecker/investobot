@@ -3,10 +3,14 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
+
+from invest.cli import app
 
 ROOT = Path(__file__).resolve().parents[1]
 BRIDGE = ROOT / 'scripts' / 'invest'
@@ -80,10 +84,31 @@ def test_given_host_agent_when_reading_skills_then_commands_use_docker_bridge(sk
     text = skill.read_text()
     references = sorted((skill.parent / 'references').glob('*.md'))
     combined = '\n'.join([text, *[path.read_text() for path in references]])
-    # Then command examples are directly callable by the external host agent.
-    assert './scripts/invest ' in text
-    assert 'host agent' in text.lower()
-    assert 'Docker' in text
-    assert '/app/local-data/' in text or '/app/local-data/' in combined
+    # Check executable syntax against public CLI metadata, not surrounding English.
+    runner = CliRunner()
+    result = runner.invoke(app, ['tools', 'list'])
+    assert result.exit_code == 0, result.output
+    commands = {tuple(item['name'].split('.')): item
+                for item in json.loads(result.stdout)['tools']}
+    examples = re.findall(r'\./scripts/invest\s+([^`\n]+)', combined)
+    assert examples, 'A host skill must offer a callable command'
+    described = {}
+    for example in examples:
+        args = shlex.split(example)
+        matches = [path for path in commands if list(path) == args[:len(path)]]
+        assert matches, f'{skill.parent.name}: unknown command {example}'
+        path = max(matches, key=len)
+        if path not in described:
+            result = runner.invoke(app, ['tools', 'describe', '.'.join(path)])
+            assert result.exit_code == 0, result.output
+            described[path] = json.loads(result.stdout)
+        descriptor = described[path]
+        flags = {flag for option in descriptor['options'] for flag in option['flags']}
+        for token in args[len(path):]:
+            if token.startswith('--'):
+                assert token.split('=', 1)[0] in flags | {'--help'}, example
+        if path == ('tools', 'describe') and args[2] != 'TOOL':
+            assert tuple(args[2].split('.')) in commands, example
+        assert isinstance(descriptor['json_input_schema'], dict)
     assert not re.search(r'(?m)(?:`|^)invest\s', combined), 'Bare host CLI command remains'
 

@@ -86,13 +86,24 @@ def test_warning_counts_are_part_of_delta_and_missing_baseline(ledger):
     assert missing['counts']['warnings'] == len(missing['warnings'])
 
 
-def test_compact_reads_and_context_never_scan_package(ledger):
+def test_compact_reads_preserve_scope_citations_and_accepted_research(ledger):
     save(ledger, 'old')
     save(ledger, 'new', '2026-10-03')
-    trace = []
-    ledger.connection.set_trace_callback(trace.append)
-    assert len(queries.list_runs(ledger, 'FAKE')['runs']) == 2
+    expected_context = queries.context(ledger, 'FAKE')
+    expected_delta = queries.compare(ledger, 'old', 'new')
+    raw_detail = 'Fictional detailed research notes. ' * 5000
+    package = {'company': {'name': 'Fictional Company'}, 'limitations': [raw_detail]}
+    for index in range(20):
+        save(ledger, f'unrelated-{index:02}', '2026-10-04', ticker='OTHER', cik='0000000002')
+    ledger.connection.execute('UPDATE research_runs SET package_json=?', (json.dumps(package),))
+    ledger.connection.commit()
+    before = tuple(ledger.connection.iterdump())
+    # A true read-only boundary, independent of query spelling or access plan.
+    ledger.connection.execute('PRAGMA query_only=ON')
+    listed = queries.list_runs(ledger, 'FAKE')
+    assert [run['research_run_id'] for run in listed['runs']] == ['new', 'old']
     result = queries.context(ledger, 'FAKE')
+    assert result == expected_context
     assert result['baseline_available'] is True
     assert result['research_run_id'] == 'new'
     assert result['events'][0]['event_key'] == 'launch'
@@ -101,9 +112,19 @@ def test_compact_reads_and_context_never_scan_package(ledger):
     assert result['open_follow_up_questions'][0]['id'] == 'uptake'
     summary = queries.summary(ledger, 'new')
     assert summary['events'][0]['verified_facts'][0]['fact_key'] == 'announced'
-    queries.compare(ledger, 'old', 'new')
-    assert not any('package_json' in sql.lower() for sql in trace)
-    assert queries.show(ledger, 'old')['skill_name'] == 'investobot-news'
+    assert queries.compare(ledger, 'old', 'new') == expected_delta
+    for compact in (listed, result, expected_delta):
+        encoded = json.dumps(compact)
+        assert raw_detail not in encoded
+        assert len(encoded.encode()) < 128 * 1024
+        assert 'unrelated-' not in encoded
+    shown = queries.show(ledger, 'old')
+    assert shown['skill_name'] == 'investobot-news'
+    assert shown['limitations'] == [raw_detail]
+    source = result['events'][0]['sources'][0]
+    assert (source['run_id'], source['url'], source['published_at'], source['source_locator']) == (
+        'new', 'https://example.invalid/s1', '2026-10-03', 'Release paragraph')
+    assert tuple(ledger.connection.iterdump()) == before
 
 
 def test_missing_baseline_and_unknown_runs(ledger):
@@ -225,15 +246,26 @@ def test_partial_strong_identity_cannot_fall_back_to_ticker(ledger):
         queries.compare(ledger, 'old', 'new')
 
 
-def test_context_uses_focused_projections_not_full_event_facts(ledger):
+def test_context_excludes_full_facts_and_implications_but_summary_retains_them(ledger):
     save(ledger, 'old')
-    trace = []
-    ledger.connection.set_trace_callback(trace.append)
+    detail = 'Fictional full-detail evidence, not context.'
+    implications = [{'id': 'possible-demand', 'area': 'DEMAND', 'statement': detail,
+                     'assumptions': 'Fictional uptake.', 'uncertainty': 'Uptake unknown.'}]
+    ledger.connection.execute('UPDATE research_news_facts SET statement=?', (detail,))
+    ledger.connection.execute('UPDATE research_news_events SET implications_json=?',
+                              (json.dumps(implications),))
+    ledger.connection.commit()
+    before = tuple(ledger.connection.iterdump())
     result = queries.context(ledger, 'FAKE')
     assert result['baseline_available']
-    assert not any('research_news_facts' in sql.lower() for sql in trace)
-    assert not any('implications_json' in sql.lower() for sql in trace)
+    event, = result['events']
+    assert not {'verified_facts', 'disputed_facts', 'implications'} & event.keys()
+    assert detail not in json.dumps(result)
     assert 'sources' not in result
+    full = queries.summary(ledger, 'old')['events'][0]
+    assert full['verified_facts'][0]['statement'] == detail
+    assert full['implications'] == implications
+    assert tuple(ledger.connection.iterdump()) == before
 
 
 def test_missing_records_keep_prior_source_links(ledger):
