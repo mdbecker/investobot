@@ -46,9 +46,10 @@ USD allowance derived from confirmed sales. Losses do not replenish that allowan
 saved proposals do not consume it. Unknown coverage blocks taxable sales while safe
 cash-only proposals can remain available for human review.
 The nested annual policy must explicitly match the planned trade year and the
-portfolio environment. Its sourced `as_of` attestation must not follow the trade
-date or omit confirmed taxable sales before that date. A stale cutoff, wrong year,
-unknown coverage or environment mismatch blocks taxable sales with typed issues;
+portfolio environment. Its sourced `as_of` attestation must cover the planned trade
+date, even when no intervening sales are recorded, and must not follow that date.
+A stale cutoff, wrong year, unknown coverage or environment mismatch blocks
+taxable sales with typed issues;
 approve a new immutable policy with updated evidence rather than changing dates
 silently. Safe cash-funded purchases are evaluated independently.
 

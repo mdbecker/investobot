@@ -145,7 +145,8 @@
 - Annual USD positive tax-cost allowance uses confirmed taxable sales and explicit
   ST/LT rates/coverage. Losses do not replenish it; saved plans do not spend it.
   Rebalance and harvest share planned-date validation: match year/environment,
-  reject future attestations and cutoffs omitting confirmed pre-trade taxable sales.
+  require tax-history coverage through the planned date even without intervening
+  recorded sales, and reject future attestations.
   Preserve independently safe cash-funded suggestions when tax evidence blocks sales.
   Mandatory household/IRA/spouse/DRIP/substantially-identical wash review remains;
   never certify legality or guaranteed savings. Harvest uses approved policy identity,
@@ -191,6 +192,11 @@
   optimization/general certification. Verify native outputs before projecting only
   reviewed incidental/semantic deltas; retain invalid evidence, actual failures and
   exit codes outside Git. Fixtures/reset/oracles stay outside timed operations.
+  The October 15 follow-up authorizes only the retired-target evidence correction:
+  project target-only empty permission/floor/increment mappings and integer price
+  age default 1; reject other retired values. Preserve supported target fields,
+  approved policies, financial facts and native oracles. No rebaseline or new timing
+  campaign is authorized by this evidence repair.
 - Fuzzing requires explicit human invocation and [fuzz/SKILL.md](fuzz/SKILL.md):
   offline disposable allowlisted full-scenario JSON replay, actionable reports,
   independent exact oracles. CI runs fixed regressions only, never agent campaigns,

@@ -1,5 +1,50 @@
 # October 14 contract review handoff
 
+## October 15 bounded follow-up
+
+The owner's follow-up identified two remaining cases. Red checkpoint `7e03c88`
+observed **9 failed, 23 passed** in offline Docker before implementation. Green
+checkpoint `9a68d2a` passed **88 focused tests**; configured Ruff also passed.
+The final locked offline Docker suite against that runtime/test tree passed
+**1,436 tests in 46.74 seconds**, exit 0. Ruff passed across `src tests benchmarks
+scripts fuzz` with `--config pyproject.toml`, exit 0. Only documentation follows
+the verified code. No host installation or push occurred in this follow-up.
+
+Annual tax-history coverage must now reach the planned trade date even when no
+intervening taxable sale is recorded. Both rebalance and conditional harvest emit
+`STALE_TAX_HISTORY_ATTESTATION`, preserve known facts and block taxable sales for
+an older attestation. Independently safe cash-funded purchases remain possible.
+The previous activity-dependent cutoff scan was removed rather than duplicated.
+
+[Performance CI run 38681163065](https://github.com/mdbecker/investobot/actions/runs/38681163065)
+at `5c12c4a` is **INVALID**, exit 3, before measurement: `Warmup native workflow
+evidence differs`. Its artifact confirms all eight input hashes/counts match;
+only the contribution-plan output hash differs. Untimed native reference/candidate
+comparison identifies four retired target defaults: `permitted_securities:{}`,
+`cash_minimums:{}`, `trade_increments:{}`, `price_max_age_days:1`.
+
+The evidence projection removes only those exact values within a target's
+`planning_constraints`. Other values fail closed; supported target fields,
+approved policy permissions and financial changes remain detectable. Regression
+tests demonstrate this. All three affected operations (`P07.monthly-proposal`,
+`P08.list`, `P08.show`) match the pinned reference after projection and pass native
+oracles with a 20-plan disposable inventory. The initial diagnostic used two plans
+and failed the existing 20-plan oracle on both revisions; that failed evidence is
+retained alongside the corrected capture. No native oracle was weakened.
+
+The reference, thresholds, workflow configuration and timing architecture are
+unchanged. No timed benchmark pair or new remote run was performed. The CI invalid
+result remains separate from the historical **PERFORMANCE EXCEPTION — NOT PASSED**:
+reference **4.404951 ms**, candidate **6.268134 ms**, **+42.30%**, not remeasured.
+The projection fixes the demonstrated local evidence mismatch; a future remote
+run's conclusion cannot be inferred from this untimed verification.
+
+Raw CI artifact, untimed native captures and red/final logs are retained outside
+Git under `benchmark-results/code-review-followup-2026-10-15/`. Existing host-bridge,
+skill installation, recovery and viewer evidence remains applicable; the final
+full suite below also exercises the public synthetic CLI demonstration. Real
+brokerage/FMP validation remains **NOT TESTED / UNVERIFIED**. Stop after this fix.
+
 Scope: the owner's requested [post-refactor review](../investobot-code-review-2026-10-14.md),
 implemented on `main` in one bounded corrective pass. The attached review is
 preserved as historical evidence, including its original CI and readiness claims.
