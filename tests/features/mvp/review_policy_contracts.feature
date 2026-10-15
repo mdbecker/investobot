@@ -10,6 +10,8 @@ Feature: Proposed taxable sales use approved evidence for the actual trade date
       | harvest   | wrong-year        | TAX_BUDGET_YEAR_MISMATCH     |
       | rebalance | stale             | STALE_TAX_HISTORY_ATTESTATION |
       | harvest   | stale             | STALE_TAX_HISTORY_ATTESTATION |
+      | rebalance | stale-without-sales | STALE_TAX_HISTORY_ATTESTATION |
+      | harvest   | stale-without-sales | STALE_TAX_HISTORY_ATTESTATION |
       | rebalance | future            | FUTURE_TAX_HISTORY_ATTESTATION |
       | harvest   | future            | FUTURE_TAX_HISTORY_ATTESTATION |
       | rebalance | mixed-environment | MIXED_DATA_ENVIRONMENT       |

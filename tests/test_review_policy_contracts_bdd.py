@@ -31,6 +31,10 @@ def evaluate(review, path, evidence):
         budget['year'] = 2027
     elif evidence == 'stale':
         budget['as_of'] = '2026-09-01T00:00:00Z'
+    elif evidence == 'stale-without-sales':
+        budget['as_of'] = '2026-10-01T00:00:00Z'
+        assert not any(row['type'] == 'SELL' and row['date'] > '2026-10-01'
+                       for row in review['ledger'].state()['activities'])
     elif evidence == 'future':
         budget['as_of'] = '2026-10-11T00:00:00Z'
     elif evidence == 'mixed-environment':
