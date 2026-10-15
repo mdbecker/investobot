@@ -12,9 +12,9 @@ financial HTML belong in Git, logs, the ledger or agent requests.
 | Fidelity NetBenefits 401(k) HTML | NOT TESTED / adapter PROVISIONAL | Exact plan investment identity, permitted inventory and complete cash/position coverage |
 | PNC HTML | NOT TESTED / adapter PROVISIONAL | Reviewed balances, dates and explicit transaction classification |
 | Live FMP | NOT TESTED / provider UNVERIFIED | Entitled actual response, original dates, exact share class, rights and source freshness |
-| Actual real-source performance | BLOCKED | Complete dated checkpoints/flow history and explicit same-day boundary ordering |
-| Real trade proposal | BLOCKED | Approved immutable policy/target, current sourced prices, permissions, fees and verified saleable lots |
-| Tax-loss harvest execution review | BLOCKED | Household/spouse/IRA/DRIP/outside-account and substantially-identical/future purchase review |
+| Actual real-source performance | NOT TESTED | Complete dated checkpoints/flow history and explicit same-day boundary ordering |
+| Real trade proposal | NOT TESTED | Approved immutable policy/target, current sourced prices, permissions, fees and verified saleable lots |
+| Tax-loss harvest execution review | NOT TESTED | Household/spouse/IRA/DRIP/outside-account and substantially-identical/future purchase review |
 
 Typed missing evidence remains visible; status cannot be upgraded because fictional
 HTML or provider fixtures pass. Preserve independently expected quantities, prices,

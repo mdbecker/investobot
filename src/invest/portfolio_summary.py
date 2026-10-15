@@ -1,6 +1,6 @@
 """Read-only accepted balance summaries and currency guards."""
 
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 from invest.issues import _issue
 from invest.models import DomainError, decimal
@@ -14,6 +14,15 @@ def household_currency(state):
 
 
 def summarize(state):
+    values = [decimal(row[key]) for table, keys in (
+        ('positions', ('market_value', 'cost_basis')), ('cash_balances', ('amount',)))
+        for row in state[table] for key in keys if row.get(key) is not None]
+    with localcontext() as context:
+        context.prec = max(80, sum(len(format(value, 'f')) for value in values) + 32)
+        return _summarize(state)
+
+
+def _summarize(state):
     currency = household_currency(state)
     missing_cash = [row['id'] for row in state['accounts'] if not any(
         cash['account_id'] == row['id'] for cash in state['cash_balances'])]

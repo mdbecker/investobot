@@ -29,6 +29,7 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
     reporting_day = _day(as_of)
     securities = {row['id']: row for row in state.get('securities', [])}
     accounts = {row['id']: row for row in state.get('accounts', [])}
+    environments = {row.get('data_environment') for row in accounts.values()}
     currencies = {row.get('currency', 'USD') for row in accounts.values()}
     for table in ('positions', 'cash_balances'):
         for row in state.get(table, []):
@@ -42,8 +43,8 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
     stale = Decimal(0)
     unresolved = Decimal(0)
     sectors, assets, fund_coverage = {}, {}, {}
-    missing_cash = [account_id for account_id in accounts if not any(
-        row['account_id'] == account_id for row in state.get('cash_balances', []))]
+    cash_accounts = {row['account_id'] for row in state.get('cash_balances', [])}
+    missing_cash = [account_id for account_id in accounts if account_id not in cash_accounts]
     valuation_complete = all(row.get('market_value') is not None
                              for row in state.get('positions', [])) and not missing_cash
     values = [decimal(row['market_value']) for row in state.get('positions', [])
@@ -96,7 +97,6 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                 issues.append(dict(diagnostic, security_id=sid, value=_text(value), path=path))
             if observation.get('provisional'):
                 issue('PROVISIONAL_PROVIDER_HOLDINGS', sid, value, path)
-            environments = {row.get('data_environment') for row in accounts.values()}
             source_environment = observation.get('data_environment')
             if source_environment not in ('REAL', 'SYNTHETIC'):
                 issue('UNKNOWN_DATA_ENVIRONMENT', sid, value, path)
@@ -128,7 +128,10 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             holdings = observation.get('holdings', [])
             holdings = [row for row in holdings if row.get('weight') is not None]
             weights = [decimal(row['weight']) for row in holdings]
-            if any(weight < 0 for weight in weights) or sum(weights, Decimal(0)) > 1:
+            if any(weight < 0 for weight in weights):
+                return missing('INVALID_HOLDINGS_WEIGHTS', sid, value, path)
+            weight_total = sum(weights, Decimal(0))
+            if weight_total > 1:
                 return missing('INVALID_HOLDINGS_WEIGHTS', sid, value, path)
             canonical_ids = [row['security_id'] for row in holdings if row.get('security_id')]
             if len(set(canonical_ids)) != len(canonical_ids):
@@ -140,6 +143,7 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             next_path = path + [{'security_id': sid, **provenance,
                                 'stale': observation_stale,
                                 'provisional': bool(observation.get('provisional'))}]
+            next_ancestors = ancestors | {sid}
             for index, (holding, weight) in enumerate(zip(holdings, weights, strict=True)):
                 observed_id = holding.get('security_id') or f'OBSERVED:{source_id}:{sid}:{index}'
                 if observation.get('provisional'):
@@ -149,13 +153,13 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                     if holding['asset_type'] not in FUNDS:
                         observed_id = f'OBSERVED:{source_id}:{sid}:{index}'
                 visit(observed_id, value * weight, next_path,
-                      holding, depth + 1, ancestors | {sid})
-            residual = value * (1 - sum(weights, Decimal(0)))
+                      holding, depth + 1, next_ancestors)
+            residual = value * (1 - weight_total)
             if residual:
                 missing('PARTIAL_HOLDINGS', sid, residual, next_path)
-            represented = 1 - (unknown - unknown_before) / value if value else sum(weights, Decimal(0))
+            represented = 1 - (unknown - unknown_before) / value if value else weight_total
             fund_coverage[sid] = {
-                'reported_weight': _text(sum(weights, Decimal(0))),
+                'reported_weight': _text(weight_total),
                 'represented_weight': _text(represented),
                 'source': source_id, 'data_as_of': observation.get('as_of'),
                 'numeric_complete': represented == 1,
@@ -171,17 +175,19 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
             return missing('UNRESOLVED_SECURITY', sid, value, path)
         canonical_issuer = security.get('issuer_id') if security.get('issuer_identity_evidence') else None
         source_issuer = evidence.get('issuer_id')
+        provisional_path = any(hop.get('provisional') for hop in path)
         if source_issuer and canonical_issuer and source_issuer != canonical_issuer:
             issue('ISSUER_IDENTITY_CONFLICT', sid, value, path)
             issuer = None
-        elif evidence.get('provisional') or any(hop.get('provisional') for hop in path):
+        elif evidence.get('provisional') or provisional_path:
             issuer = None
         else:
             issuer = canonical_issuer or (source_issuer if evidence.get('issuer_verified') is True
                 and evidence.get('issuer_identity_evidence') else None)
-        provisional_path = any(hop.get('provisional') for hop in path)
         key = issuer or (f"OBSERVED:{path!r}:{sid}" if provisional_path else sid)
-        row = rows.setdefault(key, {'security_id': sid, 'ticker': security.get('ticker') or evidence.get('ticker'),
+        row = rows.get(key)
+        if row is None:
+            row = {'security_id': sid, 'ticker': security.get('ticker') or evidence.get('ticker'),
                                     'name': security.get('name') or evidence.get('name'),
                                     'observed_identifier': evidence.get('identifier'),
                                     'identity': {field: security.get(field) or evidence.get(field)
@@ -190,7 +196,8 @@ def exposure(state, observations, *, as_of, max_age_days=120, max_depth=8):
                                         evidence.get('issuer_identity_evidence'),
                                     'issuer_id': issuer, 'asset_type': asset,
                                     'direct_value': Decimal(0), 'indirect_value': Decimal(0),
-                                    'total_value': Decimal(0), 'contributions': []})
+                                    'total_value': Decimal(0), 'contributions': []}
+            rows[key] = row
         row['direct_value' if direct else 'indirect_value'] += value
         row['total_value'] += value
         row['contributions'].append({'value': _text(value), 'path': path,

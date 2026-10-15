@@ -36,7 +36,8 @@ def test_selected_history_preserves_all_source_evidence_and_retry_identity(fixtu
     accepted = ledger.apply(value)
     assert accepted['status'] == 'APPLIED'
     assert ledger.apply(value) == dict(status='UNCHANGED', snapshot_id=accepted['snapshot_id'],
-                                      account_id=fixture.accounts[0], warnings=value['warnings'])
+                                      account_id=fixture.accounts[0], warnings=value['warnings'],
+                                      issues=[], evidence_complete=True)
     after = ledger.rows('snapshots')
     original_by_id = {row['id']: row for row in previous}
     assert {row['id']: row for row in after if row['id'] in original_by_id} == original_by_id

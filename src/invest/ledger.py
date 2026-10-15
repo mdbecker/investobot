@@ -426,7 +426,11 @@ class Ledger:
         previous = self._account_snapshots(account_id)
         identical = next((s for s in previous if s.get("fingerprint") == fingerprint), None)
         if identical:
-            return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id, warnings=snap["warnings"])
+            issues = identical.get('issues', [])
+            return dict(status="UNCHANGED", snapshot_id=identical["id"], account_id=account_id,
+                        warnings=snap["warnings"], issues=issues,
+                        evidence_complete=not issues and all(snap[key] for key in
+                            ('positions_complete', 'lots_complete', 'cash_known')))
         reconciliation = self.reconcile(snap)
         acceptance_issues = [issue for issue in reconciliation['issues'] if issue.get('blocks_acceptance', True)]
         if acceptance_issues:
@@ -556,7 +560,8 @@ class Ledger:
                     else "OLDER_SOURCE_OVERRIDE") if allow_older and reconciliation["override_required"] else None))
         return dict(status="APPLIED", snapshot_id=audit_id, account_id=account_id,
                     warnings=reconciliation["warnings"], issues=reconciliation['issues'],
-                    evidence_complete=not reconciliation['issues'])
+                    evidence_complete=not reconciliation['issues'] and all(snap[key] for key in
+                        ('positions_complete', 'lots_complete', 'cash_known')))
 
     def summary(self):
         return summarize(self.state())

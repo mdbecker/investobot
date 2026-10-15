@@ -30,6 +30,9 @@ environment does not resolve omitted or inconsistent source rows. Default incomp
 coverage updates observed inventory without deleting absent rows. Add
 `--positions-complete` and/or `--lots-complete` only when the human confirms the
 entire relevant inventory is represented. Do not infer activity from differences.
+Acceptance and repeated-import responses retain typed source issues. Complete
+evidence requires explicit position, lot and cash coverage; successful acceptance
+alone does not establish completeness.
 
 Explicitly accept only after review/authorization:
 

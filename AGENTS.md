@@ -2,6 +2,12 @@
 
 ## Current scope and workflow
 
+- [Completion addendum](docs/PRD-mvp-completion-scope-addendum-2026-10-14.md)
+  controls this MVP handoff: reuse valid checks, stop after finite acceptance,
+  record the approved look-through performance exception as NOT PASSED, and keep
+  unavailable real-source validation separate. Do not start further benchmark,
+  profiling, optimization or audit work without a new human request.
+
 - [Correctness/simplification PRD](docs/PRD-mvp-correctness-simplification-2026-10-13.md)
   controls explicit later decisions; Gate 0 covers A-F. Use one recursive exposure
   engine and one planner; synthetic preview saves nothing. Real proposals need
@@ -82,6 +88,9 @@
 - Exact Decimal values use plain normalized strings. Scale calculation context to
   magnitudes; conserve low-order residues. Identifiers/source lexemes stay exact.
   Printed precision is explicit source evidence, never inferred from storage.
+  Read-only summaries need the same magnitude-aware arithmetic as proposals.
+  Import evidence completeness requires explicit position, lot and cash coverage;
+  an unchanged import must retain its typed source diagnostics.
   Never invent identity, lots, basis, prices, classifications or cash coverage.
 - Explicit REAL/SYNTHETIC provenance reaches parser and accepted facts. Mixed inputs
   cannot yield actionable proposals; blocking parser evidence cannot become clean
