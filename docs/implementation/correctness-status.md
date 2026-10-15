@@ -2,8 +2,31 @@
 
 Synthetic MVP implementation is complete under the
 [completion addendum](../PRD-mvp-completion-scope-addendum-2026-10-14.md).
-Verified product commit: `a6d3efa2aae48c6a1aa592e33d357e89766178f9` on `main`.
+Original verified product commit: `a6d3efa2aae48c6a1aa592e33d357e89766178f9` on `main`.
 The final handoff commit changes documentation only. No pushes or host installs.
+
+## Review follow-up — 2026-10-14
+
+The supplied 22-commit review's nullable-price case reproduced as `Invalid numeric
+value`; test-only red checkpoint `7ba80a1` preceded fix `04246f0`.
+Reconciliation now emits `INCOMPLETE_POSITION_VALUATION` when a comparison term is
+absent despite printed precision, preserving other review evidence and accepted
+state without inferring a price. Four key exposure scenarios now state concrete
+observable amounts, identity and denominator outcomes instead of a case-name
+switch. Their original numerical expectations remain unchanged. The testing guide
+clarifies the addendum's mounted-source reuse allowance.
+
+Latest verified product: `04246f0be9f55f444dedb23001c53874a5bc58e8`.
+Locked offline Docker mounted-source verification: **1,390 passed in 46.49s**;
+Ruff **All checks passed**. Focused observation/exposure checks: **26 passed**.
+Local logs: ignored `benchmark-results/review-2026-10-14/`; these results do not
+claim fresh exact-image or remote CI verification. No known material correctness
+defect remains from the supplied review.
+
+Packaging, skills, host bridge, recovery and dashboard inputs are unchanged; their
+earlier passing smoke checks below are reused. No benchmark, profile, CI change or
+provider validation was performed for this review. **PERFORMANCE EXCEPTION — NOT
+PASSED** and all real-source gates remain unchanged.
 
 Current contract: [correctness PRD](../PRD-mvp-correctness-simplification-2026-10-13.md).
 It supersedes explicit older decisions; unchanged financial/recovery/privacy
