@@ -1,4 +1,9 @@
-# Correctness and simplification handoff - 2026-10-13
+# Correctness and simplification handoff - 2026-10-14
+
+Synthetic MVP implementation is complete under the
+[completion addendum](../PRD-mvp-completion-scope-addendum-2026-10-14.md).
+Verified product commit: `a6d3efa2aae48c6a1aa592e33d357e89766178f9` on `main`.
+The final handoff commit changes documentation only. No pushes or host installs.
 
 Current contract: [correctness PRD](../PRD-mvp-correctness-simplification-2026-10-13.md).
 It supersedes explicit older decisions; unchanged financial/recovery/privacy
@@ -76,9 +81,80 @@ rebaseline or performance allowance.
 Local evidence: ignored `benchmark-results/correctness-2026-10-13/`. Retain 90 days
 and retain unresolved failures until resolution. Local checks are not remote CI.
 
-## Real-source gate
+## Final bounded verification
+
+The final material corrections preserve exact large-value summary cents and make
+partial/repeated imports retain honest coverage and source diagnostics. Test-only
+checkpoint `610a033` observed three failures and four preservation passes before
+these fixes. An older complete-response expectation was updated only for the
+intentional added `issues` and `evidence_complete` fields; no financial expected
+values changed. A small behavior-preserving exposure refactor already underway
+before the addendum avoids rebuilding issuer metadata and repeated sums/scans.
+
+- Final locked offline Docker full suite: **1,389 passed in 45.93s**
+  (`final-green-repeat.log`); Ruff: **All checks passed** (`final-ruff.log`).
+  Focused final observation/history/exposure checks: **27 passed**
+  (`final-focused.log`). No further production changes followed these checks.
+- Actual synthetic CLI demo passed against the final bound source: no external
+  calls, hypothetical operations preserved accepted financial fingerprints,
+  specific-lot conservation and nested source paths passed, and backup/restore
+  recovered financial facts and corpus retrieval (`final-cli-demo.json`).
+- Disposable real host bridge/Compose walkthrough passed: private host storage,
+  absent-ledger previews, explicit/idempotent evidence publication, project skill
+  installation preserving unrelated resources, online backup/verify, restore
+  preview/confirm, loopback GET and malformed POST **405**, unchanged GET results
+  (`host-qa.log`). The initial temporary project-name error was corrected in the
+  disposable QA script; it did not reveal a product defect.
+- Reused valid image/wheel QA from `dc894c8`: both project-local agent formats,
+  **13 bundled skills**, installed wheel resources, retired command/module absent,
+  and private directories excluded. Subsequent changes did not change packaging
+  or skills. Final smoke tests use the final source bind with that image's locked
+  runtime; no claim is made that its baked source contains later corrections.
+  Earlier exact-image tests passed **1,387 tests**; final-source results above
+  supersede that count. All results are local, not remote CI evidence.
+
+No outstanding material correctness defect is known from these finite checks.
+Residual maintenance limits: the existing CLI remains large, and the deterministic
+greedy planner can leave drift when full sales exceed the approved tax allowance;
+it is not a global optimizer. Further audit/refactoring is deferred.
+
+## PERFORMANCE EXCEPTION — NOT PASSED
+
+The addendum explicitly accepts the confirmed exposure regression for this
+implementation. The gate remains failed; its threshold/reference are unchanged
+for this exception. No further measurements, profiles or optimization follow the
+addendum. The final small refactor and summary/import corrections were **not
+remeasured**; no performance improvement is claimed.
+
+Measured candidate product: `dc894c8c6ce72db25c44e12da4034c6874b61e0f`;
+reference: `d0940a12c44831095492efcd7091fb7b937ad6b3`. Native ARM64, same Docker
+runner, offline, 2 CPUs/4 GiB, one warm-up per pair and five samples per shared
+batch. All raw samples exceeded 200 ms and native financial/identity/path oracles
+passed. The other seven workflows stayed within the guard in both pairs.
+
+| Look-through paired workflow | Reference median | Candidate median | Change | Raw batch medians |
+|---|---:|---:|---:|---|
+| Initial pair | 4.560949 ms | 6.196091 ms | +35.85% | 136 iterations: 620.289050 / 842.668422 ms |
+| Complete confirmation pair | 4.404951 ms | 6.268134 ms | +42.30% | 134 iterations: 590.263367 / 839.930002 ms |
+
+Each iteration runs recursive exposure plus top-issuer selection: four accounts,
+200 positions, 400 lots, four funds with 12 constituents and three nested levels.
+Both paths retain comparable financial quantities and contribution paths; the new
+path additionally reports source identity/provenance and explicit numeric/evidence
+coverage. They do not perform identical reporting work. No evidence fields were
+removed to improve speed. Reviewed incidental response/order deltas are documented
+above; immutable receipt lists compare full membership independently of display
+ordering. Native results, initial invalid comparisons, raw samples and exit codes
+remain outside Git under the local evidence directory. The confirmed result is
+`performance/confirmed-comparison.json`: **FAIL**, accepted exception, not green.
+
+## Real-source gate — NOT TESTED / UNVERIFIED
 
 No reviewed Vanguard, Fidelity NetBenefits, PNC HTML or entitled FMP responses were
 supplied. Every adapter remains PROVISIONAL; live FMP remains UNVERIFIED. The
-[readiness matrix](../readiness.md) records NOT TESTED/BLOCKED human gates and
+[readiness matrix](../readiness.md) records NOT TESTED human gates and
 required inputs. Synthetic acceptance cannot establish real-trade readiness.
+The smallest next human step is to supply one permission-cleared, sanitized broker
+sample with independently reviewed expected balances, dates, identities and lot
+facts; entitled FMP responses require separate rights/freshness review. This gate
+does not block the synthetic handoff. Stop here unless the human requests new work.

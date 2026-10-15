@@ -10,6 +10,8 @@ credentials or places orders.
 
 This is a synthetic-tested **development preview**. Vanguard, Fidelity NetBenefits
 401(k) and PNC HTML adapters remain PROVISIONAL; live FMP contracts are UNVERIFIED.
+The [completion addendum](docs/PRD-mvp-completion-scope-addendum-2026-10-14.md)
+sets the bounded synthetic MVP handoff and approved performance exception.
 The [current PRD](docs/PRD-mvp-correctness-simplification-2026-10-13.md)
 governs correctness and workflow simplification; [handoff evidence](docs/implementation/correctness-status.md)
 records validation and outstanding operator steps.
