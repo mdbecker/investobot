@@ -31,13 +31,13 @@ def test_fixed_workflows_use_representative_single_user_inputs():
 
 
 def test_one_slow_measurement_requires_complete_confirmation():
-    assert gates.compare_pair(report(), report(1.26))['status'] == 'CONFIRM'
-    assert gates.compare_pair(report(), report(1.26), confirmation=(report(), report()))['status'] == 'PASS'
-    assert gates.compare_pair(report(), report(1.26), confirmation=(report(), report(1.26)))['status'] == 'FAIL'
+    assert gates.compare_pair(report(), report(1.51))['status'] == 'CONFIRM'
+    assert gates.compare_pair(report(), report(1.51), confirmation=(report(), report()))['status'] == 'PASS'
+    assert gates.compare_pair(report(), report(1.51), confirmation=(report(), report(1.51)))['status'] == 'FAIL'
 
 
-def test_exact_25_percent_is_accepted():
-    assert gates.compare_pair(report(), report(1.25))['status'] == 'PASS'
+def test_exact_50_percent_is_accepted():
+    assert gates.compare_pair(report(), report(1.50))['status'] == 'PASS'
 
 
 @pytest.mark.parametrize('alteration', ['short', 'missing', 'output', 'recipe', 'runner', 'count'])
@@ -53,9 +53,9 @@ def test_invalid_evidence_cannot_establish_a_regression(alteration):
 
 
 def test_confirmation_must_cover_the_complete_suite():
-    incomplete = report(1.26)
+    incomplete = report(1.51)
     incomplete['cases'].pop('7')
-    assert gates.compare_pair(report(), report(1.26), confirmation=(report(), incomplete))['status'] == 'INVALID'
+    assert gates.compare_pair(report(), report(1.51), confirmation=(report(), incomplete))['status'] == 'INVALID'
 
 
 @pytest.mark.parametrize('operation', ['P06.budget', 'P10.recursive-exposure'])
@@ -154,3 +154,29 @@ def test_receipt_display_order_does_not_hide_source_facts():
     changed = deepcopy(receipts)
     changed[1]['cash'] = '151'
     assert evidence({'snapshots': receipts}) != evidence({'snapshots': changed})
+
+
+def test_recorded_lookthrough_slowdown_has_timing_headroom():
+    reference = report()
+    candidate = report()
+    candidate['cases']['0']['samples_ns'] = [569_200_000] * 5
+    result = gates.compare_pair(reference, candidate)
+    assert result['status'] == 'PASS'
+    assert result['measurements']['0']['ratio'] == pytest.approx(1.423)
+
+
+def test_just_above_allowance_requires_confirmation_and_can_fail():
+    candidate = report(1.500001)
+    assert gates.compare_pair(report(), candidate)['status'] == 'CONFIRM'
+    assert gates.compare_pair(report(), candidate,
+                              confirmation=(report(), candidate))['status'] == 'FAIL'
+    assert gates.compare_pair(report(), candidate,
+                              confirmation=(report(), report(1.49)))['status'] == 'PASS'
+
+
+@pytest.mark.parametrize('hardware_scale', [0.75, 1.0, 2.0])
+def test_allowance_compares_paired_ratios_independent_of_absolute_speed(hardware_scale):
+    assert gates.compare_pair(report(hardware_scale),
+                              report(hardware_scale * 1.49))['status'] == 'PASS'
+    assert gates.compare_pair(report(hardware_scale),
+                              report(hardware_scale * 1.51))['status'] == 'CONFIRM'
