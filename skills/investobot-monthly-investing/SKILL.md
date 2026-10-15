@@ -77,4 +77,5 @@ Prefer one routine discretionary trading session per month and at most four reba
 Use confirmed recent activity as context and prefer contributions-only with new cash.
 These are agent preferences: necessary proposals may use any valid date with an explicit
 explanation. No calendar prohibition, scheduler or automatic execution.
-Follow the authoritative operational walkthrough in [docs/workflows.md](../../docs/workflows.md).
+Follow the authoritative operational walkthrough in `docs/workflows.md`, opened
+from the repository root, including when using an installed copy of this skill.

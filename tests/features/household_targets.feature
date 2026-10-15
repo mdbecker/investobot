@@ -34,10 +34,9 @@ Feature: Household targets are independent of accepted holdings
     Then current and target dollars and drift are exact
     And accepted portfolio state remains unchanged
 
-  Scenario: Restricted account permissions remain explicit
-    When a target restricts the retirement account to one permitted security
-    Then the saved constraints preserve that restriction
-    And missing account permissions remain unknown
+  Scenario: Target planning scope preserves explicit position exclusions
+    When a target excludes one accepted position from planning
+    Then the saved target preserves account eligibility and that exclusion
 
   Scenario: Archiving preserves historical target inputs
     When a balanced target is saved

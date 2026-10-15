@@ -10,7 +10,7 @@ from invest.models import DomainError, decimal
 from invest.security_identity import resolve
 from invest.simulations import simulate
 from invest.tax import estimate_sale
-from invest.tax_policy import _issue, _plain, annual_budget, harvest_plan
+from invest.tax_policy import _issue, _plain, harvest_plan, trade_annual_budget
 
 
 def _latest_receipts(state):
@@ -69,7 +69,7 @@ def conditional_harvest(state, policy, as_of):
         issue('UNKNOWN_ANNUAL_TAX_BUDGET', 'Approve annual tax rates, allowance and household coverage')
         budget = None
     else:
-        budget = annual_budget(state, budget_policy, proposed_positive_tax_cost='0')
+        budget = trade_annual_budget(state, budget_policy, as_of)
         budget['remaining_headroom'] = budget['remaining_allowance']
         issues.extend(budget['issues'])
         if any(row['code'] == 'UNKNOWN_TAX_RATE' for row in budget['issues']):
@@ -142,7 +142,8 @@ def conditional_harvest(state, policy, as_of):
         buy_rule = permissions.get(replacement_security['id'], {}) if replacement_security else {}
         if sell_rule.get('can_sell') is not True:
             issue('SELL_PERMISSION_REQUIRED', 'Loss-sale permission must be explicitly approved')
-        if buy_rule.get('can_buy') is not True or replacement.get('approved_for_purchase') is not True:
+        if (buy_rule.get('can_buy') is not True or buy_rule.get('can_hold') is not True
+                or replacement.get('approved_for_purchase') is not True):
             issue('REPLACEMENT_PERMISSION_REQUIRED', 'Replacement purchase must be explicitly approved')
         for rule in (sell_rule, buy_rule):
             if rule.get('share_increment') is None:

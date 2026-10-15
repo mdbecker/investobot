@@ -39,8 +39,10 @@ def _validate(policy):
             if not isinstance(rule, dict):
                 raise DomainError('Trading permission must be a structured rule')
             for field in ('can_buy', 'can_sell', 'can_hold'):
-                if field in rule and not isinstance(rule[field], bool):
-                    raise DomainError('Trading permissions require JSON booleans')
+                if not isinstance(rule.get(field), bool):
+                    raise DomainError('Trading permissions require all three explicit JSON booleans')
+            if rule['can_buy'] and not rule['can_hold']:
+                raise DomainError('Buy permission requires permission to hold the security')
             if rule.get('share_increment') is not None and decimal(rule['share_increment']) <= 0:
                 raise DomainError('Execution increment must be positive')
     if decimal(policy.get('minimum_notional', '25')) < 0:
@@ -199,6 +201,11 @@ def _propose(ledger, target, supplied, mode, as_of, prices, baseline, preview):
         elif date.fromisoformat(source[:10]) > day:
             issue('FUTURE_POSITION_DATE', 'Planning cannot use later observations')
     permissions = policy.get('permissions', {})
+    for position in baseline['positions']:
+        rule = permissions.get(position['account_id'], {}).get(position['security_id'], {})
+        if rule.get('can_hold') is False and decimal(position['quantity']) > 0:
+            issue('RESTRICTED_HOLDING', 'Existing restricted inventory requires human review; no forced sale',
+                  blocking=False, account=position['account_id'], security=position['security_id'])
     eligible = target['planning_constraints'].get('eligible_accounts', [])
     normalized_prices = {}
     for sid, observation in (prices or {}).items():
@@ -252,9 +259,9 @@ def _propose(ledger, target, supplied, mode, as_of, prices, baseline, preview):
         issue('UNKNOWN_EXECUTION_FEES', 'Zero modeled fee is hypothetical; verify actual fees', blocking=False)
     tax_budget = None
     if policy.get('annual_tax_budget'):
-        from invest.tax_policy import annual_budget
+        from invest.tax_policy import trade_annual_budget
 
-        tax_budget = annual_budget(baseline, policy['annual_tax_budget'])
+        tax_budget = trade_annual_budget(baseline, policy['annual_tax_budget'], as_of)
     headroom = decimal(tax_budget['remaining_allowance']) if tax_budget and tax_budget.get('remaining_allowance') is not None else None
     spent = Decimal(0)
     sale_estimates = []
@@ -271,6 +278,8 @@ def _propose(ledger, target, supplied, mode, as_of, prices, baseline, preview):
         if rule.get(permission) is not True:
             if permission not in rule:
                 issue('UNKNOWN_TRADING_PERMISSION', 'Account/security eligibility is unknown', blocking=False)
+            return
+        if kind == 'BUY' and rule.get('can_hold') is not True:
             return
         if sid not in normalized_prices:
             issue('UNKNOWN_PRICE', 'Security has no sourced price assumption', blocking=False)

@@ -20,13 +20,7 @@ control if it contains private account information.
   },
   "planning_constraints": {
     "eligible_accounts": ["ira", "taxable"],
-    "permitted_securities": {
-      "ira": ["CANONICAL_EQUITY_SECURITY_ID", "CANONICAL_BOND_FUND_SECURITY_ID"],
-      "taxable": ["CANONICAL_EQUITY_SECURITY_ID", "CANONICAL_BOND_FUND_SECURITY_ID"]
-    },
-    "cash_minimums": {"ira": "0", "taxable": "500"},
-    "short_term_gain_budget": "0",
-    "long_term_gain_budget": "5000",
+    "excluded_positions": [],
     "target_tolerance": "0.01"
   }
 }
@@ -60,15 +54,17 @@ accepted valuation marks, not fetched quotes. Unknown cash warnings remain
 visible; a zero household value cannot establish meaningful current weights.
 
 Account eligibility must be explicit. Empty eligibility permits no planning.
-An omitted account's permitted-securities list means unknown eligibility, not
-unrestricted access. A permitted list may be empty to prohibit purchases.
-Unregistered accounts, investments and excluded position IDs are rejected.
-`excluded_positions` uses accepted position IDs (`account_id:security_id`);
-`trade_increments` maps account IDs to canonical security IDs and positive share
-increments. Known cash is required when specifying an account cash minimum.
+Targets retain eligible accounts and excluded accepted position IDs
+(`account_id:security_id`); unknown references are rejected.
+`target_tolerance` is a presentation threshold for the saved plan's count of
+positions outside tolerance. It never authorizes or suppresses a trade; the
+allocation sum tolerance remains `0.000001`.
 
-Target constraints describe eligibility, tolerance and source-age assumptions.
-Approved policy supplies independent buy/sell/hold permissions, exact increments,
-fees, cash floors and the annual positive estimated tax-cost allowance. Unknown
-permissions never mean unrestricted access. See [workflows](workflows.md) and
-[trading policy](trading-policy.md) for the authoritative proposal path.
+The separately approved immutable policy is the sole authority for security
+buy/sell/hold permissions, cash floors, share increments, minimum notionals,
+fees, price freshness and annual tax allowances. Target weights confer no trade
+permission. Targets reject the legacy execution fields `permitted_securities`,
+`cash_minimums`, `trade_increments` and `price_max_age_days`; put these requirements
+in the policy instead. Unknown permissions never mean unrestricted access.
+See [workflows](workflows.md) and [trading policy](trading-policy.md) for the
+authoritative proposal path.

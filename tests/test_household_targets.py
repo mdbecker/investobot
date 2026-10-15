@@ -41,8 +41,6 @@ def household(ctx):
         "target_allocations": {ctx["aaa"]: "0.5", ctx["bbb"]: "0.4", "CASH": "0.1"},
         "planning_constraints": {
             "eligible_accounts": ["ira"],
-            "permitted_securities": {"ira": [ctx["aaa"], ctx["bbb"]]},
-            "cash_minimums": {"ira": "50"},
         },
     }
 
@@ -63,7 +61,7 @@ def retained(ctx):
     assert target["created_at"] and target["updated_at"]
     assert Decimal(target["target_allocations"][ctx["aaa"]]) == Decimal("0.5")
     assert target["planning_constraints"]["eligible_accounts"] == ["ira"]
-    assert Decimal(target["planning_constraints"]["cash_minimums"]["ira"]) == Decimal("50")
+    assert target["planning_constraints"]["excluded_positions"] == []
 
 
 @then("accepted portfolio state remains unchanged")
@@ -178,23 +176,20 @@ def exact(ctx):
     json.dumps(result)
 
 
-@when("a target restricts the retirement account to one permitted security")
+@when("a target excludes one accepted position from planning")
 def restricted(ctx):
     from invest.targets import save
 
     payload = copy.deepcopy(ctx["payload"])
-    payload["planning_constraints"]["permitted_securities"] = {"ira": [ctx["bbb"]]}
+    payload["planning_constraints"]["excluded_positions"] = [f"ira:{ctx['aaa']}"]
     ctx["target"] = save(ctx["ledger"], payload)
 
 
-@then("the saved constraints preserve that restriction")
+@then("the saved target preserves account eligibility and that exclusion")
 def restriction(ctx):
-    assert ctx["target"]["planning_constraints"]["permitted_securities"] == {"ira": [ctx["bbb"]]}
-
-
-@then("missing account permissions remain unknown")
-def unknown_permission(ctx):
-    assert "unloaded-account" not in ctx["target"]["planning_constraints"]["permitted_securities"]
+    constraints = ctx["target"]["planning_constraints"]
+    assert constraints["eligible_accounts"] == ["ira"]
+    assert constraints["excluded_positions"] == [f"ira:{ctx['aaa']}"]
 
 
 @when("that target is archived")

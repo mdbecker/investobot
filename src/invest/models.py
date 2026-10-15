@@ -108,13 +108,6 @@ class Snapshot(BaseModel):
                     raise ValueError('Source datetime requires a timezone')
         return value
 
-    @model_validator(mode="before")
-    @classmethod
-    def explicit_cash(cls, value):
-        if isinstance(value, dict) and "cash" in value and "cash_known" not in value:
-            return dict(value, cash_known=True)
-        return value
-
 
 def decimal(value):
     try:
@@ -134,12 +127,8 @@ Weight = Annotated[Decimal, Field(ge=0, le=1, allow_inf_nan=False)]
 class PlanningConstraints(BaseModel):
     model_config = ConfigDict(extra="forbid")
     eligible_accounts: list[str] = Field(default_factory=list)
-    permitted_securities: dict[str, list[str]] = Field(default_factory=dict)
     excluded_positions: list[str] = Field(default_factory=list)
-    cash_minimums: dict[str, Nonnegative] = Field(default_factory=dict)
     target_tolerance: Weight = Decimal("0.01")
-    trade_increments: dict[str, dict[str, Positive]] = Field(default_factory=dict)
-    price_max_age_days: int = Field(default=1, ge=0)
 
 
 class TargetInput(BaseModel):

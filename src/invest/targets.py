@@ -24,25 +24,12 @@ def _validate_references(ledger, payload):
     constraints = payload["planning_constraints"]
     if set(payload["target_allocations"]) - securities - {"CASH"}:
         raise DomainError("Target allocations require registered canonical security IDs or CASH")
-    referenced_accounts = (set(constraints["eligible_accounts"])
-                           | set(constraints["permitted_securities"])
-                           | set(constraints["cash_minimums"])
-                           | set(constraints["trade_increments"]))
-    if referenced_accounts - accounts:
+    if set(constraints["eligible_accounts"]) - accounts:
         raise DomainError("Target constraints reference an unknown account")
     if len(constraints["eligible_accounts"]) != len(set(constraints["eligible_accounts"])):
         raise DomainError("Eligible accounts must be unique")
     if set(constraints["excluded_positions"]) - positions:
         raise DomainError("Excluded positions require accepted canonical position IDs")
-    for allowed in constraints["permitted_securities"].values():
-        if set(allowed) - securities:
-            raise DomainError("Permitted investments require registered canonical security IDs")
-    for increments in constraints["trade_increments"].values():
-        if set(increments) - securities:
-            raise DomainError("Trade increments require registered canonical security IDs")
-    known_cash = {c["account_id"] for c in ledger.rows("cash_balances")}
-    if set(constraints["cash_minimums"]) - known_cash:
-        raise DomainError("Cash minimums require known account cash balances", 3)
 
 
 def _deactivate_others(ledger, target_id, timestamp):
